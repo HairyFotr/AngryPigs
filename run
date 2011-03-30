@@ -1,0 +1,5 @@
+#!/bin/bash
+#./build ShowPyramid Window
+
+CP="lib/lwjgl-2.7.1/jar/lwjgl.jar:lib/lwjgl-2.7.1/jar/lwjgl_util.jar:."
+scala -cp $CP -Djava.library.path="lib/lwjgl-2.7.1/native/linux/" ShowPyramid
