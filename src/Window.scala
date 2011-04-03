@@ -5,12 +5,9 @@ import org.lwjgl.util.glu._
 import java.nio._
 
 //Scala-Java static hack: http://www.eishay.com/2009/05/scala-java-interoperability-statics.html
-object ShowWindow {
-    def main(args: Array[String]) {
-        // Start our program
-        (new Window()).execute();
-    }
-}
+object ShowWindow extends Application { 
+    (new Window()).execute()
+};
 
 class Window {
     var isRunning = false;
