@@ -7,9 +7,14 @@
 ###put compiler scripts into global ~/.
 ###javac + compiler jars vs. scalac,clojurec,...
 ###pass names without .ext, and let it figure it out?
+##save last few hashes and mock me if I tried the exact same thing already :D
+###also "compile by lookup"
 #toimprove
 #search .bashbeanshash and shift out already compiled, instead of doing a pure compare
 
+
+
+starttime="$(date +%s)"
 cd src
 
 #get arguments, process switches
@@ -21,31 +26,37 @@ if [ $# -gt 0 ]; then
             "-R") Run="yes please";Unforce="don't compile :)";shift;;
         esac
     done
-    C="$@"
+    files="$@"
 fi
-if [ "$C" == "" ]; then
-    C="  *.scala" 
+if [ "$files" == "" ]; then
+    files="  *.scala" 
 fi
 
-#compile
+
+#build
 if [ "$Unforce" != "" ]; then
-    echo "you told me not to compile."
-    E="0"
-elif [ "$Force" == "" -a -e .bashbeanhash -a "`md5sum $C`" == "`cat .bashbeanhash`" ]; then
+    echo "You told me not to compile."
+    builderror="0"
+elif [ "$Force" == "" -a -e ../.bashbeanhash -a "`md5sum $files`" == "`cat ../.bashbeanhash`" ]; then
     echo "I don't think I need to compile. (use force if neccesary.)"
-    E="0"
+    builderror="0"
 else
-    echo "compiling:"$C
-    scalac -deprecation -d ../class -extdirs ../lib/lwjgl-2.7.1/jar/ $C
-    E=$?
-    if [ "$E" == "0" ]; then
-        md5sum $C > .bashbeanhash
+    echo "Compiling:"$files
+    #fast scala compile (loads compile deamon)
+    fsc -deprecation -d ../class -extdirs ../lib/lwjgl-2.7.1/jar/ $files
+    
+    builderror=$?
+    #write hashes
+    if [ "$builderror" == "0" ]; then
+        md5sum $files > ../.bashbeanhash
     fi
 fi
-echo "build done("$E")."
+buildtime="$(date +%s)"
+elapsedtime="$(expr $buildtime - $starttime)"
+echo "Done("$builderror") in ${elapsedtime}s."
 
 #run it
-if [ "$E" == "0" -a "$Run" != "" ]; then
+if [ "$builderror" == "0" -a "$Run" != "" ]; then
     cd ..
     CP="lib/lwjgl-2.7.1/jar/lwjgl.jar:lib/lwjgl-2.7.1/jar/lwjgl_util.jar:class"
     #cd $CD"class"
