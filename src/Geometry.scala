@@ -22,7 +22,7 @@ abstract class Model {
     def render();
 }
 
-class TexQuadPatch extends Model {
+class QuadPatch extends Model {
     private val clockwise = List((0,0), (0,1), (1,1), (1,0));
     var width = 1;
     var points:Array[Vec3]=null;
@@ -38,14 +38,6 @@ class TexQuadPatch extends Model {
         this(p, w);
         texPoints = tex;
     }
-    /*def this(q:Array[Quad]) {
-        this((for(i <- q) yield i.getPoints).reduceLeft(_ ::: _).toArray);
-    }
-    def this(q:Array[Quad], tex:Array[Quad]) {
-        // flatten quads to points
-        this((for(i <- q) yield i.getPoints).reduceLeft(_ ::: _).toArray,
-            (for(i <- tex) yield i.getPoints).reduceLeft(_ ::: _).toArray);
-    }*/    
 
     def render() {
         GL11.glBegin(GL11.GL_QUADS);

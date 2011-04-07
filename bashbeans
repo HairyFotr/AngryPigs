@@ -12,18 +12,16 @@
 #toimprove
 #search .bashbeanshash and shift out already compiled, instead of doing a pure compare
 
-
-
 starttime="$(date +%s)"
 cd src
 
 #get arguments, process switches
 if [ $# -gt 0 ]; then
     for i do
-        case "$i" in 
+        case "$i" in #dont take the strings seriously - they're used as booleans ;)
             "-f") Force="m*a";shift;;
             "-r") Run="yes please";shift;;
-            "-R") Run="yes please";Unforce="don't compile :)";shift;;
+            "-R") Run="yes please";Unforce="<- means don't compile";shift;;
         esac
     done
     files="$@"
@@ -32,12 +30,19 @@ if [ "$files" == "" ]; then
     files="  *.scala" 
 fi
 
+#bashbeans stuff
+bashbeanshashpath="../.bashbeanhash"
+
+#hash func
+##@getpath za $1?
+fileshash="`md5sum ../$0 $files`" #must be compiled with same bashbeans script
+#echo "$fileshash"
 
 #build
 if [ "$Unforce" != "" ]; then
     echo "You told me not to compile."
     builderror="0"
-elif [ "$Force" == "" -a -e ../.bashbeanhash -a "`md5sum $files`" == "`cat ../.bashbeanhash`" ]; then
+elif [ "$Force" == "" -a -e $bashbeanshashpath -a "$fileshash" == "`cat $bashbeanshashpath`" ]; then
     echo "I don't think I need to compile. (use force if neccesary.)"
     builderror="0"
 else
@@ -48,7 +53,7 @@ else
     builderror=$?
     #write hashes
     if [ "$builderror" == "0" ]; then
-        md5sum $files > ../.bashbeanhash
+        echo "$fileshash" > $bashbeanshashpath
     fi
 fi
 buildtime="$(date +%s)"
@@ -58,7 +63,7 @@ echo "Done("$builderror") in ${elapsedtime}s."
 #run it
 if [ "$builderror" == "0" -a "$Run" != "" ]; then
     cd ..
-    CP="lib/lwjgl-2.7.1/jar/lwjgl.jar:lib/lwjgl-2.7.1/jar/lwjgl_util.jar:class"
+    #CP="lib/lwjgl-2.7.1/jar/lwjgl.jar:lib/lwjgl-2.7.1/jar/lwjgl_util.jar:class"
     #cd $CD"class"
-    scala -cp $CP -Djava.library.path="lib/lwjgl-2.7.1/native/linux/" ShowPigs
+    scala -cp lib/lwjgl-2.7.1/jar/lwjgl.jar:lib/lwjgl-2.7.1/jar/lwjgl_util.jar:class -Djava.library.path="lib/lwjgl-2.7.1/native/linux/" AngryPigs
 fi

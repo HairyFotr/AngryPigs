@@ -6,14 +6,57 @@ import scala.util._;
 
 // TODO:
 // search for @task
-// school examples most likely suck
 
-object ShowPigs extends Application { (new Pigs()).execute() }
+object AngryPigs {
 
-class Pigs extends Window {
+    var isRunning = false; // is main loop running
+    val (winWidth, winHeight)=(800,600); // window size
+    
     val rand:Random = new Random();
     
-    override def mainLoop() { 
+    /**
+     * Initializes display and enters main loop
+     */
+    def main(Args:Array[String]) {
+        try {
+          initDisplay();
+        } catch {
+            case e:LWJGLException => {
+              System.err.println("Can't open display. "+e.getMessage());
+              System.exit(0);
+            }
+        }
+
+        // enter loop
+        isRunning = true;
+        mainLoop();
+        
+        // cleanup
+        Display.destroy();
+    }
+
+    def initDisplay() {
+        var bestMode:DisplayMode = null;
+        val modes:Array[DisplayMode] = Display.getAvailableDisplayModes;
+        // Get best mode
+        for(mode <- modes)
+            if((mode.getWidth == winWidth && mode.getHeight == winHeight && mode.getFrequency <= 85)
+                &&(bestMode == null
+                   ||(mode.getBitsPerPixel >= bestMode.getBitsPerPixel
+                      && mode.getFrequency > bestMode.getFrequency)))
+                bestMode = mode;
+
+        Display.setDisplayMode(bestMode);
+        // FSAA
+        //Display.create(new PixelFormat(8, 8, 8, 4));
+        // No FSAA
+        Display.create;
+        Display.setTitle(this.getClass.getName);
+    }     
+    /**
+     * Main loop: renders and processes input events
+     */
+    def mainLoop() { 
         //loadModels(); // load models
         makeModels(); // make generative models
         setupView();  // setup camera and lights
@@ -26,8 +69,9 @@ class Pigs extends Window {
         }
     }
     
-    var terrain:TexQuadPatch=null;
+    var terrain:QuadPatch=null;
     // @would it pay-off to make model generation lazy and generate them on the fly?
+    // @infinite terrain patches and stuff
     def makeModels() {
         // Terrain
         val detail=50;
@@ -36,17 +80,17 @@ class Pigs extends Window {
         def getTerrainPoint(x:Int, y:Int):Vec3 = new Vec3(x/detail.toFloat,rand.nextFloat*height,y/detail.toFloat);
         val p = (for(i <- 0 until detail; j <- 0 until detail) yield getTerrainPoint(i,j)).toArray;
         
-        terrain = new TexQuadPatch(p, detail);
+        terrain = new QuadPatch(p, detail);
     }
 
     /**
 	 * Initial setup of projection of the scene onto screen, lights etc.
 	 */
-    override def setupView() {
+    def setupView() {
         GL11.glEnable(GL11.GL_DEPTH_TEST); // enable depth buffer (off by default)
         GL11.glEnable(GL11.GL_CULL_FACE); // enable culling of back sides of polygons
       
-        GL11.glViewport(0, 0, winX, winY); // mapping from normalized to window coordinates
+        GL11.glViewport(0, 0, winWidth, winHeight); // mapping from normalized to window coordinates
 	   
         GL11.glMatrixMode(GL11.GL_PROJECTION); // setup projection matrix stack
         GL11.glLoadIdentity();
@@ -54,19 +98,19 @@ class Pigs extends Window {
         // orthographic projection (...) 
         //GL11.glOrtho(-5,5,-5,5,1,30);
         // perspective projection (FOV, aspect, clipping near, clipping far);
-        GLU.gluPerspective(45, winX/winY.toFloat, 1.0f, 100.0f);
+        GLU.gluPerspective(45, winWidth/winHeight.toFloat, 1.0f, 100.0f);
     }
   
 
     /**
     * Resets the view of current frame
     */
-    override def resetView() {
+    def resetView() {
         // clear color and depth buffer
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
         GL11.glMatrixMode(GL11.GL_PROJECTION);
         GL11.glLoadIdentity();
-        GLU.gluPerspective(45, winX/winY.toFloat, 1.0f, 100.0f);
+        GLU.gluPerspective(45, winWidth/winHeight.toFloat, 1.0f, 100.0f);
         GL11.glRotatef(10f,rot.x,rot.y,rot.z);
         GL11.glTranslatef(tran.x,tran.y,tran.z);
         GL11.glMatrixMode(GL11.GL_MODELVIEW);
@@ -80,11 +124,11 @@ class Pigs extends Window {
     /**
     * Renders current frame
     */
-    override def renderFrame() {
+    def renderFrame() {
         terrain.render();
     }
     
-    override def processInput() {
+    def processInput() {
         if(Display.isCloseRequested() || Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)) isRunning = false;
         
         if(Keyboard.isKeyDown(Keyboard.KEY_Q)) rot.x+=0.1f;
@@ -105,8 +149,7 @@ class Pigs extends Window {
             println(tran.x+" "+tran.y+" "+tran.z);
             println(rot.x+" "+rot.y+" "+rot.z);
         }
-    }
-    
+    }    
 }
 
 
