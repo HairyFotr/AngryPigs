@@ -15,8 +15,7 @@ class Quad(var p1:Vec3, var p2:Vec3, var p3:Vec3, var p4:Vec3) {
 // lazily on first render vs loading time?
 // catapult as model-chain - has static parts which move
 
-abstract class Model {
-    var points:Array[Vec3];
+abstract class BasicModel {
     var (pos,rot,scale) = (new Vec3(0f,0f,0f), new Vec3(0f,0f,0f), new Vec3(0f,0f,0f));
 
     def setPosition(x:Float,y:Float,z:Float) = { pos = new Vec3(x,y,z); }
@@ -25,15 +24,19 @@ abstract class Model {
     
     // How do I render this model?
     def render;
-    
+
     override def toString:String = "p:("+pos.toString+"), " + "r:("+rot.toString+"), " + "s:("+scale.toString+")";
 }
+abstract class PointsModel extends BasicModel {
+    var points:Array[Vec3];
+}
 
-class Camera extends Model {
-    var points:Array[Vec3] = null;
+// doesn't care about 
+//class CompiledModel extends BasicModel {
     
-    //@ school template.. make nice :P
-    
+//}
+
+class Camera extends BasicModel {
     // default projection 
     var perspective = false
     var (near,far) = (1f,30f) // near, far clipping plane
@@ -60,7 +63,7 @@ class Camera extends Model {
         far=f
     }
   
-    override def render() {
+    override def render {
         // setup projection matrix stack
         GL11.glMatrixMode(GL11.GL_PROJECTION);
         GL11.glLoadIdentity();
@@ -85,9 +88,8 @@ class Camera extends Model {
     }
 }
 
-
 // @maybe normalize width&height to 1 and then scale?
-class QuadPatch extends Model {
+class QuadPatch extends PointsModel {
     var width = 1
     var points:Array[Vec3]=null
     var texPoints:Array[Vec3]=null
@@ -106,9 +108,7 @@ class QuadPatch extends Model {
         texPoints = tex;
     }
 
-    // @make a method to merge quadpatches (for infinite terrain)
- 
-    def render {
+    override def render {
         GL11.glPushMatrix;
         
         GL11.glTranslatef(pos.x, pos.y, pos.z);
@@ -135,5 +135,7 @@ class QuadPatch extends Model {
         }
         
         GL11.glPopMatrix;
-   }
+    }
+
+    // @make a method to merge quadpatches (for infinite terrain)   
 }
