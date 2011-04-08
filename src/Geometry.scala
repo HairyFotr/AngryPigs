@@ -5,8 +5,12 @@ class Vec3(var x:Float, var y:Float, var z:Float) {
     def this() = this(0f,0f,0f);
 };
 class Quad(var p1:Vec3, var p2:Vec3, var p3:Vec3, var p4:Vec3) {
-    def getPoints() = List(p1,p2,p3,p4);
+    def getPoints = List(p1,p2,p3,p4);
 }
+
+// @most models will be static - compile them into displaylists
+// lazily on first render vs loading time?
+// catapult as model-chain - has static parts which move
 
 abstract class Model {
     var points:Array[Vec3];
@@ -19,16 +23,17 @@ abstract class Model {
     def setScale(x:Float,y:Float,z:Float) = { scale = new Vec3(x,y,z); }
     
     // How do I render this model?
-    def render();
+    def render;
 }
 
 class QuadPatch extends Model {
-    private val clockwise = List((0,0), (0,1), (1,1), (1,0));
     var width = 1;
     var points:Array[Vec3]=null;
     var texPoints:Array[Vec3]=null;
     
     // constructors
+    // @take in random points and make it into a valid quadpatch
+    //  also use quads
     def this(p:Array[Vec3], w:Int) { 
         this();
         width = w;
@@ -39,10 +44,10 @@ class QuadPatch extends Model {
         texPoints = tex;
     }
 
-    def render() {
+    def render {
         GL11.glBegin(GL11.GL_QUADS);
-        // Draw in clockwise
-        for(i <- 0 until points.length-width-1; if(i+1%width > 0)) {
+        // Draw in clockwise - (00,01,11,10); must skip last point of line.
+        for(i <- 0 until points.length-width-1; if((i+1)%width > 0)) {
             List(points(i), points(i+width), points(i+width+1), points(i+1)).foreach {
                 (p:Vec3) => {
                     GL11.glColor3f(p.y, p.y, p.y);
@@ -51,6 +56,6 @@ class QuadPatch extends Model {
                 }
             }
         }
-        GL11.glEnd();
+        GL11.glEnd;
     }
 }
