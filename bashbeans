@@ -18,8 +18,8 @@ starttime="$(date +%s)"
 cd src
 hashpath="../.bashbeanhash"
 os="linux"
-projectname="AngryPigs"
-runname="$projectname"
+projectname="Angry Pigs"
+runname="AngryPigs"
 #setuppath="../.bashbeansetup"
 #if [ -e $setuppath ]; then
 #    #lol="l"
@@ -75,5 +75,5 @@ if [ "$builderror" == "0" -a "$Run" != "" ]; then
     cd ..
     #CP="lib/lwjgl-2.7.1/jar/lwjgl.jar:lib/lwjgl-2.7.1/jar/lwjgl_util.jar:class"
     #cd $CD"class"
-    scala -cp lib/lwjgl-2.7.1/jar/lwjgl.jar:lib/lwjgl-2.7.1/jar/lwjgl_util.jar:class -Djava.library.path="lib/lwjgl-2.7.1/native/$os/" $runname
+    scala -cp lib/lwjgl-2.7.1/jar/lwjgl.jar:lib/lwjgl-2.7.1/jar/lwjgl_util.jar:class -Djava.library.path="lib/lwjgl-2.7.1/native/macosx/:lib/lwjgl-2.7.1/native/linux/" $runname
 fi
