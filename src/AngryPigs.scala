@@ -60,7 +60,7 @@ object AngryPigs {
         //loadModels; // load models
         makeModels; // make generative models
         setupView;  // setup camera and lights
-
+    
         // @that is one ugly FPS counter :)
         def now = System.nanoTime();
         var secondTimer = now;
@@ -71,6 +71,10 @@ object AngryPigs {
             //val start = now;
             resetView;      // clear view and reset transformations
             renderFrame;    // draw stuff
+            //gl error
+            val errCode = GL11.glGetError;
+            if (errCode != GL11.GL_NO_ERROR) 
+                println(opengl.Util.translateGLErrorString(errCode));
             // @menda se da sproti/bolš gledat input
             processInput;   // process input events 
             Display.update; // update window contents and process input messages
@@ -84,31 +88,111 @@ object AngryPigs {
         }
     }
     
+    //models
     var terrain:QuadPatch=null;
+    var skybox:DisplayModel=null;
+    var coordsys:DisplayModel=null;
+    var pig:DisplayModel=null;
+    
     // @would it pay-off to make model generation lazy and generate them on the fly?
     // @infinite terrain patches and stuff
     def makeModels {
-        // Terrain
-        val detail=50;
-        val height=0.3f;
+        val scale = 50;//size of world
+        // terrain
+        val detail=10;
+        val height=0.1f;
         
         def getTerrainPoint(x:Int, y:Int):Vec3 = new Vec3(x/detail.toFloat,rand.nextFloat*height,y/detail.toFloat);
-        val p = (for(i <- 0 until detail; j <- 0 until detail) yield getTerrainPoint(i,j)).toArray;
+        val p = (for(i <- 0 to detail; j <- 0 to detail) yield getTerrainPoint(i,j)).toArray;        
+        terrain = new QuadPatch(p, detail+1);
+        terrain.setPosition(-scale,-scale,-scale);
+        terrain.setScale(scale*2, 5, scale*2);
         
-        terrain = new QuadPatch(p, detail);
+                // coordinate system
+        coordsys = new DisplayModel(Unit=>{
+            GL11.glBegin(GL11.GL_LINES);
+                GL11.glColor3f(1,0,0);
+                GL11.glVertex3f(0,0,0);
+                GL11.glVertex3f(1,0,0);
+                
+                GL11.glColor3f(0,1,0);
+                GL11.glVertex3f(0,0,0);
+                GL11.glVertex3f(0,1,0);
+                
+                GL11.glColor3f(0,0,1);
+                GL11.glVertex3f(0,0,0);
+                GL11.glVertex3f(0,0,1);
+            GL11.glEnd;//*/
+        });
+        coordsys.setScale(scale,scale,scale);
+
+        // sky-box
+        skybox = new DisplayModel(Unit=>{
+            GL11.glBegin(GL11.GL_QUADS);
+                // top
+                GL11.glColor3f(0f,1f,0f); // green
+                GL11.glVertex3f( 1f, 1f,-1f);
+                GL11.glVertex3f(-1f, 1f,-1f);
+                GL11.glVertex3f(-1f, 1f, 1f);
+                GL11.glVertex3f( 1f, 1f, 1f);
+                // bottom 
+                /*GL11.glColor3f(1f,0.5f,0f);    // orange
+                GL11.glVertex3f( 1f,-1f, 1f);
+                GL11.glVertex3f(-1f,-1f, 1f);
+                GL11.glVertex3f(-1f,-1f,-1f);
+                GL11.glVertex3f( 1f,-1f,-1f);*/
+                // Front
+                GL11.glColor3f(1f,0f,0f); // red 
+                GL11.glVertex3f( 1f, 1f, 1f);
+                GL11.glVertex3f(-1f, 1f, 1f); 
+                GL11.glVertex3f(-1f,-1f, 1f);
+                GL11.glVertex3f( 1f,-1f, 1f);
+                // back
+                GL11.glColor3f(1f,1f,0f); // yellow
+                GL11.glVertex3f( 1f,-1f,-1f);
+                GL11.glVertex3f(-1f,-1f,-1f);
+                GL11.glVertex3f(-1f, 1f,-1f);
+                GL11.glVertex3f( 1f, 1f,-1f);
+                // left
+                GL11.glColor3f(0f,0f,1f); // blue
+                GL11.glVertex3f(-1f, 1f, 1f);
+                GL11.glVertex3f(-1f, 1f,-1f);
+                GL11.glVertex3f(-1f,-1f,-1f);
+                GL11.glVertex3f(-1f,-1f, 1f);
+                // right
+                GL11.glColor3f(1f,0f,1f); // violet
+                GL11.glVertex3f( 1f, 1f,-1f);
+                GL11.glVertex3f( 1f, 1f, 1f);
+                GL11.glVertex3f( 1f,-1f, 1f);
+                GL11.glVertex3f( 1f,-1f,-1f);
+            GL11.glEnd;
+        });
+        skybox.setPosition(0,0,0);
+        skybox.setScale(scale,scale,scale);//*/
+
+        // pig
+        pig = new DisplayModel(Unit=>{
+            GL11.glColor3f(0.2f,0.7f,0.2f);
+            val p = new Sphere();
+            p.draw(2,10,10);
+        });
+        pig.setPosition(0,-scale+2,-15);
+        //pig.setScale(scale/,scale,scale);//*/
     }
 
     /**
-	 * Initial setup of projection of the scene onto screen, lights etc.
-	 */
+     * Initial setup of projection of the scene onto screen, lights etc.
+     */
     def setupView {
         GL11.glEnable(GL11.GL_DEPTH_TEST); // enable depth buffer (off by default)
         //GL11.glEnable(GL11.GL_CULL_FACE);  // enable culling of back sides of polygons
       
         GL11.glViewport(0,0, winWidth,winHeight); // mapping from normalized to window coordinates
-	   
-        cam.setPerspective(45, 4/3f, 1f, 50f);
-        cam.setPosition(0,0,2f);
+       
+        //GL11.glHint(GL11.GL_PERSPECTIVE_CORRECTION_HINT, GL11.GL_NICEST);
+        cam.setPerspective(45, winWidth/winHeight.toFloat, 1f, 500f);
+        cam.setPosition(0,45,-50);
+        cam.setRotation(0,180,0);
     }
   
     /**
@@ -127,67 +211,13 @@ object AngryPigs {
     * Renders current frame
     */
     def renderFrame {
-        cam.render;
-        terrain.render;
-        
-        // coordinate system
-        /*GL11.glBegin(GL11.GL_LINES);
-            GL11.glColor3f(1,0,0);
-            GL11.glVertex3f(0,0,0);
-            GL11.glVertex3f(100,0,0);
-            
-            GL11.glColor3f(0,1,0);
-            GL11.glVertex3f(0,0,0);
-            GL11.glVertex3f(0,100,0);
-            
-            GL11.glColor3f(0,0,1);
-            GL11.glVertex3f(0,0,0);
-            GL11.glVertex3f(0,0,100);
-        GL11.glEnd;*/
-        
-        // sky-box
-        
-        GL11.glPushMatrix;
-        GL11.glTranslatef(0,-1,0);
-        GL11.glScalef(5,5,5);
-        GL11.glBegin(GL11.GL_QUADS);
-		    GL11.glColor3f(0.0f,1.0f,0.0f);						// Set The Color To Green
-		    GL11.glVertex3f( 1.0f, 1.0f,-1.0f);					// Top Right Of The Quad (Top)
-		    GL11.glVertex3f(-1.0f, 1.0f,-1.0f);					// Top Left Of The Quad (Top)
-		    GL11.glVertex3f(-1.0f, 1.0f, 1.0f);					// Bottom Left Of The Quad (Top)
-		    GL11.glVertex3f( 1.0f, 1.0f, 1.0f);					// Bottom Right Of The Quad (Top)
-		    
-		    GL11.glColor3f(1.0f,0.5f,0.0f);						// Set The Color To Orange
-		    GL11.glVertex3f( 1.0f,-1.0f, 1.0f);					// Top Right Of The Quad (Bottom)
-		    GL11.glVertex3f(-1.0f,-1.0f, 1.0f);					// Top Left Of The Quad (Bottom)
-		    GL11.glVertex3f(-1.0f,-1.0f,-1.0f);					// Bottom Left Of The Quad (Bottom)
-		    GL11.glVertex3f( 1.0f,-1.0f,-1.0f);					// Bottom Right Of The Quad (Bottom)
-		    
-		    GL11.glColor3f(1.0f,0.0f,0.0f);						// Set The Color To Red
-		    GL11.glVertex3f( 1.0f, 1.0f, 1.0f);					// Top Right Of The Quad (Front)
-		    GL11.glVertex3f(-1.0f, 1.0f, 1.0f);					// Top Left Of The Quad (Front)
-		    GL11.glVertex3f(-1.0f,-1.0f, 1.0f);					// Bottom Left Of The Quad (Front)
-		    GL11.glVertex3f( 1.0f,-1.0f, 1.0f);					// Bottom Right Of The Quad (Front)
-		    
-		    GL11.glColor3f(1.0f,1.0f,0.0f);						// Set The Color To Yellow
-		    GL11.glVertex3f( 1.0f,-1.0f,-1.0f);					// Top Right Of The Quad (Back)
-		    GL11.glVertex3f(-1.0f,-1.0f,-1.0f);					// Top Left Of The Quad (Back)
-		    GL11.glVertex3f(-1.0f, 1.0f,-1.0f);					// Bottom Left Of The Quad (Back)
-		    GL11.glVertex3f( 1.0f, 1.0f,-1.0f);					// Bottom Right Of The Quad (Back)
-		    
-		    GL11.glColor3f(0.0f,0.0f,1.0f);						// Set The Color To Blue
-		    GL11.glVertex3f(-1.0f, 1.0f, 1.0f);					// Top Right Of The Quad (Left)
-		    GL11.glVertex3f(-1.0f, 1.0f,-1.0f);					// Top Left Of The Quad (Left)
-		    GL11.glVertex3f(-1.0f,-1.0f,-1.0f);					// Bottom Left Of The Quad (Left)
-		    GL11.glVertex3f(-1.0f,-1.0f, 1.0f);					// Bottom Right Of The Quad (Left)
-		    
-		    GL11.glColor3f(1.0f,0.0f,1.0f);						// Set The Color To Violet
-		    GL11.glVertex3f( 1.0f, 1.0f,-1.0f);					// Top Right Of The Quad (Right)
-		    GL11.glVertex3f( 1.0f, 1.0f, 1.0f);					// Top Left Of The Quad (Right)
-		    GL11.glVertex3f( 1.0f,-1.0f, 1.0f);					// Bottom Left Of The Quad (Right)
-		    GL11.glVertex3f( 1.0f,-1.0f,-1.0f);					// Bottom Right Of The Quad (Right)
-        GL11.glEnd;
-        GL11.glPopMatrix;
+        List(
+            cam,
+            terrain,
+            skybox,
+            coordsys,
+            pig
+        ).map(_.render);
     }
     
     def processInput {
@@ -207,14 +237,14 @@ object AngryPigs {
         if(Keyboard.isKeyDown(Keyboard.KEY_X)) cam.pos.z+=0.7f;
         if(Keyboard.isKeyDown(Keyboard.KEY_V)) cam.pos.z-=0.7f;
         
-        if(Keyboard.isKeyDown(Keyboard.KEY_LEFT))  terrain.pos.x+=0.7f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) terrain.pos.x-=0.7f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_UP))    terrain.pos.z+=0.7f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_DOWN))  terrain.pos.z-=0.7f;
+        if(Keyboard.isKeyDown(Keyboard.KEY_LEFT))  pig.pos.x+=0.7f;
+        if(Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) pig.pos.x-=0.7f;
+        if(Keyboard.isKeyDown(Keyboard.KEY_UP))    pig.pos.z+=0.7f;
+        if(Keyboard.isKeyDown(Keyboard.KEY_DOWN))  pig.pos.z-=0.7f;
 
         if(Keyboard.isKeyDown(Keyboard.KEY_P)) {
             println(cam.toString);
-            println(terrain.toString);
+            println(pig.toString);
         }
     }    
 }

@@ -9,6 +9,8 @@ class Vec3(var x:Float, var y:Float, var z:Float) {
 }
 class Quad(var p1:Vec3, var p2:Vec3, var p3:Vec3, var p4:Vec3) {
     def getPoints = List(p1,p2,p3,p4);
+    
+    def foreach(f:Vec3=>Unit) = getPoints.foreach(f);
 }
 
 // @most models will be static - compile them into displaylists / VBOs
@@ -16,7 +18,7 @@ class Quad(var p1:Vec3, var p2:Vec3, var p3:Vec3, var p4:Vec3) {
 // catapult as model-chain - has static parts which move
 
 abstract class BasicModel {
-    var (pos,rot,scale) = (new Vec3(0f,0f,0f), new Vec3(0f,0f,0f), new Vec3(0f,0f,0f));
+    var (pos,rot,scale) = (new Vec3(0f,0f,0f), new Vec3(0f,0f,0f), new Vec3(1f,1f,1f));
 
     def setPosition(x:Float,y:Float,z:Float) = { pos = new Vec3(x,y,z); }
     def setRotation(x:Float,y:Float,z:Float) = { rot = new Vec3(x,y,z); }
@@ -31,10 +33,35 @@ abstract class PointsModel extends BasicModel {
     var points:Array[Vec3];
 }
 
-// doesn't care about 
-//class CompiledModel extends BasicModel {
+// doesn't care about points and stuff
+class DisplayModel(var displayList:Int) extends BasicModel {
+    def this(renderf:Unit=>Unit) {
+        this(-1);
+        renderfunc = renderf;
+        displayList = GL11.glGenLists(1);
+        GL11.glNewList(displayList,GL11.GL_COMPILE);    
+        renderfunc();
+        GL11.glEndList;
+    }
+    var renderfunc:Unit=>Unit = Unit=>{};
     
-//}
+    
+    override def render {
+        GL11.glPushMatrix;
+        
+        GL11.glTranslatef(pos.x, pos.y, pos.z);
+        GL11.glRotatef(1f, rot.x, rot.y, rot.z);
+        GL11.glScalef(scale.x, scale.y, scale.z);
+        
+        if(displayList == -1)
+            renderfunc();
+        else
+            GL11.glCallList(displayList);
+        
+        GL11.glPopMatrix;
+    }
+    
+}
 
 class Camera extends BasicModel {
     // default projection 
@@ -107,33 +134,31 @@ class QuadPatch extends PointsModel {
         this(p, w);
         texPoints = tex;
     }
-
+    
     override def render {
         GL11.glPushMatrix;
         
         GL11.glTranslatef(pos.x, pos.y, pos.z);
         GL11.glRotatef(1f, rot.x, rot.y, rot.z);
+        GL11.glScalef(scale.x, scale.y, scale.z);
 
-        if (displayList == -1) {
+        if(displayList == -1 || true) {
             displayList = GL11.glGenLists(1);
             GL11.glNewList(displayList,GL11.GL_COMPILE_AND_EXECUTE);
             GL11.glBegin(GL11.GL_QUADS);
-            // Draw in clockwise - (00,01,11,10); must skip last point of line.
-            for(i <- 0 until points.length-width-1; if((i+1)%width > 0)) {
-                List(points(i), points(i+width), points(i+width+1), points(i+1)).foreach {
+            // Draw in clockwise - (00,10,11,01); must skip last point of line
+            for(i <- 0 until points.length-width-1; if((i+1)%width != 0))
+                List(points(i), points(i+1), points(i+width+1), points(i+width)).map(
                     (p:Vec3) => {
-                        GL11.glColor3f(p.y/5, p.y, p.y/5);
-                        //GL11.glTexCoord2f(clockwise(j)._1,clockwise(j)._2);
+                        GL11.glColor3f(p.y/3, p.y*5, p.y/3);
                         GL11.glVertex3f(p.x, p.y, p.z);
                     }
-                }
-            }
-            GL11.glEnd;
+                )
+            GL11.glEnd;//*/
             GL11.glEndList;
         } else {
             GL11.glCallList(displayList);
         }
-        
         GL11.glPopMatrix;
     }
 
