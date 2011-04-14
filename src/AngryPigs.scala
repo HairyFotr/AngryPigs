@@ -67,18 +67,18 @@ object AngryPigs {
         var frameCounter = 0;
         val E10 = 10000000000L;
         while(isRunning) {
-            frameCounter += 1;
-            //val start = now;
             resetView;      // clear view and reset transformations
             renderFrame;    // draw stuff
+            // @menda se da sproti/bolš gledat input
+            processInput;   // process input events 
+            Display.update; // update window contents and process input messages
+            frameCounter += 1;
+
             //gl error
             val errCode = GL11.glGetError;
             if (errCode != GL11.GL_NO_ERROR) 
                 println(opengl.Util.translateGLErrorString(errCode));
-            // @menda se da sproti/bolš gledat input
-            processInput;   // process input events 
-            Display.update; // update window contents and process input messages
-            //val timeSpent = now-start;
+
             if(now-secondTimer > E10) {
                 secondTimer = now;
                 // print fps
@@ -93,11 +93,13 @@ object AngryPigs {
     var skybox:DisplayModel=null;
     var coordsys:DisplayModel=null;
     var pig:DisplayModel=null;
+    //size of world
+    val worldSize = 75;
+    val gravity = new Vec3(0f,-0.5f,0f);
     
     // @would it pay-off to make model generation lazy and generate them on the fly?
     // @infinite terrain patches and stuff
     def makeModels {
-        val scale = 50;//size of world
         // terrain
         val detail=10;
         val height=0.1f;
@@ -105,8 +107,8 @@ object AngryPigs {
         def getTerrainPoint(x:Int, y:Int):Vec3 = new Vec3(x/detail.toFloat,rand.nextFloat*height,y/detail.toFloat);
         val p = (for(i <- 0 to detail; j <- 0 to detail) yield getTerrainPoint(i,j)).toArray;        
         terrain = new QuadPatch(p, detail+1);
-        terrain.setPosition(-scale,-scale,-scale);
-        terrain.setScale(scale*2, 5, scale*2);
+        terrain.setPosition(-worldSize,-worldSize,-worldSize);
+        terrain.setScale(worldSize*2, 5, worldSize*2);
         
                 // coordinate system
         coordsys = new DisplayModel(Unit=>{
@@ -124,7 +126,7 @@ object AngryPigs {
                 GL11.glVertex3f(0,0,1);
             GL11.glEnd;//*/
         });
-        coordsys.setScale(scale,scale,scale);
+        coordsys.setScale(worldSize,worldSize,worldSize);
 
         // sky-box
         skybox = new DisplayModel(Unit=>{
@@ -168,7 +170,7 @@ object AngryPigs {
             GL11.glEnd;
         });
         skybox.setPosition(0,0,0);
-        skybox.setScale(scale,scale,scale);//*/
+        skybox.setScale(worldSize,worldSize,worldSize);//*/
 
         // pig
         pig = new DisplayModel(Unit=>{
@@ -176,8 +178,8 @@ object AngryPigs {
             val p = new Sphere();
             p.draw(2,10,10);
         });
-        pig.setPosition(0,-scale+2,-15);
-        //pig.setScale(scale/,scale,scale);//*/
+        pig.setPosition(0,-worldSize+2.5f,-worldSize+25);
+        //pig.setScale(worldSize/,worldSize,worldSize);//*/
     }
 
     /**
@@ -191,7 +193,7 @@ object AngryPigs {
        
         //GL11.glHint(GL11.GL_PERSPECTIVE_CORRECTION_HINT, GL11.GL_NICEST);
         cam.setPerspective(45, winWidth/winHeight.toFloat, 1f, 500f);
-        cam.setPosition(0,45,-50);
+        cam.setPosition(0,worldSize-5,-worldSize+5);
         cam.setRotation(0,180,0);
     }
   
@@ -211,13 +213,20 @@ object AngryPigs {
     * Renders current frame
     */
     def renderFrame {
-        List(
+        val toRender = List(
             cam,
             terrain,
             skybox,
             coordsys,
             pig
-        ).map(_.render);
+        )
+        cam.pos.clamp(worldSize-5);
+
+        pig.pos.applyVector(pig.vector);
+        pig.vector.applyVector(gravity);
+        pig.pos.clamp(worldSize-2.5f);
+
+        toRender.map(_.render);
     }
     
     def processInput {
@@ -236,11 +245,21 @@ object AngryPigs {
         if(Keyboard.isKeyDown(Keyboard.KEY_F)) cam.pos.y-=0.7f;
         if(Keyboard.isKeyDown(Keyboard.KEY_X)) cam.pos.z+=0.7f;
         if(Keyboard.isKeyDown(Keyboard.KEY_V)) cam.pos.z-=0.7f;
-        
-        if(Keyboard.isKeyDown(Keyboard.KEY_LEFT))  pig.pos.x+=0.7f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) pig.pos.x-=0.7f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_UP))    pig.pos.z+=0.7f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_DOWN))  pig.pos.z-=0.7f;
+
+        /*if(Keyboard.isKeyDown(Keyboard.KEY_T)) cam.scale.x+=0.7f;
+        if(Keyboard.isKeyDown(Keyboard.KEY_Z)) cam.scale.x-=0.7f;
+        if(Keyboard.isKeyDown(Keyboard.KEY_G)) cam.scale.y+=0.7f;
+        if(Keyboard.isKeyDown(Keyboard.KEY_H)) cam.scale.y-=0.7f;
+        if(Keyboard.isKeyDown(Keyboard.KEY_B)) cam.scale.z+=0.7f;
+        if(Keyboard.isKeyDown(Keyboard.KEY_N)) cam.scale.z-=0.7f;*/
+
+        if(Keyboard.isKeyDown(Keyboard.KEY_LEFT))  pig.vector.x+=0.2f;
+        if(Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) pig.vector.x-=0.2f;
+        if(Keyboard.isKeyDown(Keyboard.KEY_UP))    pig.vector.z+=0.2f;
+        if(Keyboard.isKeyDown(Keyboard.KEY_DOWN))  pig.vector.z-=0.2f;
+        if(Keyboard.isKeyDown(Keyboard.KEY_SPACE)) {
+            if (pig.vector.y <= 0) pig.vector.y=2f;
+        }
 
         if(Keyboard.isKeyDown(Keyboard.KEY_P)) {
             println(cam.toString);
