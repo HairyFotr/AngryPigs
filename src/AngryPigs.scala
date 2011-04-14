@@ -94,15 +94,15 @@ object AngryPigs {
     var coordsys:DisplayModel=null;
     var pig:DisplayModel=null;
     //size of world
-    val worldSize = 75;
+    val worldSize = 85;
     val gravity = new Vec3(0f,-0.5f,0f);
     
     // @would it pay-off to make model generation lazy and generate them on the fly?
     // @infinite terrain patches and stuff
     def makeModels {
         // terrain
-        val detail=10;
-        val height=0.1f;
+        val detail=15;
+        val height=0.2f;
         
         def getTerrainPoint(x:Int, y:Int):Vec3 = new Vec3(x/detail.toFloat,rand.nextFloat*height,y/detail.toFloat);
         val p = (for(i <- 0 to detail; j <- 0 to detail) yield getTerrainPoint(i,j)).toArray;        
@@ -176,7 +176,11 @@ object AngryPigs {
         pig = new DisplayModel(Unit=>{
             GL11.glColor3f(0.2f,0.7f,0.2f);
             val p = new Sphere();
-            p.draw(2,10,10);
+            GL11.glScalef(0.8f,1,1.2f);
+            p.draw(2,15,15);
+            GL11.glScalef(1,1,1);
+            GL11.glTranslatef(0,1.4f,1.9f);
+            p.draw(0.9f,10,10);
         });
         pig.setPosition(0,-worldSize+2.5f,-worldSize+25);
         //pig.setScale(worldSize/,worldSize,worldSize);//*/
@@ -191,8 +195,8 @@ object AngryPigs {
       
         GL11.glViewport(0,0, winWidth,winHeight); // mapping from normalized to window coordinates
        
-        //GL11.glHint(GL11.GL_PERSPECTIVE_CORRECTION_HINT, GL11.GL_NICEST);
-        cam.setPerspective(45, winWidth/winHeight.toFloat, 1f, 500f);
+        GL11.glHint(GL11.GL_PERSPECTIVE_CORRECTION_HINT, GL11.GL_NICEST);
+        cam.setPerspective(50, winWidth/winHeight.toFloat, 1f, 500f);
         cam.setPosition(0,worldSize-5,-worldSize+5);
         cam.setRotation(0,180,0);
     }
@@ -225,7 +229,9 @@ object AngryPigs {
         pig.pos.applyVector(pig.vector);
         pig.vector.applyVector(gravity);
         pig.pos.clamp(worldSize-2.5f);
-
+        //val pigpos = pig.pos.clone;
+        //if(pigpos != pig.pos) pig.vector=new Vec3(0,0,0);
+        
         toRender.map(_.render);
     }
     
@@ -257,6 +263,23 @@ object AngryPigs {
         if(Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) pig.vector.x-=0.2f;
         if(Keyboard.isKeyDown(Keyboard.KEY_UP))    pig.vector.z+=0.2f;
         if(Keyboard.isKeyDown(Keyboard.KEY_DOWN))  pig.vector.z-=0.2f;
+        
+        // x+y vectors should be clamped
+        {
+            val vclamp=1;
+            if(pig.vector.x+pig.vector.y > vclamp) {
+                if(pig.vector.x > pig.vector.y) {
+                    val r=vclamp/pig.vector.x
+                    pig.vector.x = vclamp;
+                    pig.vector.y *= r;
+                } else {
+                    val r=vclamp/pig.vector.y
+                    pig.vector.y = vclamp;
+                    pig.vector.x *= r;
+                }
+            }
+        }
+
         if(Keyboard.isKeyDown(Keyboard.KEY_SPACE)) {
             if (pig.vector.y <= 0) pig.vector.y=2f;
         }

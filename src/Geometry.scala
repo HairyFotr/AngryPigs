@@ -15,6 +15,10 @@ class Vec3(var x:Float, var y:Float, var z:Float) {
     def +=(v:Vec3):Vec3 = { this+v }
     def *(f:Float):Vec3 = { this.map(_ * f); this};
     def applyVector(v:Vec3,multi:Float = 1) = { this += (v*multi) }
+    def ==(v:Vec3):Boolean = if(x==v.x && y==v.y && z==v.z) true else false;
+    def !=(v:Vec3):Boolean = !(this==v)
+    
+    override def clone = new Vec3(x,y,z);
 
     // clamp values to some value(e.g. world size)
     private def clamp(p:Float,clamp:Float):Float = if(math.abs(p) > clamp) clamp*(p/math.abs(p)) else p;
