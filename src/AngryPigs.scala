@@ -93,8 +93,10 @@ object AngryPigs {
     var skybox:DisplayModel=null;
     var coordsys:DisplayModel=null;
     var pig:DisplayModel=null;
+    var catapult:DisplayModel=null;
+    var pigcatapultLink:ModelLink=null;
     //size of world
-    val worldSize = 85;
+    val worldSize = 100;
     val gravity = new Vec3(0f,-0.5f,0f);
     
     // @would it pay-off to make model generation lazy and generate them on the fly?
@@ -176,7 +178,7 @@ object AngryPigs {
         pig = new DisplayModel(Unit=>{
             GL11.glColor3f(0.2f,0.7f,0.2f);
             val p = new Sphere();
-            GL11.glScalef(0.8f,1,1.2f);
+            GL11.glScalef(0.95f,1,1.1f);
             p.draw(2,15,15);
             GL11.glScalef(1,1,1);
             GL11.glTranslatef(0,1.4f,1.9f);
@@ -184,6 +186,47 @@ object AngryPigs {
         });
         pig.setPosition(0,-worldSize+2.5f,-worldSize+25);
         //pig.setScale(worldSize/,worldSize,worldSize);//*/
+
+        catapult = new DisplayModel(Unit=>{
+            GL11.glBegin(GL11.GL_QUADS);
+                GL11.glColor3f(1f,0.5f,0f); // orange
+
+                // top
+                GL11.glVertex3f( 1f, 1f,-1f);
+                GL11.glVertex3f(-1f, 1f,-1f);
+                GL11.glVertex3f(-1f, 1f, 1f);
+                GL11.glVertex3f( 1f, 1f, 1f);
+                // bottom 
+                GL11.glVertex3f( 1f,-1f, 1f);
+                GL11.glVertex3f(-1f,-1f, 1f);
+                GL11.glVertex3f(-1f,-1f,-1f);
+                GL11.glVertex3f( 1f,-1f,-1f);
+                // Front
+                GL11.glVertex3f( 1f, 1f, 1f);
+                GL11.glVertex3f(-1f, 1f, 1f); 
+                GL11.glVertex3f(-1f,-1f, 1f);
+                GL11.glVertex3f( 1f,-1f, 1f);
+                // back
+                GL11.glVertex3f( 1f,-1f,-1f);
+                GL11.glVertex3f(-1f,-1f,-1f);
+                GL11.glVertex3f(-1f, 1f,-1f);
+                GL11.glVertex3f( 1f, 1f,-1f);
+                // left
+                GL11.glVertex3f(-1f, 1f, 1f);
+                GL11.glVertex3f(-1f, 1f,-1f);
+                GL11.glVertex3f(-1f,-1f,-1f);
+                GL11.glVertex3f(-1f,-1f, 1f);
+                // right
+                GL11.glVertex3f( 1f, 1f,-1f);
+                GL11.glVertex3f( 1f, 1f, 1f);
+                GL11.glVertex3f( 1f,-1f, 1f);
+                GL11.glVertex3f( 1f,-1f,-1f);
+            GL11.glEnd;
+        });
+        catapult.setPosition(0,-worldSize+2.5f,-worldSize+25);
+        catapult.setScale(3,1,3);//*/
+        
+        pigcatapultLink = new ModelLink(catapult, pig, new Vec3(0f,1f,0.5f));
     }
 
     /**
@@ -222,13 +265,15 @@ object AngryPigs {
             terrain,
             skybox,
             coordsys,
-            pig
+            pig,
+            catapult
         )
         cam.pos.clamp(worldSize-5);
 
         pig.pos.applyVector(pig.vector);
         pig.vector.applyVector(gravity);
         pig.pos.clamp(worldSize-2.5f);
+        pigcatapultLink.applyLink;
         //val pigpos = pig.pos.clone;
         //if(pigpos != pig.pos) pig.vector=new Vec3(0,0,0);
         
@@ -263,25 +308,35 @@ object AngryPigs {
         if(Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) pig.vector.x-=0.2f;
         if(Keyboard.isKeyDown(Keyboard.KEY_UP))    pig.vector.z+=0.2f;
         if(Keyboard.isKeyDown(Keyboard.KEY_DOWN))  pig.vector.z-=0.2f;
+        if(Keyboard.isKeyDown(Keyboard.KEY_RCONTROL)) {
+            pig.vector.x *= 0.8f;
+            pig.vector.z *= 0.8f;
+        }
         
-        // x+y vectors should be clamped
-        {
-            val vclamp=1;
-            if(pig.vector.x+pig.vector.y > vclamp) {
-                if(pig.vector.x > pig.vector.y) {
-                    val r=vclamp/pig.vector.x
-                    pig.vector.x = vclamp;
-                    pig.vector.y *= r;
-                } else {
-                    val r=vclamp/pig.vector.y
-                    pig.vector.y = vclamp;
-                    pig.vector.x *= r;
-                }
+        // x+z vectors should be clamped
+        if(pigcatapultLink.isLinked){
+            val vclamp=0.8f;
+            def sgn(n:Float) = n/math.abs(n);
+            if(math.abs(pig.vector.x) > vclamp) pig.vector.x = vclamp*sgn(pig.vector.x);
+            if(math.abs(pig.vector.z) > vclamp) pig.vector.z = vclamp*sgn(pig.vector.z)
+            
+            if(math.abs(pig.vector.x)+math.abs(pig.vector.z) > vclamp) {
+                //if(math.abs(pig.vector.x) > math.abs(pig.vector.y)) {
+                    //x+y>vclamp ... x*r+z*r = vclamp ... r = vclamp/x+z
+                    val r = vclamp/(math.abs(pig.vector.x)+math.abs(pig.vector.z))
+                    pig.vector.x *= r
+                    pig.vector.z *= r
+                //
             }
         }
 
-        if(Keyboard.isKeyDown(Keyboard.KEY_SPACE)) {
-            if (pig.vector.y <= 0) pig.vector.y=2f;
+        if(Keyboard.isKeyDown(Keyboard.KEY_SPACE) && pigcatapultLink.isLinked) {
+            pig.vector.y=5f;
+            pig.vector.z=8f;
+            pigcatapultLink.breakLink;
+        }
+        if(Keyboard.isKeyDown(Keyboard.KEY_LCONTROL)) {
+            pigcatapultLink.forgeLink;
         }
 
         if(Keyboard.isKeyDown(Keyboard.KEY_P)) {

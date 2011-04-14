@@ -11,12 +11,13 @@ class Vec3(var x:Float, var y:Float, var z:Float) {
     def map(f:Float=>Float) = {setPoints(getPoints.map(f)); this};
   
     // @dot product etc. when needed
-    def +(v:Vec3):Vec3 = { x += v.x; y += v.y; z += v.z; this}
-    def +=(v:Vec3):Vec3 = { this+v }
-    def *(f:Float):Vec3 = { this.map(_ * f); this};
-    def applyVector(v:Vec3,multi:Float = 1) = { this += (v*multi) }
-    def ==(v:Vec3):Boolean = if(x==v.x && y==v.y && z==v.z) true else false;
+    def +(v:Vec3):Vec3 = { var res=this.clone; res.x += v.x; res.y += v.y; res.z += v.z; res }
+    def +=(v:Vec3) = { this.apply(this+v) }
+    def *(f:Float):Vec3 = { var res=this.clone; res.map(_ * f); res };
+    def applyVector(v:Vec3,multi:Float = 1) = { var res = this+(v*multi); this.apply(res) }
+    def ==(v:Vec3):Boolean = (x==v.x && y==v.y && z==v.z)
     def !=(v:Vec3):Boolean = !(this==v)
+    def apply(v:Vec3) = { this.x=v.x; this.y=v.y; this.z=v.z }
     
     override def clone = new Vec3(x,y,z);
 
@@ -60,8 +61,11 @@ abstract class BasicModel {
     var (pos,rot,scale) = (new Vec3, new Vec3, new Vec3(1f,1f,1f));
 
     def setPosition(x:Float,y:Float,z:Float) = { pos = new Vec3(x,y,z); }
+    def setPosition(v:Vec3) = { pos = new Vec3(v.x,v.y,v.z); }
     def setRotation(x:Float,y:Float,z:Float) = { rot = new Vec3(x,y,z); }
+    def setRotation(v:Vec3) = { rot = new Vec3(v.x,v.y,v.z); }
     def setScale(x:Float,y:Float,z:Float) = { scale = new Vec3(x,y,z); }
+    def setScale(v:Vec3) = { scale = new Vec3(v.x,v.y,v.z); }
     
     // How do I render this model?
     def render;
@@ -215,3 +219,20 @@ class GenModel extends BasicModel {
     override def render {
     }
 }
+
+
+class ModelLink(var m1:BasicModel, var m2:BasicModel) extends Vector {
+    def this(m1:BasicModel,m2:BasicModel,vector:Vec3) {
+        this(m1,m2)
+        this.vector = vector;
+    }
+
+    private var linked = true;
+    def breakLink() = linked = false;
+    def forgeLink() = linked = true;
+    def isLinked() = linked;
+    
+    def applyLink() = if(linked) m2.setPosition(m1.pos+vector);
+}
+
+
