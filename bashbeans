@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #todo
-##.bashbeans settings (global ~/. and per project)
+##.bashbeans settings (global ~/. and per project and per machine)
 ###folders, classpath/ext, platform info, compilers, etc.,
 ##support for java and clojure
 ###put compiler scripts into global ~/.
@@ -14,10 +14,13 @@
 
 starttime="$(date +%s)"
 
-#load settings
 cd src
+#load settings
+##@put to file, read lines and execute them
+##@make bashbeansinit to generate such files
 hashpath="../.bashbeanhash"
 os="linux"
+hashfunc="md5sum" #any will do, really, it only needs input as hashfunc <files>
 projectname="Angry Pigs"
 runname="AngryPigs"
 #setuppath="../.bashbeansetup"
@@ -45,7 +48,7 @@ fi
 
 #hash func
 ##@getpath za $1?
-fileshash="`md5sum ../$0 $files`" #must be compiled with same bashbeans script
+fileshash="`$hashfunc ../$0 $files`" #must be compiled with same bashbeans script
 #echo "$fileshash"
 
 #build

@@ -79,7 +79,7 @@ class DisplayModel(var displayList:Int) extends BasicModel with Vector {
         this(-1);
         renderfunc = renderf;
         displayList = GL11.glGenLists(1);
-        GL11.glNewList(displayList,GL11.GL_COMPILE);    
+        GL11.glNewList(displayList,GL11.GL_COMPILE);
         renderfunc();
         GL11.glEndList;
     }
