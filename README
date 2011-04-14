@@ -1,0 +1,10 @@
+Run:
+You need Scala... then run ./bashbeans -r
+
+Keys:
+Q->R ... translate/rotate X
+A->F ... translate/rotate Y
+Y->V ... translate/rotate Z
+LCTRL ... reload
+Arrow keys ... move
+RCTRL ... stop
