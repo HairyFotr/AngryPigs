@@ -53,6 +53,12 @@ object AngryPigs {
         Display.create;
         Display.setTitle("Angry Pigs");
     }
+
+
+    def now = System.nanoTime();
+    // used for frame independant movement
+    var frameTime = now;
+    
     /**
      * Main loop: renders and processes input events
      */
@@ -62,7 +68,6 @@ object AngryPigs {
         setupView;  // setup camera and lights
     
         // @that is one ugly FPS counter :)
-        def now = System.nanoTime();
         var secondTimer = now;
         var frameCounter = 0;
         val E10 = 10000000000L;
@@ -73,7 +78,8 @@ object AngryPigs {
             processInput;   // process input events 
             Display.update; // update window contents and process input messages
             frameCounter += 1;
-
+            frameTime = now;
+            
             //gl error
             val errCode = GL11.glGetError;
             if (errCode != GL11.GL_NO_ERROR) 
@@ -103,7 +109,7 @@ object AngryPigs {
     // @infinite terrain patches and stuff
     def makeModels {
         // terrain
-        val detail=15;
+        val detail=10;
         val height=0.2f;
         
         def getTerrainPoint(x:Int, y:Int):Vec3 = new Vec3(x/detail.toFloat,rand.nextFloat*height,y/detail.toFloat);
@@ -235,6 +241,7 @@ object AngryPigs {
     def setupView {
         GL11.glEnable(GL11.GL_DEPTH_TEST); // enable depth buffer (off by default)
         //GL11.glEnable(GL11.GL_CULL_FACE);  // enable culling of back sides of polygons
+        //GL11.glCullFace(GL11.GL_BACK);
       
         GL11.glViewport(0,0, winWidth,winHeight); // mapping from normalized to window coordinates
        
@@ -256,10 +263,21 @@ object AngryPigs {
         GL11.glLoadIdentity;
     }
   
+    //avoid spikes in Rendertime (used for input)
+    var normalizedRenderTime = -1f;
+    var frameIndepRatio = (10000000f/2f);
+    
     /**
     * Renders current frame
     */
     def renderFrame {
+        var renderTime = (now-frameTime)/frameIndepRatio;
+        if(normalizedRenderTime == -1) {
+            normalizedRenderTime = renderTime;
+        } else {
+            normalizedRenderTime = (renderTime+normalizedRenderTime*2)/3;
+        }
+        
         val toRender = List(
             cam,
             terrain,
@@ -270,8 +288,9 @@ object AngryPigs {
         )
         cam.pos.clamp(worldSize-5);
 
-        pig.pos.applyVector(pig.vector);
-        pig.vector.applyVector(gravity);
+        pig.pos.applyVector(pig.vector*normalizedRenderTime);
+        pig.vector.applyVector(gravity*normalizedRenderTime);
+        
         pig.pos.clamp(worldSize-2.5f);
         pigcatapultLink.applyLink;
         //val pigpos = pig.pos.clone;
@@ -283,36 +302,30 @@ object AngryPigs {
     def processInput {
         if(Display.isCloseRequested || Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)) isRunning = false;
         
-        if(Keyboard.isKeyDown(Keyboard.KEY_Q)) cam.rot.x+=0.7f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_E)) cam.rot.x-=0.7f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_A)) cam.rot.y+=0.7f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_D)) cam.rot.y-=0.7f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_Y)) cam.rot.z+=0.7f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_C)) cam.rot.z-=0.7f;
+        val keymove = 0.7f*normalizedRenderTime;
+        
+        if(Keyboard.isKeyDown(Keyboard.KEY_Q)) cam.rot.x+=keymove;
+        if(Keyboard.isKeyDown(Keyboard.KEY_E)) cam.rot.x-=keymove;
+        if(Keyboard.isKeyDown(Keyboard.KEY_A)) cam.rot.y+=keymove;
+        if(Keyboard.isKeyDown(Keyboard.KEY_D)) cam.rot.y-=keymove;
+        if(Keyboard.isKeyDown(Keyboard.KEY_Y)) cam.rot.z+=keymove;
+        if(Keyboard.isKeyDown(Keyboard.KEY_C)) cam.rot.z-=keymove;
 
-        if(Keyboard.isKeyDown(Keyboard.KEY_W)) cam.pos.x+=0.7f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_R)) cam.pos.x-=0.7f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_S)) cam.pos.y+=0.7f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_F)) cam.pos.y-=0.7f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_X)) cam.pos.z+=0.7f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_V)) cam.pos.z-=0.7f;
+        if(Keyboard.isKeyDown(Keyboard.KEY_W)) cam.pos.x+=keymove;
+        if(Keyboard.isKeyDown(Keyboard.KEY_R)) cam.pos.x-=keymove;
+        if(Keyboard.isKeyDown(Keyboard.KEY_S)) cam.pos.y+=keymove;
+        if(Keyboard.isKeyDown(Keyboard.KEY_F)) cam.pos.y-=keymove;
+        if(Keyboard.isKeyDown(Keyboard.KEY_X)) cam.pos.z+=keymove;
+        if(Keyboard.isKeyDown(Keyboard.KEY_V)) cam.pos.z-=keymove;
 
-        /*if(Keyboard.isKeyDown(Keyboard.KEY_T)) cam.scale.x+=0.7f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_Z)) cam.scale.x-=0.7f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_G)) cam.scale.y+=0.7f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_H)) cam.scale.y-=0.7f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_B)) cam.scale.z+=0.7f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_N)) cam.scale.z-=0.7f;*/
-
-        if(Keyboard.isKeyDown(Keyboard.KEY_LEFT))  pig.vector.x+=0.2f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) pig.vector.x-=0.2f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_UP))    pig.vector.z+=0.2f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_DOWN))  pig.vector.z-=0.2f;
+        if(Keyboard.isKeyDown(Keyboard.KEY_LEFT))  pig.vector.x+=keymove/3f;
+        if(Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) pig.vector.x-=keymove/3f;
+        if(Keyboard.isKeyDown(Keyboard.KEY_UP))    pig.vector.z+=keymove/3f;
+        if(Keyboard.isKeyDown(Keyboard.KEY_DOWN))  pig.vector.z-=keymove/3f;
         if(Keyboard.isKeyDown(Keyboard.KEY_RCONTROL)) {
             pig.vector.x *= 0.8f;
             pig.vector.z *= 0.8f;
         }
-        
         // x+z vectors should be clamped
         if(pigcatapultLink.isLinked){
             val vclamp=0.8f;
@@ -331,8 +344,8 @@ object AngryPigs {
         }
 
         if(Keyboard.isKeyDown(Keyboard.KEY_SPACE) && pigcatapultLink.isLinked) {
-            pig.vector.y=5f;
-            pig.vector.z=8f;
+            pig.vector.y=5.5f;
+            pig.vector.z=7f;
             pigcatapultLink.breakLink;
         }
         if(Keyboard.isKeyDown(Keyboard.KEY_LCONTROL)) {
@@ -342,6 +355,10 @@ object AngryPigs {
         if(Keyboard.isKeyDown(Keyboard.KEY_P)) {
             println(cam.toString);
             println(pig.toString);
+        }
+        if(Keyboard.isKeyDown(Keyboard.KEY_0)) {
+            cam.setPosition(0,worldSize-5,-worldSize+5);
+            cam.setRotation(0,180,0);
         }
     }    
 }
