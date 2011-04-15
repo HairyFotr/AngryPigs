@@ -102,7 +102,7 @@ object AngryPigs {
     var catapult:DisplayModel=null;
     var pigcatapultLink:ModelLink=null;
     //size of world
-    val worldSize = 100;
+    val worldSize = 150;
     val gravity = new Vec3(0f,-0.5f,0f);
     
     // @would it pay-off to make model generation lazy and generate them on the fly?

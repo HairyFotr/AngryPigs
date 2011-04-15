@@ -46,9 +46,14 @@ if [ "$files" == "" ]; then
     files="  *.scala" 
 fi
 
+#@ temporary hack to do scala and clojure
+files1="  *.scala"
+files2="  *.clj"
+
+
 #hash func
 ##@getpath za $1?
-fileshash="`$hashfunc ../$0 $files`" #must be compiled with same bashbeans script
+fileshash="`$hashfunc ../$0 $files1 $files2`" #must be compiled with same bashbeans script
 #echo "$fileshash"
 
 #build
@@ -59,9 +64,12 @@ elif [ "$Force" == "" -a -e $hashpath -a "$fileshash" == "`cat $hashpath`" ]; th
     echo "I don't think I need to compile. (use force if neccesary.)"
     builderror="0"
 else
-    echo "Compiling:"$files
+    echo "Compiling:"$files1" "$files2
     #fast scala compile (loads compile deamon)
-    fsc -deprecation -d ../class -extdirs ../lib/lwjgl-2.7.1/jar/ $files
+    fsc -deprecation -d ../class -extdirs ../lib/lwjgl-2.7.1/jar/ $files1
+    if [ "$files2" != "  *.clj" ]; then
+        clojurec -d ../class -extdirs $files2
+    fi
     
     builderror=$?
     #write hashes
@@ -78,5 +86,5 @@ if [ "$builderror" == "0" -a "$Run" != "" ]; then
     cd ..
     #CP="lib/lwjgl-2.7.1/jar/lwjgl.jar:lib/lwjgl-2.7.1/jar/lwjgl_util.jar:class"
     #cd $CD"class"
-    scala -cp lib/lwjgl-2.7.1/jar/lwjgl.jar:lib/lwjgl-2.7.1/jar/lwjgl_util.jar:class -Djava.library.path="lib/lwjgl-2.7.1/native/macosx/:lib/lwjgl-2.7.1/native/linux/" $runname
+    scala -cp lib/clojure.jar:lib/lwjgl-2.7.1/jar/lwjgl.jar:lib/lwjgl-2.7.1/jar/lwjgl_util.jar:class -Djava.library.path="lib/lwjgl-2.7.1/native/macosx/:lib/lwjgl-2.7.1/native/linux/" $runname
 fi
