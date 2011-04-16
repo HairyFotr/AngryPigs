@@ -14,7 +14,6 @@
 
 starttime="$(date +%s)"
 
-cd src
 #load settings
 ##@put to file, read lines and execute them
 ##@make bashbeansinit to generate such files
@@ -29,6 +28,7 @@ runname="AngryPigs"
 #    ./$setuppath
 #fi
 
+cd src
 echo "$projectname"
 
 #get arguments, process switches
@@ -49,11 +49,12 @@ fi
 #@ temporary hack to do scala and clojure
 files1="  *.scala"
 files2="  *.clj"
+files="$files1$files2"
 
 
 #hash func
 ##@getpath za $1?
-fileshash="`$hashfunc ../$0 $files1 $files2`" #must be compiled with same bashbeans script
+fileshash="`$hashfunc ../$0 ../compile.clj $files`" #must be compiled with same bashbeans script
 #echo "$fileshash"
 
 #build
@@ -64,14 +65,27 @@ elif [ "$Force" == "" -a -e $hashpath -a "$fileshash" == "`cat $hashpath`" ]; th
     echo "I don't think I need to compile. (use force if neccesary.)"
     builderror="0"
 else
-    echo "Compiling:"$files1" "$files2
-    #fast scala compile (loads compile deamon)
-    fsc -deprecation -d ../class -extdirs ../lib/lwjgl-2.7.1/jar/ $files1
-    if [ "$files2" != "  *.clj" ]; then
-        clojurec -d ../class -extdirs $files2
+    builderror="0"
+    if [ "$builderror" == "0" ]; then
+        echo "Compiling:"$files2
+        #clojurec -d ../class -extdirs $files2
+        
+        #remove .clj
+        #for file in AngryPigs/$files2
+        #do
+        #    ffiles2="$ffiles2 `basename $file .clj`"
+        #done
+        #java -cp .:../class:../lib/clojure.jar -Dclojure.compile.path=../class clojure.lang.Compile $ffiles2
+        #java -cp .:../class:../class/AngryPig:../lib/clojure.jar -Dclojure.compile.path=../class clojure.lang.Compile AngryPig.helloworld
+        builderror=$?
+    fi
+    if [ "$builderror" == "0" ]; then
+        echo "Compiling:"$files1
+        #fast scala compile (loads compile deamon)
+        fsc -deprecation -cp ../class/AngryPig:../class:.:../lib/clojure.jar -d ../class -extdirs ../lib/lwjgl-2.7.1/jar/ $files1
+        builderror=$?
     fi
     
-    builderror=$?
     #write hashes
     if [ "$builderror" == "0" ]; then
         echo "$fileshash" > $hashpath
@@ -86,5 +100,5 @@ if [ "$builderror" == "0" -a "$Run" != "" ]; then
     cd ..
     #CP="lib/lwjgl-2.7.1/jar/lwjgl.jar:lib/lwjgl-2.7.1/jar/lwjgl_util.jar:class"
     #cd $CD"class"
-    scala -cp lib/clojure.jar:lib/lwjgl-2.7.1/jar/lwjgl.jar:lib/lwjgl-2.7.1/jar/lwjgl_util.jar:class -Djava.library.path="lib/lwjgl-2.7.1/native/macosx/:lib/lwjgl-2.7.1/native/linux/" $runname
+    scala -cp src/:src/AngryPig:class/AngryPig:.:lib/lwjgl-2.7.1/jar/lwjgl.jar:lib/lwjgl-2.7.1/jar/lwjgl_util.jar:class:lib/clojure.jar -Djava.library.path="lib/lwjgl-2.7.1/native/macosx/:lib/lwjgl-2.7.1/native/linux/" AngryPig.$runname
 fi

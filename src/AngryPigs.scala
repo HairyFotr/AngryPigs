@@ -1,8 +1,11 @@
+package AngryPig
+
 import org.lwjgl._
 import org.lwjgl.opengl._
 import org.lwjgl.input._
 import org.lwjgl.util.glu._
-import scala.util._;
+import scala.util._
+import clojure.lang.RT;
 
 // TODO:
 // search for @task
@@ -18,6 +21,11 @@ object AngryPigs {
      * Initializes display and enters main loop
      */
     def main(Args:Array[String]) {
+        //var h = new AngryPig.helloworld2;
+        //println(h.neki(6));
+        RT.loadResourceScript("helloworld.clj");
+        println(RT.`var`("AngryPig.helloworld", "neki").invoke(6));
+        
         try {
           initDisplay;
         } catch {

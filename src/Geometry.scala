@@ -1,3 +1,5 @@
+package AngryPig
+
 import org.lwjgl._
 import org.lwjgl.opengl._
 import org.lwjgl.util.glu._
