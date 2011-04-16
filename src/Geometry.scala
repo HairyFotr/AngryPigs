@@ -1,4 +1,4 @@
-package AngryPig
+package AngryPigs
 
 import org.lwjgl._
 import org.lwjgl.opengl._

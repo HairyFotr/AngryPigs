@@ -1,4 +1,4 @@
-package AngryPig
+package AngryPigs
 
 import org.lwjgl._
 import org.lwjgl.opengl._
@@ -8,9 +8,9 @@ import scala.util._
 import clojure.lang.RT;
 
 // TODO:
-// search for @task
+// search for @ <task>
 
-object AngryPigs {
+object Game {
 
     var isRunning = false; // is main loop running
     val (winWidth, winHeight)=(800,600); // window size
@@ -24,7 +24,7 @@ object AngryPigs {
         //var h = new AngryPig.helloworld2;
         //println(h.neki(6));
         RT.loadResourceScript("helloworld.clj");
-        println(RT.`var`("AngryPig.helloworld", "neki").invoke(6));
+        println(RT.`var`("AngryPigs.helloworld", "neki").invoke(6));
         
         try {
           initDisplay;
