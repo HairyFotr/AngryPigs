@@ -45,8 +45,16 @@
 	(if (>= i (count plane)) point
 	    (let [component (/ dd (nth plane i))]
 	      (recur (cons component point) (inc i) (- dd component))))))))
+
+(defn vector-between-points [a b]
+  (map #(- (nth b %1) (nth a %1)) [0 1 2]))
+
+(defn length [v]
+  (Math/sqrt (apply + (map #(* %1 %1) v))))
   
 (defn give-me-tree [node depth]
-  (point-on-plane (plane node)))
+  (length (vector-between-points
+	   (butlast (travel node 0))
+	   (point-on-plane (plane node)))))
 
 (println (give-me-tree [1 2 3 5] 0))
