@@ -38,7 +38,15 @@
     (concat (butlast N)
 	    [(apply + (map #(* (nth N %1) (nth point %1)) [0 1 2]))])))
 
+(defn point-on-plane [plane]
+  (let [d (last plane)]
+    (let [plane (reverse (sort (butlast plane)))]
+      (loop [point [] i 0 dd d]
+	(if (>= i (count plane)) point
+	    (let [component (/ dd (nth plane i))]
+	      (recur (cons component point) (inc i) (- dd component))))))))
+  
 (defn give-me-tree [node depth]
-  (plane node))
+  (point-on-plane (plane node)))
 
 (println (give-me-tree [1 2 3 5] 0))
