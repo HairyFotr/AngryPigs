@@ -51,10 +51,14 @@
 
 (defn length [v]
   (Math/sqrt (apply + (map #(* %1 %1) v))))
+
+(defn normalize [v]
+  (let [l (length v)]
+    (map #(/ %1 l) v)))
   
 (defn give-me-tree [node depth]
-  (length (vector-between-points
-	   (butlast (travel node 0))
-	   (point-on-plane (plane node)))))
+  (normalize (vector-between-points
+	      (butlast (travel node 0))
+	      (point-on-plane (plane node)))))
 
 (println (give-me-tree [1 2 3 5] 0))
