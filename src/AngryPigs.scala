@@ -4,9 +4,11 @@ import org.lwjgl._
 import org.lwjgl.opengl._
 import org.lwjgl.input._
 import org.lwjgl.util.glu._
-import scala.util._
+import java.util.ArrayList
 import scala.collection.mutable._
-import clojure.lang.RT
+import scala.util._
+import clojure.lang._
+import clojure.core._
 import java.nio._
 
 // TODO:
@@ -59,6 +61,8 @@ object Game {
     val (winWidth, winHeight)=(800,600); // window size
     val cam = new Camera;
     val rand = new Random;
+    val genTree = new clojureWrap("AngryPigs", "gen-tree");
+    //val helloworld = new clojureWrap("AngryPigs", "helloworld");
     
     /**
      * Initializes display and enters main loop
@@ -67,9 +71,17 @@ object Game {
         //var h = new AngryPig.helloworld2;
         //printlnset(h.neki(6));
         
-        /*var helloworld = new clojureWrap("AngryPigs", "helloworld");
-        println(helloworld/("neki", 6))
-        println(helloworld/("ab", 6, 6))*/
+        //println(genTree/("give-me-tree", new Array[Int](1,2,3,5), 0))
+        //val i = new clojure.lang.Sequence(5, 6);
+        //val i = new clojure.core.seq(List(5,6));
+        
+        val tree = genTree/("give-me-tree", List(1,2,3,5).toArray, 0);
+        
+        for(t <- tree.asInstanceOf[java.util.List[Object]].toArray.toList) {
+            println(t);
+        }
+        
+        exit(0);
         
         try {
           initDisplay;
@@ -429,7 +441,7 @@ object Game {
         
         val toRender = List(
             //cam,
-            coordsys,
+            //coordsys,
             terrain,
             //skybox,
             pig,

@@ -1,5 +1,4 @@
-
-(ns AngryPig.gen-tree)
+(ns AngryPigs.gen-tree)
 
 ; the aim of this thing is to generate a tree
 ; main program expects a list of point,vector tuples that represent cyllindres making up the tree
@@ -159,11 +158,11 @@
 			 angle))))
 
 	  (let [up-angle (/ 180 (nth primes depth))]
-	    (concat [node] [(map #(give-me-tree (rotate %1
+	    (list (concat [node] [(list (map #(give-me-tree (rotate %1
 							(cross-product %1 node)
 							up-angle)
 						(inc depth))
-				 (make-branches))]))))))
+				 (make-branches)))])))))))
 
 ;(println (cross-product [1 2 3] [1 2 3]))
 
