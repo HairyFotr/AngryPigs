@@ -119,9 +119,9 @@
 
 ;    [v] = [v]x{[i] + sin(a)/d*[L] + ((1 - cos(a))/(d*d)*([L]x[L]))} 
 (defn rotate [v axis angle]
-  (let [L [[0 (nth axis 2) (- (nth axis 1))]
-	  [(- (nth axis 2)) 0 (nth axis 0)]
-	  [(nth axis 1) (- (nth axis 0)) 0]]]
+  (let [L [[0                (nth axis 2)      (- (nth axis 1))]
+	  [(- (nth axis 2))  0                 (nth axis 0)]
+	  [(nth axis 1)      (- (nth axis 0))  0]]]
     (let [d (length (butlast axis))]
       (first (*matrices [(butlast v)]
 			(+matrices (+matrices I
