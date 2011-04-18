@@ -26,7 +26,7 @@
 
 
 (def primes [2 3 5 7 11 13 17 23 29])
-(def max-depth 8)
+(def max-depth 2)
 (def I [[1 0 0]
 	[0 1 0]
 	[0 0 1]])
@@ -90,6 +90,12 @@
   (apply + (map #(* (nth v1 %1) (nth v2 %1))
 		(take (count v1) nums))))
 
+; a × b = (a2b3 − a3b2) i + (a3b1 − a1b3) j + (a1b2 − a2b1) k = (a2b3 − a3b2, a3b1 − a1b3, a1b2 − a2b1).
+(defn cross-product [a b]
+  [(- (* (nth a 1) (nth b 2)) (* (nth a 2) (nth b 1)))
+   (- (* (nth a 2) (nth b 0)) (* (nth a 0) (nth b 2)))
+   (- (* (nth a 0) (nth b 1)) (* (nth a 1) (nth b 0)))])
+
 (defn row [m n]
   (nth m n))
 
@@ -151,7 +157,14 @@
 			       branches)
 			 (dec n)
 			 angle))))
-	  
-	  (concat [node] [(map #(give-me-tree %1 (inc depth)) (make-branches))])))))
+
+	  (let [up-angle (/ 180 (nth primes depth))]
+	    (concat [node] [(map #(give-me-tree (rotate %1
+							(cross-product %1 node)
+							up-angle)
+						(inc depth))
+				 (make-branches))]))))))
+
+;(println (cross-product [1 2 3] [1 2 3]))
 
 (println (give-me-tree [1 2 3 5] 0))
