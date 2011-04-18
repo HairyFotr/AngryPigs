@@ -26,7 +26,7 @@
 
 
 (def primes [2 3 5 7 11 13 17 23 29])
-(def max-depth 9)
+(def max-depth 8)
 (def I [[1 0 0]
 	[0 1 0]
 	[0 0 1]])
@@ -66,6 +66,7 @@
   (concat v [l]))
 
 
+; taken from http://steve.hollasch.net/cgindex/math/rotvec.html
 ;    let
 ;        [v] = [vx, vy, vz]      the vector to be rotated.
 ;        [l] = [lx, ly, lz]      the vector about rotation
@@ -130,11 +131,27 @@
 					    (/ (- 1 (Math/cos angle)) (* d d)))))))))
   
 (defn give-me-tree [node depth]
-  (rotate (make-node (normalize (vector-between-points
-				 (butlast (travel node 0))
-				 (point-on-plane (plane node))))
-		     (/ (last node) (nth primes depth)))
-	  (travel node 0)
-	  30))
+  (if (> depth max-depth) node
+      
+      (let [d (/ (last node) (nth primes depth))]
+	(let [first-branch (make-node (normalize (vector-between-points
+						  (butlast (travel node 0))
+						  (point-on-plane (plane node))))
+				      d)]
+
+	  (defn make-branches []
+	    (loop [branches [first-branch]
+		   n (dec (nth primes depth))
+		   angle (/ 360 (nth primes depth))]
+	      (if (= n 0) branches
+		  (recur (cons (make-node (rotate (last branches)
+						  node
+						  angle)
+					  d)
+			       branches)
+			 (dec n)
+			 angle))))
+	  
+	  (concat [node] [(map #(give-me-tree %1 (inc depth)) (make-branches))])))))
 
 (println (give-me-tree [1 2 3 5] 0))
