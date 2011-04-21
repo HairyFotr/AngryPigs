@@ -25,7 +25,7 @@
 
 
 (def primes [2 3 5 7 11 13 17 23 29])
-(def max-depth 2)
+(def max-depth 1)
 (def I [[1 0 0]
 	[0 1 0]
 	[0 0 1]])
@@ -168,4 +168,4 @@
 
 ;(println (cross-product [1 2 3] [1 2 3]))
 
-;(println (give-me-tree [1 2 3 5] 5 0))
+(println (give-me-tree [1 1 1 5] 5 0))

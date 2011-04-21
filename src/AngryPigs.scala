@@ -372,6 +372,8 @@ object Game {
                     GL11.glVertex3f(vector(0)*vector(3), vector(1)*vector(3), vector(2)*vector(3))
                     GL11.glEnd
                     
+                    println(vector.toList.foldLeft("")(_+" "+_.toString))
+                    
                     return vector;//continue reading two lines down :P
                 } else {
                     val vector = drawTree(a(0).asInstanceOf[java.util.List[Object]].toArray, v);
@@ -385,7 +387,7 @@ object Game {
                 }
             }
             
-            val initVec = List(0.1f,1f,0.1f,5f).toArray;
+            val initVec = List(1f,1f,1f,5f).toArray;
             val tree = (genTree/("give-me-tree", initVec, 5, 0)).asInstanceOf[java.util.List[Object]].toArray;
             
             GL11.glColor3f(1,1,1);
