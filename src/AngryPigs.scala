@@ -246,7 +246,7 @@ object Game {
             GL11.glPushMatrix;
             {
                 GL11.glScalef(0.95f,1,1.05f);
-                Quadrics.sphere.draw(2,1,15);
+                Quadrics.sphere.draw(2,20,20);
             }
             GL11.glPopMatrix
             //ears
