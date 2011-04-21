@@ -4,9 +4,8 @@ import org.lwjgl._
 import org.lwjgl.opengl._
 import org.lwjgl.input._
 import org.lwjgl.util.glu._
-import java.util.ArrayList
+import scala.util.Random
 import scala.collection.mutable._
-import scala.util._
 import clojure.lang._
 import clojure.core._
 import java.nio._
@@ -17,7 +16,7 @@ import java.nio._
 class clojureWrap(ns:String,obj:String) {
     RT.loadResourceScript(obj+".clj");  
     
-    //@morda bi se dal s parcialno funkcijo obj/"func"(args) in bi invoke prevzel vse (args)
+    //@meorda sbi se dal s parcialno funkcijo obj/"func"(args) in bi invoke prevzel vse (args)
     def /(func:String, a:Any) = (RT.`var`(ns+"."+obj, func).invoke(a.asInstanceOf[Object]))
     def /(func:String, a:Any, b:Any) = (RT.`var`(ns+"."+obj, func).invoke(a.asInstanceOf[Object], b.asInstanceOf[Object]))
     def /(func:String, a:Any, b:Any, c:Any) = (RT.`var`(ns+"."+obj, func).invoke(a.asInstanceOf[Object], b.asInstanceOf[Object], c.asInstanceOf[Object]))
@@ -74,14 +73,6 @@ object Game {
         //println(genTree/("give-me-tree", new Array[Int](1,2,3,5), 0))
         //val i = new clojure.lang.Sequence(5, 6);
         //val i = new clojure.core.seq(List(5,6));
-        
-        val tree = genTree/("give-me-tree", List(1,2,3,5).toArray, 0);
-        
-        for(t <- tree.asInstanceOf[java.util.List[Object]].toArray.toList) {
-            println(t);
-        }
-        
-        exit(0);
         
         try {
           initDisplay;
@@ -165,6 +156,7 @@ object Game {
     var coordsys:DisplayModel=null;
     var pig:DisplayModel=null;
     var catapult:DisplayModel=null;
+    var tree:DisplayModel=null;
     var pigcatapultLink:ModelLink=null;
     var campigLink:ModelLink=null;
     //size of world
@@ -254,7 +246,7 @@ object Game {
             GL11.glPushMatrix;
             {
                 GL11.glScalef(0.95f,1,1.05f);
-                Quadrics.sphere.draw(2,15,15);
+                Quadrics.sphere.draw(2,1,15);
             }
             GL11.glPopMatrix
             //ears
@@ -365,11 +357,41 @@ object Game {
             GL11.glPopMatrix;
         });
         catapult.setPosition(0,-worldSize+2.5f,-worldSize/2+25);
-        //catapult.setScale(3,1,3);//*/
         
         pigcatapultLink = new ModelLink(catapult, pig, new Vec3(0f,2f,0f));
-        //campigLink = new ModelLink(pig, cam, new Vec3(0f,worldSize*2f-8f,-20f), new Vec3(0,180f,0));
         campigLink = new ModelLink(pig, cam, new Vec3(0f,7,-50), new Vec3(0,0,0));
+        
+        
+        tree = new DisplayModel(Unit=>{
+            def drawTree(a:Array[Object], v:Array[Float]):Array[Float] = {
+                if(a.length==4 && !a(0).isInstanceOf[java.util.List[Object]]) {
+                    val vector = a.toList.map(_.toString.toFloat).toArray;
+                    
+                    GL11.glBegin(GL11.GL_LINES)
+                    GL11.glVertex3f(v(0)*v(3),v(1)*v(3),v(2)*v(3))
+                    GL11.glVertex3f(vector(0)*vector(3), vector(1)*vector(3), vector(2)*vector(3))
+                    GL11.glEnd
+                    
+                    return vector;//continue reading two lines down :P
+                } else {
+                    val vector = drawTree(a(0).asInstanceOf[java.util.List[Object]].toArray, v);
+
+                    for(i <- 1 until a.length) {
+                        drawTree(a(i).asInstanceOf[java.util.List[Object]].toArray, vector)
+                    }
+                    
+                    // gotta return something...
+                    return vector;
+                }
+            }
+            
+            val initVec = List(0.1f,1f,0.1f,5f).toArray;
+            val tree = (genTree/("give-me-tree", initVec, 5, 0)).asInstanceOf[java.util.List[Object]].toArray;
+            
+            GL11.glColor3f(1,1,1);
+            drawTree(tree, initVec);
+        });  
+        tree.setPosition(0,-worldSize+2.5f,-worldSize/2+30);
     }
 
     def allocFloats(floatarray:Array[Float]):FloatBuffer = {
@@ -386,7 +408,8 @@ object Game {
         //GL11.glCullFace(GL11.GL_BACK);
       
         // smooth shading - Gouraud
-        GL11.glShadeModel(GL11.GL_SMOOTH);
+        //GL11.glShadeModel(GL11.GL_SMOOTH);
+        GL11.glShadeModel(GL11.GL_FLAT);
 
         // lights
         GL11.glEnable(GL11.GL_LIGHTING);
@@ -445,7 +468,8 @@ object Game {
             terrain,
             //skybox,
             pig,
-            catapult
+            catapult,
+            tree
         )
         
         // move pig or catapult

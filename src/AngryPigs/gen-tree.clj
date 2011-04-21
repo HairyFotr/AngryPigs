@@ -62,7 +62,7 @@
     (map #(/ %1 l) v)))
 
 (defn make-node [v l]
-  (concat v [l]))
+  (concat v [(float l)]))
 
 
 ; taken from http://steve.hollasch.net/cgindex/math/rotvec.html
@@ -157,7 +157,7 @@
 			 angle))))
 
 	  (let [up-angle (/ 180 (nth primes depth))]
-	    (apply list (concat [node]
+	    (apply list (concat [(apply list node)]
 				[(apply list (map #(give-me-tree (make-node (rotate %1
 										    (cross-product %1 node)
 										    up-angle)
@@ -168,4 +168,4 @@
 
 ;(println (cross-product [1 2 3] [1 2 3]))
 
-(println (give-me-tree [1 2 3 5] 5 0))
+;(println (give-me-tree [1 2 3 5] 5 0))
