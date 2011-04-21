@@ -408,8 +408,8 @@ object Game {
         //GL11.glCullFace(GL11.GL_BACK);
       
         // smooth shading - Gouraud
-        //GL11.glShadeModel(GL11.GL_SMOOTH);
-        GL11.glShadeModel(GL11.GL_FLAT);
+        GL11.glShadeModel(GL11.GL_SMOOTH);
+        //GL11.glShadeModel(GL11.GL_FLAT);
 
         // lights
         GL11.glEnable(GL11.GL_LIGHTING);
