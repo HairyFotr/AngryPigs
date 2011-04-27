@@ -57,7 +57,7 @@ object Quadrics {
 object Game {
 
     var isRunning = false; // is main loop running
-    val (winWidth, winHeight)=(800,600); // window size
+    val (winWidth, winHeight)=(1024,768); // window size
     val cam = new Camera;
     val rand = new Random;
     val genTree = new clojureWrap("AngryPigs", "gen-tree");
@@ -372,7 +372,7 @@ object Game {
                     GL11.glVertex3f(vector(0)*vector(3), vector(1)*vector(3), vector(2)*vector(3))
                     GL11.glEnd
                     
-                    println(vector.toList.foldLeft("")(_+" "+_.toString))
+                    vector.toList.foreach(println)
                     
                     return vector;//continue reading two lines down :P
                 } else {
@@ -392,7 +392,7 @@ object Game {
             
             GL11.glColor3f(1,1,1);
             drawTree(tree, initVec);
-        });  
+        });
         tree.setPosition(0,-worldSize+2.5f,-worldSize/2+30);
     }
 
@@ -517,19 +517,35 @@ object Game {
         
         val keymove = 0.7f*normalizedRenderTime;
         
-        if(Keyboard.isKeyDown(Keyboard.KEY_Q)) cam.rot.x+=keymove;
-        if(Keyboard.isKeyDown(Keyboard.KEY_E)) cam.rot.x-=keymove;
-        if(Keyboard.isKeyDown(Keyboard.KEY_A)) cam.rot.y+=keymove;
-        if(Keyboard.isKeyDown(Keyboard.KEY_D)) cam.rot.y-=keymove;
-        if(Keyboard.isKeyDown(Keyboard.KEY_Y)) cam.rot.z+=keymove;
-        if(Keyboard.isKeyDown(Keyboard.KEY_C)) cam.rot.z-=keymove;
+        if(campigLink.isLinked) {
+            if(Keyboard.isKeyDown(Keyboard.KEY_Q)) campigLink.vector2.x+=keymove;
+            if(Keyboard.isKeyDown(Keyboard.KEY_E)) campigLink.vector2.x-=keymove;
+            if(Keyboard.isKeyDown(Keyboard.KEY_A)) campigLink.vector2.y+=keymove;
+            if(Keyboard.isKeyDown(Keyboard.KEY_D)) campigLink.vector2.y-=keymove;
+            if(Keyboard.isKeyDown(Keyboard.KEY_Y)) campigLink.vector2.z+=keymove;
+            if(Keyboard.isKeyDown(Keyboard.KEY_C)) campigLink.vector2.z-=keymove;
 
-        if(Keyboard.isKeyDown(Keyboard.KEY_W)) cam.pos.x+=keymove;
-        if(Keyboard.isKeyDown(Keyboard.KEY_R)) cam.pos.x-=keymove;
-        if(Keyboard.isKeyDown(Keyboard.KEY_S)) cam.pos.y+=keymove;
-        if(Keyboard.isKeyDown(Keyboard.KEY_F)) cam.pos.y-=keymove;
-        if(Keyboard.isKeyDown(Keyboard.KEY_X)) cam.pos.z+=keymove;
-        if(Keyboard.isKeyDown(Keyboard.KEY_V)) cam.pos.z-=keymove;
+            if(Keyboard.isKeyDown(Keyboard.KEY_W)) campigLink.vector.x+=keymove;
+            if(Keyboard.isKeyDown(Keyboard.KEY_R)) campigLink.vector.x-=keymove;
+            if(Keyboard.isKeyDown(Keyboard.KEY_S)) campigLink.vector.y+=keymove;
+            if(Keyboard.isKeyDown(Keyboard.KEY_F)) campigLink.vector.y-=keymove;
+            if(Keyboard.isKeyDown(Keyboard.KEY_X)) campigLink.vector.z+=keymove;
+            if(Keyboard.isKeyDown(Keyboard.KEY_V)) campigLink.vector.z-=keymove;
+        } else {
+            if(Keyboard.isKeyDown(Keyboard.KEY_Q)) cam.rot.x+=keymove;
+            if(Keyboard.isKeyDown(Keyboard.KEY_E)) cam.rot.x-=keymove;
+            if(Keyboard.isKeyDown(Keyboard.KEY_A)) cam.rot.y+=keymove;
+            if(Keyboard.isKeyDown(Keyboard.KEY_D)) cam.rot.y-=keymove;
+            if(Keyboard.isKeyDown(Keyboard.KEY_Y)) cam.rot.z+=keymove;
+            if(Keyboard.isKeyDown(Keyboard.KEY_C)) cam.rot.z-=keymove;
+
+            if(Keyboard.isKeyDown(Keyboard.KEY_W)) cam.pos.x+=keymove;
+            if(Keyboard.isKeyDown(Keyboard.KEY_R)) cam.pos.x-=keymove;
+            if(Keyboard.isKeyDown(Keyboard.KEY_S)) cam.pos.y+=keymove;
+            if(Keyboard.isKeyDown(Keyboard.KEY_F)) cam.pos.y-=keymove;
+            if(Keyboard.isKeyDown(Keyboard.KEY_X)) cam.pos.z+=keymove;
+            if(Keyboard.isKeyDown(Keyboard.KEY_V)) cam.pos.z-=keymove;
+        }
 
         //if(Keyboard.isKeyDown(Keyboard.KEY_LEFT))  moveObj.vector.x+=keymove/3f;
         //if(Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) moveObj.vector.x-=keymove/3f;
