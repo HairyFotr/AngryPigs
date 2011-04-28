@@ -159,15 +159,15 @@
 
 	  (let [up-angle (/ 180 (nth primes depth))]
 	    (apply list (concat [node]
-                                [(map #(give-me-tree
-                                        (make-node (normalize
-                                                    (rotate %1
-                                                            (cross-product %1 node)
-                                                            up-angle))
-                                                   d)
-                                        baselen
-                                        (inc depth))
-                                      (make-branches))])))))))
+                                [(apply list (map #(give-me-tree
+                                                    (make-node (normalize
+                                                                (rotate %1
+                                                                        (cross-product %1 node)
+                                                                        up-angle))
+                                                               d)
+                                                    baselen
+                                                    (inc depth))
+                                                  (make-branches)))])))))))
 
 ;(println (cross-product [1 2 3] [1 2 3]))
 
