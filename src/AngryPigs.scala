@@ -141,7 +141,15 @@ object Game {
             processInput;   // process input events 
             Display.update; // update window contents and process input messages
             frameCounter += 1;
+
+            var renderTime = (now-frameTime)/frameIndepRatio;
+            //if(normalizedRenderTime == -1) {
+                normalizedRenderTime = renderTime;
+            //} else {
+            //    normalizedRenderTime = (renderTime+normalizedRenderTime)/2;
+           // }
             frameTime = now;
+            //while(now-frameTime<25000000) Thread.sleep(1)
             
             //gl error
             val errCode = GL11.glGetError;
@@ -446,7 +454,6 @@ object Game {
         GL11.glMaterial(GL11.GL_FRONT, GL11.GL_AMBIENT_AND_DIFFUSE, allocFloats(Array[Float](0.9f, 0.9f, 0.9f, 0f)));
         GL11.glColorMaterial(GL11.GL_FRONT, GL11.GL_AMBIENT_AND_DIFFUSE );
         
-
         GL11.glViewport(0,0, winWidth,winHeight); // mapping from normalized to window coordinates
        
         GL11.glHint(GL11.GL_PERSPECTIVE_CORRECTION_HINT, GL11.GL_NICEST);
@@ -470,21 +477,15 @@ object Game {
   
     //avoid spikes in Rendertime (used for input)
     var normalizedRenderTime = -1f;
-    var frameIndepRatio = (10000000f/2f);
+    var frameIndepRatio = (20000000f);
+    var treeView = false;
 
-    def moveObj = if(pigcatapultLink.isLinked) catapult else pig;
-    
+    def moveObj = if(treeView) tree else { if(pigcatapultLink.isLinked) catapult else pig };
+        
     /**
     * Renders current frame
     */
-    def renderFrame {
-        var renderTime = (now-frameTime)/frameIndepRatio;
-        if(normalizedRenderTime == -1) {
-            normalizedRenderTime = renderTime;
-        } else {
-            normalizedRenderTime = (renderTime+normalizedRenderTime)/2;
-        }
-        
+    def renderFrame {       
         val toRender = List(
             //cam,
             //coordsys,
@@ -517,7 +518,7 @@ object Game {
                 
         //set projection and reset modelview
         //look at this pig... look!
-        cam.lookAt(pig)
+        cam.lookAt(moveObj)        
         cam.render
 
         toRender.foreach(
@@ -535,6 +536,11 @@ object Game {
     
     def processInput {
         if(Display.isCloseRequested || Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)) isRunning = false;
+        
+        if(Keyboard.isKeyDown(Keyboard.KEY_T) && !TimeLock.isLocked) {
+            treeView = !treeView
+            TimeLock.lockIt(1000);
+        }
         
         val keymove = 0.7f*normalizedRenderTime;
         

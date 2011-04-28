@@ -24,11 +24,14 @@ os="linux"
 hashfunc="md5sum" #any will do, really, it only needs input as hashfunc <files>
 projectname="Angry Pigs"
 runname="AngryPigs"
+pathprocess="echo"
 #setuppath="../.bashbeansetup"
 #if [ -e $setuppath ]; then
 #    #lol="l"
 #    ./$setuppath
 #fi
+
+originalcall="$*"
 
 cd src
 echo "$projectname"
@@ -41,6 +44,7 @@ if [ $# -gt 0 ]; then
             "-f") Force="m*a";shift;;
             "-r") Run="yes please";shift;;
             "-R") Run="yes please";Unforce="<- means don't ever compile";shift;;
+            "--cygwin") pathprocess="cygpath -wp";shift;;
         esac
     done
     files="$@"
@@ -82,8 +86,20 @@ else
         #fast scala compile (loads compile deamon)
         #@detect if it says Deamon not loaded and retry, or fallback to scala
         #@also this will be a part of compiler spec later
-        fsc -deprecation -cp ../class/AngryPigs:../class:.:../lib/clojure.jar -d ../class -extdirs ../lib/lwjgl-2.7.1/jar/ $files
+        compileErr=$( { fsc -deprecation -cp "`$pathprocess ../lib/clojure.jar:../class/AngryPigs:../class:.`" -d ../class -extdirs ../lib/lwjgl-2.7.1/jar/ $files ; } 2>&1 )
         builderror=$?
+        if [ "$compileErr" != "" ]; then
+            echo "$compileErr"
+            
+            if [ "$compileErr" == "Could not connect to compilation daemon." ]; then
+                echo "OK, let's try this again..."
+                echo ""
+                cd ..
+                echo "\$ $originalcall"
+                echo "`$originalcall`"
+                exit 0
+            fi
+        fi
     fi
     
     #write hashes
@@ -98,5 +114,5 @@ echo "Done("$builderror") in ${elapsedtime}s."
 #run it
 if [ "$builderror" == "0" -a "$Run" != "" ]; then
     cd ..
-    scala -cp .:src/:src/AngryPigs:class/AngryPigs:lib/lwjgl-2.7.1/jar/lwjgl.jar:lib/lwjgl-2.7.1/jar/lwjgl_util.jar:class:lib/clojure.jar -Djava.library.path="lib/lwjgl-2.7.1/native/macosx/:lib/lwjgl-2.7.1/native/linux/" AngryPigs.Game
+    scala -cp "`$pathprocess .:src/:src/AngryPigs:class/AngryPigs:lib/lwjgl-2.7.1/jar/lwjgl.jar:lib/lwjgl-2.7.1/jar/lwjgl_util.jar:class:lib/clojure.jar`" -Djava.library.path="`$pathprocess lib/lwjgl-2.7.1/native/macosx/:lib/lwjgl-2.7.1/native/linux/:lib/lwjgl-2.7.1/native/windows/`" AngryPigs.Game
 fi
