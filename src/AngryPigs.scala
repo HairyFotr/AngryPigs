@@ -58,7 +58,7 @@ object Game {
 
     var isRunning = false; // is main loop running
     //val acceptModes
-    val (winWidth, winHeight)=(1024,768); // window size
+    var (winWidth, winHeight)=(5000,5000); // window size
     val cam = new Camera;
     val rand = new Random;
     val genTree = new clojureWrap("AngryPigs", "gen-tree");
@@ -97,13 +97,19 @@ object Game {
         val modes:Array[DisplayMode] = Display.getAvailableDisplayModes;
         // Get best mode
         for(mode <- modes)
-            if((mode.getWidth == winWidth && mode.getHeight == winHeight && mode.getFrequency <= 100)
+            if((mode.getWidth <= winWidth && mode.getHeight <= winHeight && mode.getFrequency <= 100)
                 &&(bestMode == null
-                   ||(mode.getBitsPerPixel >= bestMode.getBitsPerPixel
+                   ||(mode.getWidth >= bestMode.getWidth && mode.getHeight >= bestMode.getHeight
+                      && mode.getBitsPerPixel >= bestMode.getBitsPerPixel
                       && mode.getFrequency >= bestMode.getFrequency)))
                 bestMode = mode;
         
         Display.setDisplayMode(bestMode);
+        winWidth = bestMode.getWidth;
+        winHeight = bestMode.getHeight;
+        
+        println("Display: "+bestMode.getWidth+"x"+bestMode.getHeight+"@"+bestMode.getFrequency+"Hz, "+bestMode.getBitsPerPixel+"bit")
+        
         // FSAA
         //Display.create(new PixelFormat(8, 8, 8, 4));
         // No FSAA
@@ -364,6 +370,7 @@ object Game {
         
         
         tree = new DisplayModel(Unit=>{
+            var depth=0;
             def drawTree(a:Array[Object], v:Array[Float]):Array[Float] = {
                 if(a.length==4 && !a(0).isInstanceOf[java.util.List[Object]]) {
                     val vector = a.toList.map(_.toString.toFloat).toArray;
@@ -379,7 +386,8 @@ object Game {
                                         v(2)*v(3) + vector(2)*vector(3))
                         GL11.glEnd
 
-                        vector.toList.foreach(println)
+                        //vector.toList.foreach(println)
+                        println(depth)
                         
                         return (
                             for(i <- 0 to 3) yield 
@@ -390,9 +398,11 @@ object Game {
                 } else {
                     val vector = drawTree(a(0).asInstanceOf[java.util.List[Object]].toArray, v);
 
+                    depth += 1;
                     for(i <- 1 until a.length) {
                         drawTree(a(i).asInstanceOf[java.util.List[Object]].toArray, vector)
                     }
+                    depth -= 1;
                     
                     // gotta return something...
                     return vector;
@@ -401,7 +411,6 @@ object Game {
             
             GL11.glColor3f(1,1,1);
 
-            //val initVec = List(0.1f,1f,0.1f,5f).toArray;
             val tree = (genTree/("give-me-tree", 0.1f, 1f, 0.1f, 5f)).asInstanceOf[java.util.List[Object]].toArray;
             drawTree(tree, null);
         });
