@@ -57,6 +57,7 @@ object Quadrics {
 object Game {
 
     var isRunning = false; // is main loop running
+    //val acceptModes
     val (winWidth, winHeight)=(1024,768); // window size
     val cam = new Camera;
     val rand = new Random;
@@ -96,10 +97,10 @@ object Game {
         val modes:Array[DisplayMode] = Display.getAvailableDisplayModes;
         // Get best mode
         for(mode <- modes)
-            if((mode.getWidth == winWidth && mode.getHeight == winHeight && mode.getFrequency <= 85)
+            if((mode.getWidth == winWidth && mode.getHeight == winHeight && mode.getFrequency <= 100)
                 &&(bestMode == null
                    ||(mode.getBitsPerPixel >= bestMode.getBitsPerPixel
-                      && mode.getFrequency > bestMode.getFrequency)))
+                      && mode.getFrequency >= bestMode.getFrequency)))
                 bestMode = mode;
         
         Display.setDisplayMode(bestMode);
@@ -367,14 +368,25 @@ object Game {
                 if(a.length==4 && !a(0).isInstanceOf[java.util.List[Object]]) {
                     val vector = a.toList.map(_.toString.toFloat).toArray;
                     
-                    GL11.glBegin(GL11.GL_LINES)
-                    GL11.glVertex3f(v(0)*v(3),v(1)*v(3),v(2)*v(3))
-                    GL11.glVertex3f(vector(0)*vector(3), vector(1)*vector(3), vector(2)*vector(3))
-                    GL11.glEnd
-                    
-                    vector.toList.foreach(println)
-                    
-                    return vector;//continue reading two lines down :P
+                    if(v != null) {
+                        GL11.glBegin(GL11.GL_LINES)
+                        GL11.glVertex3f(v(0)*v(3),
+                                        v(1)*v(3),
+                                        v(2)*v(3));
+                        
+                        GL11.glVertex3f(v(0)*v(3) + vector(0)*vector(3),
+                                        v(1)*v(3) + vector(1)*vector(3),
+                                        v(2)*v(3) + vector(2)*vector(3))
+                        GL11.glEnd
+
+                        vector.toList.foreach(println)
+                        
+                        return (
+                            for(i <- 0 to 3) yield 
+                                if(i==3) 1f else v(i)*v(3) + vector(i)*vector(3)
+                        ).toArray
+                    }
+                    return vector;
                 } else {
                     val vector = drawTree(a(0).asInstanceOf[java.util.List[Object]].toArray, v);
 
@@ -387,11 +399,11 @@ object Game {
                 }
             }
             
-            val initVec = List(1f,1f,1f,5f).toArray;
-            val tree = (genTree/("give-me-tree", initVec, 5, 0)).asInstanceOf[java.util.List[Object]].toArray;
-            
             GL11.glColor3f(1,1,1);
-            drawTree(tree, initVec);
+
+            //val initVec = List(0.1f,1f,0.1f,5f).toArray;
+            val tree = (genTree/("give-me-tree", 0.1f, 1f, 0.1f, 5f)).asInstanceOf[java.util.List[Object]].toArray;
+            drawTree(tree, null);
         });
         tree.setPosition(0,-worldSize+2.5f,-worldSize/2+30);
     }
