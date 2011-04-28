@@ -62,7 +62,7 @@
     (map #(/ %1 l) v)))
 
 (defn make-node [v l]
-  (concat v [(float l)]))
+  (apply list (concat v [(float l)])))
 
 
 ; taken from http://steve.hollasch.net/cgindex/math/rotvec.html
@@ -129,6 +129,7 @@
 	  [(- (nth axis 2))  0                 (nth axis 0)]
 	  [(nth axis 1)      (- (nth axis 0))  0]]]
     (let [d (length (butlast axis))]
+      
       (first (*matrices [(butlast v)]
 			(+matrices (+matrices I
 					      (*scalar L (/ (Math/sin angle) d)))
@@ -157,14 +158,16 @@
 			 angle))))
 
 	  (let [up-angle (/ 180 (nth primes depth))]
-	    (apply list (concat [(apply list node)]
-				[(apply list (map #(give-me-tree (make-node (rotate %1
-										    (cross-product %1 node)
-										    up-angle)
-									    d)
-								 baselen
-								 (inc depth))
-						  (make-branches)))])))))))
+	    (apply list (concat [node]
+                                [(map #(give-me-tree
+                                        (make-node (normalize
+                                                    (rotate %1
+                                                            (cross-product %1 node)
+                                                            up-angle))
+                                                   d)
+                                        baselen
+                                        (inc depth))
+                                      (make-branches))])))))))
 
 ;(println (cross-product [1 2 3] [1 2 3]))
 
