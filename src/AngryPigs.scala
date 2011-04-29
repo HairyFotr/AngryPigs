@@ -383,40 +383,25 @@ object Game {
                 if(a.length==4 && !a(0).isInstanceOf[java.util.List[Object]]) {
                     val vector = a.toList.map(_.toString.toFloat).toArray;
                     
-                    if(v != null) {
-                        GL11.glBegin(GL11.GL_LINES)
-                        GL11.glVertex3f(v(0)*v(3),
-                                        v(1)*v(3),
-                                        v(2)*v(3));
-                        
-                        GL11.glVertex3f(v(0)*v(3) + vector(0)*vector(3),
-                                        v(1)*v(3) + vector(1)*vector(3),
-                                        v(2)*v(3) + vector(2)*vector(3))
-                        GL11.glEnd
+                    val vec = if(v == null) vector else v
+                    
+                    GL11.glBegin(GL11.GL_LINES)
+                    GL11.glVertex3f(vec(0)*vec(3),
+                                    vec(1)*vec(3),
+                                    vec(2)*vec(3));
+                    
+                    GL11.glVertex3f(vec(0)*vec(3) + vector(0)*vector(3),
+                                    vec(1)*vec(3) + vector(1)*vector(3),
+                                    vec(2)*vec(3) + vector(2)*vector(3))
+                    GL11.glEnd
 
-                        //vector.toList.foreach(println)
-                        println(depth)
-                        
-                        return (
-                            for(i <- 0 to 3) yield 
-                                if(i==3) 1f else v(i)*v(3) + vector(i)*vector(3)
-                        ).toArray
-                    } else {
-                        GL11.glBegin(GL11.GL_LINES)
-                        GL11.glVertex3f(vector(0)*vector(3),
-                                        vector(1)*vector(3),
-                                        vector(2)*vector(3));
-                        
-                        GL11.glVertex3f(vector(0)*vector(3) + vector(0)*vector(3),
-                                        vector(1)*vector(3) + vector(1)*vector(3),
-                                        vector(2)*vector(3) + vector(2)*vector(3))
-                        GL11.glEnd
-
-                        //vector.toList.foreach(println)
-                        println(depth)                    
-
-                        return vector;
-                    }
+                    //vector.toList.foreach(println)
+                    println(depth)
+                    
+                    return (
+                        for(i <- 0 to 3) yield 
+                            if(i==3) 1f else vec(i)*vec(3) + vector(i)*vector(3)
+                    ).toArray
                 } else {
                     val vector = drawTree(a(0).asInstanceOf[java.util.List[Object]].toArray, v);
 
@@ -433,7 +418,7 @@ object Game {
             
             GL11.glColor3f(1,1,1);
 
-            val tree = (genTree/("give-me-tree", 0.1f, 1f, 0.1f, 5f)).asInstanceOf[java.util.List[Object]].toArray;
+            val tree = (genTree/("give-me-tree", 0.1f, 2f, 0.1f, 5f)).asInstanceOf[java.util.List[Object]].toArray;
             drawTree(tree, null);
         });
         tree.setPosition(0,-worldSize+2.5f,-worldSize/2+30);
