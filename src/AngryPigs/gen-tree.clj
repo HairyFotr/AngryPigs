@@ -32,12 +32,12 @@
 (def nums (iterate inc 0))
 
 ; generate a tree from starting position v
-(defn travel [node depth]
+(defn travel [node]
   (let [d (last node)]
-    (concat (map #(+ %1 d) (butlast node)) [(/ d (nth primes depth))])))
+    (map #(+ %1 d) (butlast node))))
 
 (defn plane [N]
-  (let [point (butlast (travel N 0))]
+  (let [point (travel N)]
     (concat (butlast N)
 	    [(apply + (map #(* (nth N %1) (nth point %1))
 			   (take (count point) nums)))])))
@@ -145,7 +145,7 @@
       
          (let [d (/ baselen (nth primes depth))]
            (let [first-branch (normalize (vector-between-points
-					  (butlast (travel node 0))
+					  (travel node))
 					  (point-on-plane (plane node))))]
 
              (defn make-branches []
