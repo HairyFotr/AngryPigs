@@ -151,8 +151,8 @@
 
              (defn make-branches []
                (loop [branches [first-branch]
-                      n (dec (nth primes depth))
-                      angle (/ 360 (nth primes depth))]
+                      n (nth primes depth)
+                      angle (/ (* 2 Math/PI) (nth primes depth))]
                  (if (= n 0) branches
                      (recur (cons (rotate (last branches)
                                           node
@@ -161,21 +161,21 @@
                             (dec n)
                             angle))))
              
-             (let [up-angle (/ 180 (nth primes depth))]
+             (let [up-angle 1]
+               (println "upAngle" up-angle)
+               (println (make-branches))
                (apply list
                       (concat [node]
                               [(apply list
                                       (map #(give-me-tree
-                                             (make-node (normalize
-                                                         (rotate %1
-                                                                 (cross-product %1 node)
-                                                                 up-angle))
+                                             (make-node %1
+                                                         ;(rotate %1
+                                                         ;        (cross-product %1 node)
+                                                         ;        up-angle))
                                                         d)
                                              baselen
                                              (inc depth))
                                            (make-branches)))]))))))))
-
-;(println (cross-product [1 2 3] [1 2 3]))
 
 
 (println (give-me-tree 1 1 1 5))
