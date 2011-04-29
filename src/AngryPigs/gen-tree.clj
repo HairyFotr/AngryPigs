@@ -25,7 +25,7 @@
 
 
 (def primes [2 3 5 7 11 13 17 23 29])
-(def max-depth 0)
+(def max-depth 1)
 (def I [[1 0 0]
 	[0 1 0]
 	[0 0 1]])
@@ -161,7 +161,10 @@
 
 	     (println "p:" (nth primes depth))
 	     (concat [node]
-		     [(map #(make-node %1 d)
+		     [(map #(give-me-tree
+			     (make-node %1 d)
+			     baselen
+			     (inc depth))
 			  (make-branches))]))))))
              
              ;(let [up-angle (/ Math/PI 3)]
