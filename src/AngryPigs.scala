@@ -401,8 +401,22 @@ object Game {
                             for(i <- 0 to 3) yield 
                                 if(i==3) 1f else v(i)*v(3) + vector(i)*vector(3)
                         ).toArray
+                    } else {
+                        GL11.glBegin(GL11.GL_LINES)
+                        GL11.glVertex3f(vector(0)*vector(3),
+                                        vector(1)*vector(3),
+                                        vector(2)*vector(3));
+                        
+                        GL11.glVertex3f(vector(0)*vector(3) + vector(0)*vector(3),
+                                        vector(1)*vector(3) + vector(1)*vector(3),
+                                        vector(2)*vector(3) + vector(2)*vector(3))
+                        GL11.glEnd
+
+                        //vector.toList.foreach(println)
+                        println(depth)                    
+
+                        return vector;
                     }
-                    return vector;
                 } else {
                     val vector = drawTree(a(0).asInstanceOf[java.util.List[Object]].toArray, v);
 
