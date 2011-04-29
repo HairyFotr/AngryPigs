@@ -145,7 +145,7 @@
       
          (let [d (/ baselen (nth primes depth))]
            (let [first-branch (normalize (vector-between-points
-					  (travel node))
+					  (travel node)
 					  (point-on-plane (plane node))))]
 
              (defn make-branches []
@@ -153,16 +153,16 @@
 		 (loop [branches [first-branch]
 			n (dec (nth primes depth))]
 		   (if (= n 0) branches
-		       (recur (cons (last branches) ;(rotate (last branches)
-					;    node
-					 ;   angle)
+		       (recur (cons (rotate (last branches)
+					    node
+					    angle)
 				    branches)
 			      (dec n))))))
 
 	     (println "p:" (nth primes depth))
-	     (concat [node] (list (list (make-node first-branch d)))))))))
-		     ;[(map #(make-node %1 d)
-		;	  (make-branches))]))))))
+	     (concat [node]
+		     [(map #(make-node %1 d)
+			  (make-branches))]))))))
              
              ;(let [up-angle (/ Math/PI 3)]
              ;  (println "upAngle" up-angle)
