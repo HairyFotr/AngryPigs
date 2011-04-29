@@ -150,16 +150,14 @@
 
              (defn make-branches []
 	       (let [angle (/ (* 2 Math/PI) (nth primes depth))]
-		 (loop [branches [first-branch]
-			n (dec (nth primes depth))]
-		   (if (= n 0) branches
-		       (recur (cons (rotate (last branches)
+		 (loop [branches [] n (dec (nth primes depth))]
+		   (if (<= n 0) (cons first-branch branches)
+		       (recur (cons (rotate first-branch
 					    node
-					    angle)
+					    (* angle n))
 				    branches)
 			      (dec n))))))
 
-	     (println "p:" (nth primes depth))
 	     (concat [node]
 		     [(map #(give-me-tree
 			     (make-node %1 d)
