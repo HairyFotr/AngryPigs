@@ -403,16 +403,30 @@ object Game {
                             if(i==3) 1f else vec(i)*vec(3) + vector(i)*vector(3)
                     ).toArray
                 } else {
-                    val vector = drawTree(a(0).asInstanceOf[java.util.List[Object]].toArray, v);
-
-                    depth += 1;
-                    for(i <- 1 until a.length) {
-                        drawTree(a(i).asInstanceOf[java.util.List[Object]].toArray, vector)
+                    var finalBranch = false;
+                    if(a.length==2) {
+                        val aa = (a(1).asInstanceOf[java.util.List[Object]].toArray)
+                        if(!aa(0).isInstanceOf[java.util.List[Object]]) {
+                            finalBranch = true;
+                        }
                     }
-                    depth -= 1;
                     
+                    if(finalBranch) {
+                        depth += 1;
+                        for(i <- 0 until a.length) {
+                            drawTree(a(i).asInstanceOf[java.util.List[Object]].toArray, v)
+                        }
+                        depth -= 1;
+                    } else {
+                        val vector = drawTree(a(0).asInstanceOf[java.util.List[Object]].toArray, v);
+
+                        depth += 1;
+                        drawTree(a(1).asInstanceOf[java.util.List[Object]].toArray, vector)
+                        depth -= 1;
+                    }
+
                     // gotta return something...
-                    return vector;
+                    return v;
                 }
             }
             
