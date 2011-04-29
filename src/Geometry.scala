@@ -13,12 +13,14 @@ class Vec3(var x:Float, var y:Float, var z:Float) {
   
     def map(f:Float=>Float) = {setPoints(getPoints.map(f)); this};
   
-    // @dot product etc. when needed
     def +(v:Vec3):Vec3 = { var res=this.clone; res.x += v.x; res.y += v.y; res.z += v.z; res }
     def +=(v:Vec3) = { this.apply(this+v) }
     def -(v:Vec3):Vec3 = { var res=this.clone; res.x -= v.x; res.y -= v.y; res.z -= v.z; res }
     def -=(v:Vec3) = { this.apply(this+v) }
     def *(f:Float):Vec3 = { var res=this.clone; res.map(_ * f); res };
+    def X(v:Vec3):Vec3 = { new Vec3(y*v.z-z*v.y,  z*v.x-x*v.z,  x*v.y-y*v.x) };
+    def dot(v:Vec3):Float = { (new Vec3(x*v.x, y*v.y, z*v.z)).getPoints.reduceLeft(_+_) };
+    def length:Float = { var l = this.clone; math.sqrt(l.map(math.pow(_,2).toFloat).getPoints.reduceLeft(_+_)).toFloat }
     def applyVector(v:Vec3,multi:Float = 1) = { var res = this+(v*multi); this.apply(res) }
     def ==(v:Vec3):Boolean = (x==v.x && y==v.y && z==v.z)
     def !=(v:Vec3):Boolean = !(this==v)
@@ -112,13 +114,17 @@ class DisplayModel(var displayList:Int) extends BasicModel with Vector {
     def this(renderf:Unit=>Unit) {
         this(-1);
         renderfunc = renderf;
+        compile;
+    }
+    var renderfunc:Unit=>Unit = Unit=>{};
+    
+    def compile = {
         displayList = GL11.glGenLists(1);
         GL11.glNewList(displayList,GL11.GL_COMPILE);
         renderfunc();
         GL11.glEndList;
+        
     }
-    var renderfunc:Unit=>Unit = Unit=>{};
-    
     
     override def render {
         GL11.glPushMatrix;

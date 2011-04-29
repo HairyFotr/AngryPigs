@@ -4,6 +4,7 @@ import org.lwjgl._
 import org.lwjgl.opengl._
 import org.lwjgl.input._
 import org.lwjgl.util.glu._
+import org.lwjgl.util.vector._
 import scala.util.Random
 import scala.collection.mutable._
 import clojure.lang._
@@ -16,7 +17,7 @@ import java.nio._
 class clojureWrap(ns:String,obj:String) {
     RT.loadResourceScript(obj+".clj");  
     
-    //@meorda sbi se dal s parcialno funkcijo obj/"func"(args) in bi invoke prevzel vse (args)
+    //@morda bi se dal s parcialno funkcijo obj/"func"(args) in bi invoke prevzel vse (args)
     def /(func:String, a:Any) = (RT.`var`(ns+"."+obj, func).invoke(a.asInstanceOf[Object]))
     def /(func:String, a:Any, b:Any) = (RT.`var`(ns+"."+obj, func).invoke(a.asInstanceOf[Object], b.asInstanceOf[Object]))
     def /(func:String, a:Any, b:Any, c:Any) = (RT.`var`(ns+"."+obj, func).invoke(a.asInstanceOf[Object], b.asInstanceOf[Object], c.asInstanceOf[Object]))
@@ -58,7 +59,8 @@ object Game {
 
     var isRunning = false; // is main loop running
     //val acceptModes
-    var (winWidth, winHeight)=(5000,5000); // window size
+    var (winWidth, winHeight)=(3000,3000); // window size
+    var renderTime=0f;
     val cam = new Camera;
     val rand = new Random;
     val genTree = new clojureWrap("AngryPigs", "gen-tree");
@@ -110,11 +112,16 @@ object Game {
         
         println("Display: "+bestMode.getWidth+"x"+bestMode.getHeight+"@"+bestMode.getFrequency+"Hz, "+bestMode.getBitsPerPixel+"bit")
         
-        // FSAA
-        //Display.create(new PixelFormat(8, 8, 8, 4));
-        // No FSAA
-        Display.create;
+        try {
+            // FSAA
+            Display.create(new PixelFormat(8, 16, 0, 1));
+        } catch {
+            case _ =>
+                // No FSAA
+                Display.create;
+        }
         Display.setTitle("Angry Pigs");
+        Display.setVSyncEnabled(true);
     }
 
     def now = System.nanoTime();
@@ -142,12 +149,7 @@ object Game {
             Display.update; // update window contents and process input messages
             frameCounter += 1;
 
-            var renderTime = (now-frameTime)/frameIndepRatio;
-            //if(normalizedRenderTime == -1) {
-                normalizedRenderTime = renderTime;
-            //} else {
-            //    normalizedRenderTime = (renderTime+normalizedRenderTime)/2;
-           // }
+            renderTime = (now-frameTime)/frameIndepRatio;
             frameTime = now;
             //while(now-frameTime<25000000) Thread.sleep(1)
             
@@ -178,6 +180,8 @@ object Game {
     val worldSize = 400;
     val gravity = new Vec3(0f,-0.5f,0f);
     
+    var fattrees = true;
+    
     // @would it pay-off to make model generation lazy and generate them on the fly?
     // @infinite terrain patches and stuff
     def makeModels {
@@ -191,7 +195,7 @@ object Game {
         terrain.setPosition(-worldSize,-worldSize,-worldSize);
         terrain.setScale(worldSize*2, 5, worldSize*2);
         
-                // coordinate system
+        // coordinate system
         coordsys = new DisplayModel(Unit=>{
             GL11.glBegin(GL11.GL_LINES);
                 GL11.glColor3f(1,0,0);
@@ -261,7 +265,7 @@ object Game {
             GL11.glPushMatrix;
             {
                 GL11.glScalef(0.95f,1,1.05f);
-                Quadrics.sphere.draw(2,20,20);
+                Quadrics.sphere.draw(2,22,22);
             }
             GL11.glPopMatrix
             //ears
@@ -271,9 +275,9 @@ object Game {
                 val x = 0.9f;
                 GL11.glRotatef(180,0,1,0)
                 GL11.glTranslatef(x,1.7f,-0.7f);
-                Quadrics.disk.draw(0,0.35f, 10,1);
+                Quadrics.disk.draw(0,0.35f, 15,1);
                 GL11.glTranslatef(-2*x,0,0);
-                Quadrics.disk.draw(0,0.35f, 10,1);
+                Quadrics.disk.draw(0,0.35f, 15,1);
             }
             GL11.glPopMatrix
             //nose            
@@ -284,9 +288,9 @@ object Game {
                 //GL11.glRotatef(90, 0,1,0)
                 GL11.glTranslatef(0,0.4f,1.4f);
                 val size=0.7f
-                Quadrics.cylinder.draw(size,size, 1, 10,1);
+                Quadrics.cylinder.draw(size,size, 1, 20,1);
                 GL11.glTranslatef(0,0f,1f);
-                Quadrics.disk.draw(0,size, 10,1);
+                Quadrics.disk.draw(0,size, 20,1);
             }
             GL11.glPopMatrix
             //eyes
@@ -317,8 +321,8 @@ object Game {
             val scale = new Vec3(4f,1f,6.5f)
             GL11.glPushMatrix;
             GL11.glScalef(scale.x,scale.y,scale.z);
-            GL11.glBegin(GL11.GL_QUADS);
-                GL11.glColor3f(0.8f,0.3f,0f);
+            GL11.glColor3f(0.8f,0.3f,0f);
+            GL11.glBegin(GL11.GL_QUADS);                
                 // top
                 GL11.glNormal3f( 0f, 1f, 0f);
                 GL11.glVertex3f( 1f, 1f,-1f);
@@ -358,22 +362,27 @@ object Game {
             GL11.glEnd;
             GL11.glPopMatrix;
 
+            def wheel = {
+                GL11.glRotatef(90, 0,1,0)
+                Quadrics.cylinder.draw(1f,1f, scale.x*2+2, 25,1);
+                Quadrics.disk.draw(0,1,20,1);
+                GL11.glTranslatef(0,0,scale.x*2+2);
+                Quadrics.disk.draw(0,1,20,1);
+            }
             // Front wheel
             GL11.glPushMatrix;
-            GL11.glTranslatef(-scale.x-1,-1,scale.z-2f)
-            GL11.glRotatef(90, 0,1,0)
-            Quadrics.cylinder.draw(1,1, scale.x*2+2, 20,1);
+                GL11.glTranslatef(-scale.x-1,-1,scale.z-2f)
+                wheel
             GL11.glPopMatrix;
             // Back wheel
             GL11.glPushMatrix;
-            GL11.glTranslatef(-scale.x-1,-1,-scale.z+2f)
-            GL11.glRotatef(90, 0,1,0)
-            Quadrics.cylinder.draw(1,1, scale.x*2+2, 20,1);
+                GL11.glTranslatef(-scale.x-1,-1,-scale.z+2f)
+                wheel
             GL11.glPopMatrix;
         });
         catapult.setPosition(0,-worldSize+2.5f,-worldSize/2+25);
         
-        pigcatapultLink = new ModelLink(catapult, pig, new Vec3(0f,2f,0f));
+        pigcatapultLink = new ModelLink(catapult, pig, new Vec3(0f,2.5f,0f));
         campigLink = new ModelLink(pig, cam, new Vec3(0f,7,-50), new Vec3(0,0,0));
         
         
@@ -383,25 +392,45 @@ object Game {
                 if(a.length==4 && !a(0).isInstanceOf[java.util.List[Object]]) {
                     val vector = a.toList.map(_.toString.toFloat).toArray;
                     
-                    val vec = if(v == null) vector else v
+                    val vec = if(v == null) Array[Float](0f,0f,0f,1f) else v
                     
-                    GL11.glBegin(GL11.GL_LINES)
-                    GL11.glVertex3f(vec(0)*vec(3),
-                                    vec(1)*vec(3),
-                                    vec(2)*vec(3));
-                    
-                    GL11.glVertex3f(vec(0)*vec(3) + vector(0)*vector(3),
-                                    vec(1)*vec(3) + vector(1)*vector(3),
-                                    vec(2)*vec(3) + vector(2)*vector(3))
-                    GL11.glEnd
+                    if(fattrees) {
+                        GL11.glPushMatrix
+                        val vecA = new Vec3(vec(0)*vec(3),
+                                            vec(1)*vec(3),
+                                            vec(2)*vec(3))
+                                            
+                        val vecB = new Vec3(vec(0)*vec(3) + vector(0)*vector(3),
+                                            vec(1)*vec(3) + vector(1)*vector(3),
+                                            vec(2)*vec(3) + vector(2)*vector(3))
+                        val z = new Vec3(0,0,1)
+                        val p = vecA - vecB
+                        val t = z X p;
+
+                        val angle = 180f/math.Pi * math.acos((z dot p)/p.length);
+
+                        GL11.glTranslatef(vecB.x,vecB.y,vecB.z);
+                        GL11.glRotatef(angle.toFloat,t.x,t.y,t.z);
+                        
+                        
+                        Quadrics.cylinder.draw(0.2f/(depth+1),0.3f/(depth+1), if(depth==0) vector(1)*vector(3) else vector(3), 25,1);
+                        GL11.glPopMatrix
+                    } else {
+                        GL11.glBegin(GL11.GL_LINES)
+                        GL11.glVertex3f(vec(0)*vec(3),
+                                        vec(1)*vec(3),
+                                        vec(2)*vec(3));
+                        
+                        GL11.glVertex3f(vec(0)*vec(3) + vector(0)*vector(3),
+                                        vec(1)*vec(3) + vector(1)*vector(3),
+                                        vec(2)*vec(3) + vector(2)*vector(3))
+                        GL11.glEnd
+                    }
 
                     //vector.toList.foreach(println)
                     println(depth)
                     
-                    return (
-                        for(i <- 0 to 3) yield 
-                            if(i==3) 1f else vec(i)*vec(3) + vector(i)*vector(3)
-                    ).toArray
+                    return (for(i <- 0 to 3) yield if(i==3) 1f else vec(i)*vec(3) + vector(i)*vector(3)).toArray
                 } else {
                     var finalBranch = false;
                     if(a.length==2) {
@@ -431,8 +460,9 @@ object Game {
             }
             
             GL11.glColor3f(1,1,1);
+            GL11.glColor3f(0.7f,0.2f,0f);
 
-            val tree = (genTree/("give-me-tree", 0.1f, 2f, 0.1f, 5f)).asInstanceOf[java.util.List[Object]].toArray;
+            val tree = (genTree/("give-me-tree", 0.1f, 2f, 0.1f, 5f)).asInstanceOf[java.util.List[Object]].toArray;            
             drawTree(tree, null);
         });
         tree.setPosition(0,-worldSize+2.5f,-worldSize/2+30);
@@ -488,8 +518,6 @@ object Game {
         GL11.glLoadIdentity;
     }
   
-    //avoid spikes in Rendertime (used for input)
-    var normalizedRenderTime = -1f;
     var frameIndepRatio = (20000000f);
     var treeView = false;
 
@@ -510,10 +538,10 @@ object Game {
         )
         
         // move pig or catapult
-        moveObj.vector.z -= 0.05f*moveObj.vector.z*normalizedRenderTime;
+        moveObj.vector.z -= 0.05f*moveObj.vector.z*renderTime;
         moveObj.vector.clamp3(0,0,8);
 
-        pig.vector.applyVector(gravity*normalizedRenderTime);
+        pig.vector.applyVector(gravity*renderTime);
 
         val actualMoveVector = 
             new Vec3(
@@ -521,7 +549,7 @@ object Game {
                 moveObj.vector.y,
                 math.cos(moveObj.rot.y/(180f/math.Pi)).toFloat*moveObj.vector.z
             )
-        moveObj.pos.applyVector(actualMoveVector*normalizedRenderTime);
+        moveObj.pos.applyVector(actualMoveVector*renderTime);
         
         moveObj.pos.clamp(worldSize-2.5f);
         
@@ -554,8 +582,11 @@ object Game {
             treeView = !treeView
             TimeLock.lockIt(1000);
         }
+        if(Keyboard.isKeyDown(Keyboard.KEY_1)) { fattrees = false; tree.compile }
+        if(Keyboard.isKeyDown(Keyboard.KEY_2)) { fattrees = true; tree.compile }
+
         
-        val keymove = 0.7f*normalizedRenderTime;
+        val keymove = 0.7f*renderTime;
         
         if(campigLink.isLinked) {
             if(Keyboard.isKeyDown(Keyboard.KEY_Q)) campigLink.vector2.x+=keymove;
@@ -571,13 +602,13 @@ object Game {
             if(Keyboard.isKeyDown(Keyboard.KEY_F)) campigLink.vector.y-=keymove;
             if(Keyboard.isKeyDown(Keyboard.KEY_X)) campigLink.vector.z+=keymove;
             if(Keyboard.isKeyDown(Keyboard.KEY_V)) campigLink.vector.z-=keymove;
-        } else {
-            if(Keyboard.isKeyDown(Keyboard.KEY_Q)) cam.rot.x+=keymove;
-            if(Keyboard.isKeyDown(Keyboard.KEY_E)) cam.rot.x-=keymove;
-            if(Keyboard.isKeyDown(Keyboard.KEY_A)) cam.rot.y+=keymove;
-            if(Keyboard.isKeyDown(Keyboard.KEY_D)) cam.rot.y-=keymove;
-            if(Keyboard.isKeyDown(Keyboard.KEY_Y)) cam.rot.z+=keymove;
-            if(Keyboard.isKeyDown(Keyboard.KEY_C)) cam.rot.z-=keymove;
+        } else {            
+            if(Keyboard.isKeyDown(Keyboard.KEY_Q)) cam.rot.x+=keymove*2000;
+            if(Keyboard.isKeyDown(Keyboard.KEY_E)) cam.rot.x-=keymove*2000;
+            if(Keyboard.isKeyDown(Keyboard.KEY_A)) cam.rot.y+=keymove*2000;
+            if(Keyboard.isKeyDown(Keyboard.KEY_D)) cam.rot.y-=keymove*2000;
+            if(Keyboard.isKeyDown(Keyboard.KEY_Y)) cam.rot.z+=keymove*2000;
+            if(Keyboard.isKeyDown(Keyboard.KEY_C)) cam.rot.z-=keymove*2000;
 
             if(Keyboard.isKeyDown(Keyboard.KEY_W)) cam.pos.x+=keymove;
             if(Keyboard.isKeyDown(Keyboard.KEY_R)) cam.pos.x-=keymove;

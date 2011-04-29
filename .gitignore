@@ -24,6 +24,8 @@
 *.vrb
 
 *.class
+*.exe
+*.exe.stackdump
 
 ref/*
 

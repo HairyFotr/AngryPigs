@@ -3,11 +3,14 @@ You need Scala 2.8... then run ./bashbeans -r
 On Windows you also need cygwin, and you run with ./bashbeans -r --cygwin
 
 Keys:
+Arrow keys ... move
+Space ... shoot
+LCTRL ... reload
+RCTRL ... stop
+
 Q->R ... translate/rotate X
 A->F ... translate/rotate Y
 Y->V ... translate/rotate Z
+
 T ... become a tree
-Space ... shoot
-LCTRL ... reload
-Arrow keys ... move
-RCTRL ... stop
+1,2, ... tree display mode
