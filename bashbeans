@@ -14,6 +14,9 @@
 #toimprove
 #search .bashbeanshash and shift out already compiled, instead of doing a pure compare
 
+#links
+## http://www.codecommit.com/blog/scala/joint-compilation-of-scala-and-java-sources
+## http://code.google.com/p/simple-build-tool/
 starttime="$(date +%s)"
 
 #load settings

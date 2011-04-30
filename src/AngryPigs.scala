@@ -412,8 +412,7 @@ object Game {
                         GL11.glTranslatef(vecB.x,vecB.y,vecB.z);
                         GL11.glRotatef(angle.toFloat,t.x,t.y,t.z);
                         
-                        
-                        Quadrics.cylinder.draw(0.2f/(depth+1),0.3f/(depth+1), if(depth==0) vector(1)*vector(3) else vector(3), 25,1);
+                        Quadrics.cylinder.draw(0.2f/(depth),0.3f/(depth), if(depth==1) vector(1)*vector(3) else vector(3), 25,1);
                         GL11.glPopMatrix
                     } else {
                         GL11.glBegin(GL11.GL_LINES)
@@ -433,7 +432,7 @@ object Game {
                     return (for(i <- 0 to 3) yield if(i==3) 1f else vec(i)*vec(3) + vector(i)*vector(3)).toArray
                 } else {
                     var finalBranch = false;
-                    if(a.length==2) {
+                    if(a.length>=2) {
                         val aa = (a(1).asInstanceOf[java.util.List[Object]].toArray)
                         if(!aa(0).isInstanceOf[java.util.List[Object]]) {
                             finalBranch = true;
@@ -441,16 +440,16 @@ object Game {
                     }
                     
                     if(finalBranch) {
-                        depth += 1;
                         for(i <- 0 until a.length) {
+                            depth += 1;
                             drawTree(a(i).asInstanceOf[java.util.List[Object]].toArray, v)
+                            depth -= 1;
                         }
-                        depth -= 1;
-                    } else {
-                        val vector = drawTree(a(0).asInstanceOf[java.util.List[Object]].toArray, v);
-
+                    } else if(a.length>=2) {
                         depth += 1;
-                        drawTree(a(1).asInstanceOf[java.util.List[Object]].toArray, vector)
+                            val vector = drawTree(a(0).asInstanceOf[java.util.List[Object]].toArray, v);
+                            
+                            drawTree(a(1).asInstanceOf[java.util.List[Object]].toArray, vector)
                         depth -= 1;
                     }
 
