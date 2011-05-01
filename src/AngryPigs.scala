@@ -461,7 +461,7 @@ object Game {
             GL11.glColor3f(1,1,1);
             GL11.glColor3f(0.7f,0.2f,0f);
 
-            val tree = (genTree/("give-me-tree", 0.1f, 2f, 0.1f, 5f)).asInstanceOf[java.util.List[Object]].toArray;            
+            val tree = (genTree/("give-me-tree", 0.0f, 2f, 0.0f, 5f)).asInstanceOf[java.util.List[Object]].toArray;            
             drawTree(tree, null);
         });
         tree.setPosition(0,-worldSize+2.5f,-worldSize/2+30);

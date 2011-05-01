@@ -44,11 +44,9 @@
 
 (defn point-on-plane [plane]
   (let [d (last plane)]
-    (let [plane (reverse (sort (butlast plane)))]
-      (loop [point [] i 0 dd d]
-	(if (>= i (count plane)) point
-	    (let [component (/ dd (nth plane i))]
-	      (recur (cons component point) (inc i) (- dd component))))))))
+    (let [x (rand-int d)]
+      (let [y (rand-int (- d x))]
+        [x y (- d (+ x y))]))))
 
 (defn vector-between-points [a b]
   (map #(- (nth b %1) (nth a %1))
@@ -145,9 +143,18 @@
       
          (let [d (/ baselen (nth primes depth))]
            (let [first-branch (normalize (vector-between-points
-					  (travel node)
-					  (point-on-plane (plane node))))]
+					  (point-on-plane (plane node))
+                                          (travel node)))]
 
+             (let [plane (plane node)]
+               (let [point (point-on-plane plane)]
+                 (let [vector (vector-between-points (travel node) point)]
+                   (println "plane" plane)
+                   (println "point" point)
+                   (println "point0" (travel node))
+                   (println "vector" vector)
+                   (println "normalized" (normalize vector)))))
+             
              (defn make-branches []
 	       (let [angle (/ (* 2 Math/PI) (nth primes depth))]
 		 (loop [branches [] n (dec (nth primes depth))]
