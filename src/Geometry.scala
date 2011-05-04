@@ -77,30 +77,18 @@ abstract class BasicModel {
     def setScale(x:Float,y:Float,z:Float) = { scale = new Vec3(x,y,z); }
     def setScale(v:Vec3) = { scale = new Vec3(v.x,v.y,v.z); }
     
-    def doTranslation = GL11.glTranslatef(pos.x, pos.y, pos.z);
-    def undoTranslation = GL11.glTranslatef(-pos.x, -pos.y, -pos.z);
-    def doRotation {
+    def doTranslate = GL11.glTranslatef(pos.x, pos.y, pos.z);
+    def doRotate {
         if(rot.x!=0) GL11.glRotatef(rot.x, 1, 0, 0);        
         if(rot.y!=0) GL11.glRotatef(rot.y, 0, 1, 0);
         if(rot.z!=0) GL11.glRotatef(rot.z, 0, 0, 1);
     }
-    def undoRotation {
-        if(rot.z!=0) GL11.glRotatef(rot.z, 0, 0, -1);
-        if(rot.y!=0) GL11.glRotatef(rot.y, 0, -1, 0);
-        if(rot.x!=0) GL11.glRotatef(rot.x, -1, 0, 0);        
-    }
-    def doScalation = GL11.glScalef(scale.x, scale.y, scale.z);
-
+    def doScaling = GL11.glScalef(scale.x, scale.y, scale.z);
 
     def doTransforms {
-        doTranslation;
-        doRotation;
-        doScalation    
-    }
-    def undoTransforms {
-        GL11.glScalef(1, 1, 1);
-        undoRotation;
-        undoTranslation;
+        doTranslate
+        doRotate
+        doScaling
     }
 
     // How do I render this model?

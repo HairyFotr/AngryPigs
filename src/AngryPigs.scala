@@ -10,6 +10,7 @@ import scala.collection.mutable._
 import clojure.lang._
 import clojure.core._
 import java.nio._
+import java.util.{List => JavaList}
 
 // TODO:
 // search for @ <task>
@@ -236,6 +237,7 @@ object Game {
                 GL11.glVertex3f(-1f,-1f, 1f);
                 GL11.glVertex3f( 1f,-1f, 1f);
                 // back
+
                 //GL11.glColor3f(1f,1f,0f); // yellow
                 GL11.glVertex3f( 1f,-1f,-1f);
                 GL11.glVertex3f(-1f,-1f,-1f);
@@ -362,7 +364,7 @@ object Game {
             GL11.glEnd;
             GL11.glPopMatrix;
 
-            def wheel = {
+            def drawWheel = {
                 GL11.glRotatef(90, 0,1,0)
                 Quadrics.cylinder.draw(1f,1f, scale.x*2+2, 25,1);
                 Quadrics.disk.draw(0,1,20,1);
@@ -371,13 +373,13 @@ object Game {
             }
             // Front wheel
             GL11.glPushMatrix;
-                GL11.glTranslatef(-scale.x-1,-1,scale.z-2f)
-                wheel
+            GL11.glTranslatef(-scale.x-1,-1,scale.z-2f)
+            drawWheel
             GL11.glPopMatrix;
             // Back wheel
             GL11.glPushMatrix;
-                GL11.glTranslatef(-scale.x-1,-1,-scale.z+2f)
-                wheel
+            GL11.glTranslatef(-scale.x-1,-1,-scale.z+2f)
+            drawWheel
             GL11.glPopMatrix;
         });
         catapult.setPosition(0,-worldSize+2.5f,-worldSize/2+25);
@@ -388,14 +390,16 @@ object Game {
         
         tree = new DisplayModel(Unit=>{
             var depth=0;
-            def drawTree(a:Array[Object], v:Array[Float]):Array[Float] = {
-                if(a.length==4 && !a(0).isInstanceOf[java.util.List[Object]]) {
+            //this ugly makes below code a little less ugly
+            def isJavaList(a:Object):Boolean = a.isInstanceOf[JavaList[Object]]
+            def asArray(a:Object):Array[Object] = a.asInstanceOf[JavaList[Object]].toArray;
+            
+            def drawTree(v:Array[Float], a:Array[Object]):Array[Float] = {
+                if(a.length==4 && !isJavaList(a(0))) {
                     val vector = a.toList.map(_.toString.toFloat).toArray;
-                    
                     val vec = if(v == null) Array[Float](0f,0f,0f,1f) else v
                     
                     if(fattrees) {
-                        GL11.glPushMatrix
                         val vecA = new Vec3(vec(0)*vec(3),
                                             vec(1)*vec(3),
                                             vec(2)*vec(3))
@@ -403,15 +407,16 @@ object Game {
                         val vecB = new Vec3(vec(0)*vec(3) + vector(0)*vector(3),
                                             vec(1)*vec(3) + vector(1)*vector(3),
                                             vec(2)*vec(3) + vector(2)*vector(3))
+                                            
                         val z = new Vec3(0,0,1)
                         val p = vecA - vecB
                         val t = z X p;
 
                         val angle = 180f/math.Pi * math.acos((z dot p)/p.length);
 
+                        GL11.glPushMatrix
                         GL11.glTranslatef(vecB.x,vecB.y,vecB.z);
                         GL11.glRotatef(angle.toFloat,t.x,t.y,t.z);
-                        
                         Quadrics.cylinder.draw(0.2f/(depth),0.3f/(depth), if(depth==1) vector(1)*vector(3) else vector(3), 25,1);
                         GL11.glPopMatrix
                     } else {
@@ -428,28 +433,17 @@ object Game {
 
                     //vector.toList.foreach(println)
                     println(depth)
-                    
+                                        
                     return (for(i <- 0 to 3) yield if(i==3) 1f else vec(i)*vec(3) + vector(i)*vector(3)).toArray
                 } else {
-                    var finalBranch = false;
-                    if(a.length>=2) {
-                        val aa = (a(1).asInstanceOf[java.util.List[Object]].toArray)
-                        if(!aa(0).isInstanceOf[java.util.List[Object]]) {
-                            finalBranch = true;
-                        }
-                    }
-                    
-                    if(finalBranch) {
-                        for(i <- 0 until a.length) {
-                            depth += 1;
-                            drawTree(a(i).asInstanceOf[java.util.List[Object]].toArray, v)
-                            depth -= 1;
-                        }
-                    } else if(a.length>=2) {
+                    if(!isJavaList(asArray(a(1)).apply(0))) for(i <- 0 until a.length) {
+                        //last level
                         depth += 1;
-                            val vector = drawTree(a(0).asInstanceOf[java.util.List[Object]].toArray, v);
-                            
-                            drawTree(a(1).asInstanceOf[java.util.List[Object]].toArray, vector)
+                        drawTree(v, asArray(a(i)))
+                        depth -= 1;
+                    } else {
+                        depth += 1;
+                        drawTree(drawTree(v, asArray(a(0))), asArray(a(1)))
                         depth -= 1;
                     }
 
@@ -461,8 +455,8 @@ object Game {
             GL11.glColor3f(1,1,1);
             GL11.glColor3f(0.7f,0.2f,0f);
 
-            val tree = (genTree/("give-me-tree", 0.0f, 2f, 0.0f, 5f)).asInstanceOf[java.util.List[Object]].toArray;            
-            drawTree(tree, null);
+            val tree = asArray(genTree/("give-me-tree", 0f, 2f, 0f, 5f));
+            drawTree(null, tree);
         });
         tree.setPosition(0,-worldSize+2.5f,-worldSize/2+30);
     }
@@ -526,7 +520,7 @@ object Game {
     * Renders current frame
     */
     def renderFrame {       
-        val toRender = List(
+        val models = List(
             //cam,
             //coordsys,
             terrain,
@@ -542,13 +536,13 @@ object Game {
 
         pig.vector.applyVector(gravity*renderTime);
 
-        val actualMoveVector = 
+        val moveVector = 
             new Vec3(
                 math.sin(moveObj.rot.y/(180f/math.Pi)).toFloat*moveObj.vector.z,
                 moveObj.vector.y,
                 math.cos(moveObj.rot.y/(180f/math.Pi)).toFloat*moveObj.vector.z
             )
-        moveObj.pos.applyVector(actualMoveVector*renderTime);
+        moveObj.pos.applyVector(moveVector*renderTime);
         
         moveObj.pos.clamp(worldSize-2.5f);
         
@@ -558,20 +552,15 @@ object Game {
                 
         //set projection and reset modelview
         //look at this pig... look!
-        cam.lookAt(moveObj)        
+        cam.lookAt(moveObj)
         cam.render
 
-        toRender.foreach(
-            (model:BasicModel)=>{
-                GL11.glPushMatrix;
-                model.doTranslation
-                model.doRotation
-                model.doScalation
-
-                model.render
-                GL11.glPopMatrix;
-            }
-        )
+        for(model <- models) {
+            GL11.glPushMatrix;
+            model.doTransforms
+            model.render
+            GL11.glPopMatrix;
+        }
     }
     
     def processInput {
@@ -624,23 +613,6 @@ object Game {
         if(Keyboard.isKeyDown(Keyboard.KEY_UP))    moveObj.vector.z+=keymove/5f;
         if(Keyboard.isKeyDown(Keyboard.KEY_DOWN))  moveObj.vector.z-=keymove/5f;
         
-        // clamps x+z vector... enable after you know when the pig is floating :)
-        /*if(!pigcatapultLink.isLinked) {
-            val vclamp=0.8f;
-            def sgn(n:Float) = n/math.abs(n);
-            if(math.abs(pig.vector.x) > vclamp) pig.vector.x = vclamp*sgn(pig.vector.x);
-            if(math.abs(pig.vector.z) > vclamp) pig.vector.z = vclamp*sgn(pig.vector.z)
-            
-            if(math.abs(pig.vector.x)+math.abs(pig.vector.z) > vclamp) {
-                //if(math.abs(pig.vector.x) > math.abs(pig.vector.y)) {
-                    //x+y>vclamp ... x*r+z*r = vclamp ... r = vclamp/x+z
-                    val r = vclamp/(math.abs(pig.vector.x)+math.abs(pig.vector.z))
-                    pig.vector.x *= r
-                    pig.vector.z *= r
-                //
-            }
-        }//*/
-
         if(Keyboard.isKeyDown(Keyboard.KEY_SPACE) && !TimeLock.isLocked){
             if(pigcatapultLink.isLinked) {
                 pigcatapultLink.breakLink;
