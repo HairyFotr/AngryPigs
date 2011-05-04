@@ -57,6 +57,7 @@ object Quadrics {
 }
 
 object Game {
+    import org.lwjgl.opengl.GL11._
 
     var isRunning = false; // is main loop running
     //val acceptModes
@@ -66,6 +67,7 @@ object Game {
     val rand = new Random;
     val genTree = new clojureWrap("AngryPigs", "gen-tree");
     //val helloworld = new clojureWrap("AngryPigs", "helloworld");
+    
     
     /**
      * Initializes display and enters main loop
@@ -155,8 +157,8 @@ object Game {
             //while(now-frameTime<25000000) Thread.sleep(1)
             
             //gl error
-            val errCode = GL11.glGetError;
-            if (errCode != GL11.GL_NO_ERROR) 
+            val errCode = glGetError;
+            if (errCode != GL_NO_ERROR) 
                 println(opengl.Util.translateGLErrorString(errCode));
 
             if(now-secondTimer > E10) {
@@ -198,64 +200,64 @@ object Game {
         
         // coordinate system
         coordsys = new DisplayModel(Unit=>{
-            GL11.glBegin(GL11.GL_LINES);
-                GL11.glColor3f(1,0,0);
-                GL11.glVertex3f(0,0,0);
-                GL11.glVertex3f(1,0,0);
+            glBegin(GL_LINES);
+                glColor3f(1,0,0);
+                glVertex3f(0,0,0);
+                glVertex3f(1,0,0);
                 
-                GL11.glColor3f(0,1,0);
-                GL11.glVertex3f(0,0,0);
-                GL11.glVertex3f(0,1,0);
+                glColor3f(0,1,0);
+                glVertex3f(0,0,0);
+                glVertex3f(0,1,0);
                 
-                GL11.glColor3f(0,0,1);
-                GL11.glVertex3f(0,0,0);
-                GL11.glVertex3f(0,0,1);
-            GL11.glEnd;//*/
+                glColor3f(0,0,1);
+                glVertex3f(0,0,0);
+                glVertex3f(0,0,1);
+            glEnd;//*/
         });
         coordsys.setScale(worldSize,worldSize,worldSize);
 
         // sky-box
         skybox = new DisplayModel(Unit=>{
-            GL11.glBegin(GL11.GL_QUADS);
-                GL11.glColor3f(0.5f,0.5f,0.5f);
+            glBegin(GL_QUADS);
+                glColor3f(0.5f,0.5f,0.5f);
                 // top
-                //GL11.glColor3f(0f,1f,0f); // green
-                GL11.glVertex3f( 2f, 1f,-2f);
-                GL11.glVertex3f(-2f, 1f,-2f);
-                GL11.glVertex3f(-2f, 1f, 2f);
-                GL11.glVertex3f( 2f, 1f, 2f);
+                //glColor3f(0f,1f,0f); // green
+                glVertex3f( 2f, 1f,-2f);
+                glVertex3f(-2f, 1f,-2f);
+                glVertex3f(-2f, 1f, 2f);
+                glVertex3f( 2f, 1f, 2f);
                 // bottom 
-                /*GL11.glColor3f(1f,0.5f,0f);    // orange
-                GL11.glVertex3f( 1f,-1f, 1f);
-                GL11.glVertex3f(-1f,-1f, 1f);
-                GL11.glVertex3f(-1f,-1f,-1f);
-                GL11.glVertex3f( 1f,-1f,-1f);*/
+                /*glColor3f(1f,0.5f,0f);    // orange
+                glVertex3f( 1f,-1f, 1f);
+                glVertex3f(-1f,-1f, 1f);
+                glVertex3f(-1f,-1f,-1f);
+                glVertex3f( 1f,-1f,-1f);*/
                 // front
-                //GL11.glColor3f(1f,0f,0f); // red 
-                GL11.glVertex3f( 2f, 1f, 2f);
-                GL11.glVertex3f(-2f, 1f, 2f); 
-                GL11.glVertex3f(-1f,-1f, 1f);
-                GL11.glVertex3f( 1f,-1f, 1f);
+                //glColor3f(1f,0f,0f); // red 
+                glVertex3f( 2f, 1f, 2f);
+                glVertex3f(-2f, 1f, 2f); 
+                glVertex3f(-1f,-1f, 1f);
+                glVertex3f( 1f,-1f, 1f);
                 // back
 
-                //GL11.glColor3f(1f,1f,0f); // yellow
-                GL11.glVertex3f( 1f,-1f,-1f);
-                GL11.glVertex3f(-1f,-1f,-1f);
-                GL11.glVertex3f(-2f, 1f,-2f);
-                GL11.glVertex3f( 2f, 1f,-2f);
+                //glColor3f(1f,1f,0f); // yellow
+                glVertex3f( 1f,-1f,-1f);
+                glVertex3f(-1f,-1f,-1f);
+                glVertex3f(-2f, 1f,-2f);
+                glVertex3f( 2f, 1f,-2f);
                 // left
-                //GL11.glColor3f(0f,0f,1f); // blue
-                GL11.glVertex3f(-2f, 1f, 2f);
-                GL11.glVertex3f(-2f, 1f,-2f);
-                GL11.glVertex3f(-1f,-1f,-1f);
-                GL11.glVertex3f(-1f,-1f, 1f);
+                //glColor3f(0f,0f,1f); // blue
+                glVertex3f(-2f, 1f, 2f);
+                glVertex3f(-2f, 1f,-2f);
+                glVertex3f(-1f,-1f,-1f);
+                glVertex3f(-1f,-1f, 1f);
                 // right
-                //GL11.glColor3f(1f,0f,1f); // violet
-                GL11.glVertex3f( 2f, 1f,-2f);
-                GL11.glVertex3f( 2f, 1f, 2f);
-                GL11.glVertex3f( 1f,-1f, 1f);
-                GL11.glVertex3f( 1f,-1f,-1f);
-            GL11.glEnd;
+                //glColor3f(1f,0f,1f); // violet
+                glVertex3f( 2f, 1f,-2f);
+                glVertex3f( 2f, 1f, 2f);
+                glVertex3f( 1f,-1f, 1f);
+                glVertex3f( 1f,-1f,-1f);
+            glEnd;
         });
         skybox.setPosition(0,0,0);
         skybox.setScale(worldSize,worldSize,worldSize);//*/
@@ -263,124 +265,124 @@ object Game {
         // pig
         pig = new DisplayModel(Unit=>{
             //body
-            GL11.glColor3f(0.3f,0.8f,0.3f);
-            GL11.glPushMatrix;
+            glColor3f(0.3f,0.8f,0.3f);
+            glPushMatrix;
             {
-                GL11.glScalef(0.95f,1,1.05f);
+                glScalef(0.95f,1,1.05f);
                 Quadrics.sphere.draw(2,22,22);
             }
-            GL11.glPopMatrix
+            glPopMatrix
             //ears
-            GL11.glColor3f(0.4f,0.9f,0.4f);
-            GL11.glPushMatrix;
+            glColor3f(0.4f,0.9f,0.4f);
+            glPushMatrix;
             {
                 val x = 0.9f;
-                GL11.glRotatef(180,0,1,0)
-                GL11.glTranslatef(x,1.7f,-0.7f);
+                glRotatef(180,0,1,0)
+                glTranslatef(x,1.7f,-0.7f);
                 Quadrics.disk.draw(0,0.35f, 15,1);
-                GL11.glTranslatef(-2*x,0,0);
+                glTranslatef(-2*x,0,0);
                 Quadrics.disk.draw(0,0.35f, 15,1);
             }
-            GL11.glPopMatrix
+            glPopMatrix
             //nose            
-            GL11.glColor3f(0.4f,1f,0.4f);
-            GL11.glPushMatrix;
+            glColor3f(0.4f,1f,0.4f);
+            glPushMatrix;
             {
-                GL11.glScalef(1,1,1);
-                //GL11.glRotatef(90, 0,1,0)
-                GL11.glTranslatef(0,0.4f,1.4f);
+                glScalef(1,1,1);
+                //glRotatef(90, 0,1,0)
+                glTranslatef(0,0.4f,1.4f);
                 val size=0.7f
                 Quadrics.cylinder.draw(size,size, 1, 20,1);
-                GL11.glTranslatef(0,0f,1f);
+                glTranslatef(0,0f,1f);
                 Quadrics.disk.draw(0,size, 20,1);
             }
-            GL11.glPopMatrix
+            glPopMatrix
             //eyes
-            GL11.glPushMatrix;
+            glPushMatrix;
             {
                 val x = 1.2f;
                 def eye = {
-                    GL11.glPushMatrix;
-                    GL11.glColor3f(0.8f,0.8f,0.8f);
+                    glPushMatrix;
+                    glColor3f(0.8f,0.8f,0.8f);
                     Quadrics.sphere.draw(0.5f,10,10);
                     val z = 0.35f;
-                    GL11.glTranslatef(0,0,z);
-                    GL11.glColor3f(0.1f,0.1f,0.1f);
+                    glTranslatef(0,0,z);
+                    glColor3f(0.1f,0.1f,0.1f);
                     Quadrics.sphere.draw(0.25f,10,10);
-                    GL11.glPopMatrix
+                    glPopMatrix
                 }
-                GL11.glTranslatef(x,0.6f,1.2f);
+                glTranslatef(x,0.6f,1.2f);
                 eye;
-                GL11.glTranslatef(-2*x,0,0);
+                glTranslatef(-2*x,0,0);
                 eye;
             }
-            GL11.glPopMatrix
+            glPopMatrix
         });
         pig.setPosition(0,-worldSize+7f,-worldSize/2+25);
         //pig.setScale(worldSize/,worldSize,worldSize);//*/
 
         catapult = new DisplayModel(Unit=>{
             val scale = new Vec3(4f,1f,6.5f)
-            GL11.glPushMatrix;
-            GL11.glScalef(scale.x,scale.y,scale.z);
-            GL11.glColor3f(0.8f,0.3f,0f);
-            GL11.glBegin(GL11.GL_QUADS);                
+            glPushMatrix;
+            glScalef(scale.x,scale.y,scale.z);
+            glColor3f(0.8f,0.3f,0f);
+            glBegin(GL_QUADS);                
                 // top
-                GL11.glNormal3f( 0f, 1f, 0f);
-                GL11.glVertex3f( 1f, 1f,-1f);
-                GL11.glVertex3f(-1f, 1f,-1f);
-                GL11.glVertex3f(-1f, 1f, 1f);
-                GL11.glVertex3f( 1f, 1f, 1f);
+                glNormal3f( 0f, 1f, 0f);
+                glVertex3f( 1f, 1f,-1f);
+                glVertex3f(-1f, 1f,-1f);
+                glVertex3f(-1f, 1f, 1f);
+                glVertex3f( 1f, 1f, 1f);
                 // bottom 
-                GL11.glNormal3f( 0f,-1f, 1f);
-                GL11.glVertex3f( 1f,-1f, 1f);
-                GL11.glVertex3f(-1f,-1f, 1f);
-                GL11.glVertex3f(-1f,-1f,-1f);
-                GL11.glVertex3f( 1f,-1f,-1f);
+                glNormal3f( 0f,-1f, 1f);
+                glVertex3f( 1f,-1f, 1f);
+                glVertex3f(-1f,-1f, 1f);
+                glVertex3f(-1f,-1f,-1f);
+                glVertex3f( 1f,-1f,-1f);
                 // Front
-                GL11.glNormal3f( 0f, 0f, 1f);
-                GL11.glVertex3f( 1f, 1f, 1f);
-                GL11.glVertex3f(-1f, 1f, 1f); 
-                GL11.glVertex3f(-1f,-1f, 1f);
-                GL11.glVertex3f( 1f,-1f, 1f);
+                glNormal3f( 0f, 0f, 1f);
+                glVertex3f( 1f, 1f, 1f);
+                glVertex3f(-1f, 1f, 1f); 
+                glVertex3f(-1f,-1f, 1f);
+                glVertex3f( 1f,-1f, 1f);
                 // back
-                GL11.glNormal3f( 0f, 0f,-1f);
-                GL11.glVertex3f( 1f,-1f,-1f);
-                GL11.glVertex3f(-1f,-1f,-1f);
-                GL11.glVertex3f(-1f, 1f,-1f);
-                GL11.glVertex3f( 1f, 1f,-1f);
+                glNormal3f( 0f, 0f,-1f);
+                glVertex3f( 1f,-1f,-1f);
+                glVertex3f(-1f,-1f,-1f);
+                glVertex3f(-1f, 1f,-1f);
+                glVertex3f( 1f, 1f,-1f);
                 // left
-                GL11.glNormal3f(-1f, 0f, 0f);
-                GL11.glVertex3f(-1f, 1f, 1f);
-                GL11.glVertex3f(-1f, 1f,-1f);
-                GL11.glVertex3f(-1f,-1f,-1f);
-                GL11.glVertex3f(-1f,-1f, 1f);
+                glNormal3f(-1f, 0f, 0f);
+                glVertex3f(-1f, 1f, 1f);
+                glVertex3f(-1f, 1f,-1f);
+                glVertex3f(-1f,-1f,-1f);
+                glVertex3f(-1f,-1f, 1f);
                 // right
-                GL11.glNormal3f( 1f, 0f, 0f);
-                GL11.glVertex3f( 1f, 1f,-1f);
-                GL11.glVertex3f( 1f, 1f, 1f);
-                GL11.glVertex3f( 1f,-1f, 1f);
-                GL11.glVertex3f( 1f,-1f,-1f);
-            GL11.glEnd;
-            GL11.glPopMatrix;
+                glNormal3f( 1f, 0f, 0f);
+                glVertex3f( 1f, 1f,-1f);
+                glVertex3f( 1f, 1f, 1f);
+                glVertex3f( 1f,-1f, 1f);
+                glVertex3f( 1f,-1f,-1f);
+            glEnd;
+            glPopMatrix;
 
             def drawWheel = {
-                GL11.glRotatef(90, 0,1,0)
+                glRotatef(90, 0,1,0)
                 Quadrics.cylinder.draw(1f,1f, scale.x*2+2, 25,1);
                 Quadrics.disk.draw(0,1,20,1);
-                GL11.glTranslatef(0,0,scale.x*2+2);
+                glTranslatef(0,0,scale.x*2+2);
                 Quadrics.disk.draw(0,1,20,1);
             }
             // Front wheel
-            GL11.glPushMatrix;
-            GL11.glTranslatef(-scale.x-1,-1,scale.z-2f)
+            glPushMatrix;
+            glTranslatef(-scale.x-1,-1,scale.z-2f)
             drawWheel
-            GL11.glPopMatrix;
+            glPopMatrix;
             // Back wheel
-            GL11.glPushMatrix;
-            GL11.glTranslatef(-scale.x-1,-1,-scale.z+2f)
+            glPushMatrix;
+            glTranslatef(-scale.x-1,-1,-scale.z+2f)
             drawWheel
-            GL11.glPopMatrix;
+            glPopMatrix;
         });
         catapult.setPosition(0,-worldSize+2.5f,-worldSize/2+25);
         
@@ -414,21 +416,21 @@ object Game {
 
                         val angle = 180f/math.Pi * math.acos((z dot p)/p.length);
 
-                        GL11.glPushMatrix
-                        GL11.glTranslatef(vecB.x,vecB.y,vecB.z);
-                        GL11.glRotatef(angle.toFloat,t.x,t.y,t.z);
+                        glPushMatrix
+                        glTranslatef(vecB.x,vecB.y,vecB.z);
+                        glRotatef(angle.toFloat,t.x,t.y,t.z);
                         Quadrics.cylinder.draw(0.2f/(depth),0.3f/(depth), if(depth==1) vector(1)*vector(3) else vector(3), 25,1);
-                        GL11.glPopMatrix
+                        glPopMatrix
                     } else {
-                        GL11.glBegin(GL11.GL_LINES)
-                        GL11.glVertex3f(vec(0)*vec(3),
+                        glBegin(GL_LINES)
+                        glVertex3f(vec(0)*vec(3),
                                         vec(1)*vec(3),
                                         vec(2)*vec(3));
                         
-                        GL11.glVertex3f(vec(0)*vec(3) + vector(0)*vector(3),
+                        glVertex3f(vec(0)*vec(3) + vector(0)*vector(3),
                                         vec(1)*vec(3) + vector(1)*vector(3),
                                         vec(2)*vec(3) + vector(2)*vector(3))
-                        GL11.glEnd
+                        glEnd
                     }
 
                     //vector.toList.foreach(println)
@@ -452,8 +454,8 @@ object Game {
                 }
             }
             
-            GL11.glColor3f(1,1,1);
-            GL11.glColor3f(0.7f,0.2f,0f);
+            glColor3f(1,1,1);
+            glColor3f(0.7f,0.2f,0f);
 
             val tree = asArray(genTree/("give-me-tree", 0f, 2f, 0f, 5f));
             drawTree(null, tree);
@@ -470,29 +472,29 @@ object Game {
      * Initial setup of projection of the scene onto screen, lights etc.
      */
     def setupView {
-        GL11.glEnable(GL11.GL_DEPTH_TEST); // enable depth buffer (off by default)
-        //GL11.glEnable(GL11.GL_CULL_FACE);  // enable culling of back sides of polygons
-        //GL11.glCullFace(GL11.GL_BACK);
+        glEnable(GL_DEPTH_TEST); // enable depth buffer (off by default)
+        //glEnable(GL_CULL_FACE);  // enable culling of back sides of polygons
+        //glCullFace(GL_BACK);
       
         // smooth shading - Gouraud
-        GL11.glShadeModel(GL11.GL_SMOOTH);
-        //GL11.glShadeModel(GL11.GL_FLAT);
+        glShadeModel(GL_SMOOTH);
+        //glShadeModel(GL_FLAT);
 
         // lights
-        GL11.glEnable(GL11.GL_LIGHTING);
-        GL11.glEnable(GL11.GL_LIGHT0);
+        glEnable(GL_LIGHTING);
+        glEnable(GL_LIGHT0);
 
-        GL11.glLight(GL11.GL_LIGHT0, GL11.GL_AMBIENT, allocFloats(Array[Float](0.3f, 0.3f, 0.3f, 0.0f)));
-        GL11.glLight(GL11.GL_LIGHT0, GL11.GL_DIFFUSE, allocFloats(Array[Float](0.7f, 0.7f, 0.7f, 0.0f)));
-        GL11.glLightf(GL11.GL_LIGHT0, GL11.GL_LINEAR_ATTENUATION, 20f);
-        GL11.glLight(GL11.GL_LIGHT0, GL11.GL_POSITION, allocFloats(Array[Float](0f, 0f, 10f, 0f)));
-        GL11.glEnable(GL11.GL_COLOR_MATERIAL)
-        GL11.glMaterial(GL11.GL_FRONT, GL11.GL_AMBIENT_AND_DIFFUSE, allocFloats(Array[Float](0.9f, 0.9f, 0.9f, 0f)));
-        GL11.glColorMaterial(GL11.GL_FRONT, GL11.GL_AMBIENT_AND_DIFFUSE );
+        glLight(GL_LIGHT0, GL_AMBIENT, allocFloats(Array[Float](0.3f, 0.3f, 0.3f, 0.0f)));
+        glLight(GL_LIGHT0, GL_DIFFUSE, allocFloats(Array[Float](0.7f, 0.7f, 0.7f, 0.0f)));
+        glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 20f);
+        glLight(GL_LIGHT0, GL_POSITION, allocFloats(Array[Float](0f, 0f, 10f, 0f)));
+        glEnable(GL_COLOR_MATERIAL)
+        glMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, allocFloats(Array[Float](0.9f, 0.9f, 0.9f, 0f)));
+        glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE );
         
-        GL11.glViewport(0,0, winWidth,winHeight); // mapping from normalized to window coordinates
+        glViewport(0,0, winWidth,winHeight); // mapping from normalized to window coordinates
        
-        GL11.glHint(GL11.GL_PERSPECTIVE_CORRECTION_HINT, GL11.GL_NICEST);
+        glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
         cam.setPerspective(50, winWidth/winHeight.toFloat, 1f, 600f);
         cam.setPosition(0,worldSize-5,-worldSize+5);
         cam.setRotation(0,0,0);
@@ -503,12 +505,12 @@ object Game {
     */
     def resetView {
         // clear color and depth buffer
-        GL11.glClearColor(0.3f,0.6f,0.8f,1f);
-        GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-        GL11.glMatrixMode(GL11.GL_PROJECTION);
-        GL11.glLoadIdentity;
-        GL11.glMatrixMode(GL11.GL_MODELVIEW);
-        GL11.glLoadIdentity;
+        glClearColor(0.3f,0.6f,0.8f,1f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity;
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity;
     }
   
     var frameIndepRatio = (20000000f);
@@ -556,10 +558,10 @@ object Game {
         cam.render
 
         for(model <- models) {
-            GL11.glPushMatrix;
+            glPushMatrix;
             model.doTransforms
             model.render
-            GL11.glPopMatrix;
+            glPopMatrix;
         }
     }
     
