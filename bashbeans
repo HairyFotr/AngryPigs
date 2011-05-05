@@ -34,7 +34,7 @@ pathprocess="echo"
 #    ./$setuppath
 #fi
 
-originalcall="$0 $*"
+originalcall="$*"
 
 cd src
 echo "$projectname"
@@ -98,8 +98,8 @@ else
                 echo "OK, let's try this again..."
                 echo ""
                 cd ..
-                echo "\$ $originalcall"
-                echo "`$originalcall`"
+                echo "\$ $0 $originalcall"
+                $0 $originalcall
                 exit 0
             fi
         fi

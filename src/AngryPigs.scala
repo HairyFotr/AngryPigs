@@ -66,8 +66,6 @@ object Game {
     val cam = new Camera;
     val rand = new Random;
     val genTree = new clojureWrap("AngryPigs", "gen-tree");
-    //val helloworld = new clojureWrap("AngryPigs", "helloworld");
-    
     
     /**
      * Initializes display and enters main loop
@@ -141,7 +139,7 @@ object Game {
     
         frameTime = now;
         // @that is one ugly FPS counter :)
-        var secondTimer = now;
+        var tenSecondTimer = now;
         var frameCounter = 0;
         val E10 = 10000000000L;
         while(isRunning) {
@@ -154,15 +152,14 @@ object Game {
 
             renderTime = (now-frameTime)/frameIndepRatio;
             frameTime = now;
-            //while(now-frameTime<25000000) Thread.sleep(1)
             
             //gl error
             val errCode = glGetError;
             if (errCode != GL_NO_ERROR) 
                 println(opengl.Util.translateGLErrorString(errCode));
 
-            if(now-secondTimer > E10) {
-                secondTimer = now;
+            if(now-tenSecondTimer > E10) {
+                tenSecondTimer = now;
                 // print fps
                 println("FPS: "+frameCounter/10);
                 frameCounter = 0;
@@ -301,7 +298,7 @@ object Game {
             glPushMatrix;
             {
                 val x = 1.2f;
-                def eye = {
+                def drawEye = {
                     glPushMatrix;
                     glColor3f(0.8f,0.8f,0.8f);
                     Quadrics.sphere.draw(0.5f,10,10);
@@ -312,9 +309,9 @@ object Game {
                     glPopMatrix
                 }
                 glTranslatef(x,0.6f,1.2f);
-                eye;
+                drawEye;
                 glTranslatef(-2*x,0,0);
-                eye;
+                drawEye;
             }
             glPopMatrix
         });
@@ -462,7 +459,8 @@ object Game {
         });
         tree.setPosition(0,-worldSize+2.5f,-worldSize/2+30);
     }
-
+    
+    //@ Y is this not in some LWJGL lib, if it's really needed?
     def allocFloats(floatarray:Array[Float]):FloatBuffer = {
         val fb:FloatBuffer = ByteBuffer.allocateDirect(floatarray.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
         fb.put(floatarray).asInstanceOf[FloatBuffer].flip();
@@ -517,7 +515,7 @@ object Game {
     var treeView = false;
 
     def moveObj = if(treeView) tree else { if(pigcatapultLink.isLinked) catapult else pig };
-        
+    
     /**
     * Renders current frame
     */
@@ -538,14 +536,12 @@ object Game {
 
         pig.vector.applyVector(gravity*renderTime);
 
-        val moveVector = 
-            new Vec3(
-                math.sin(moveObj.rot.y/(180f/math.Pi)).toFloat*moveObj.vector.z,
-                moveObj.vector.y,
-                math.cos(moveObj.rot.y/(180f/math.Pi)).toFloat*moveObj.vector.z
-            )
+        val moveVector = new Vec3(
+            math.sin(moveObj.rot.y/(180f/math.Pi)).toFloat*moveObj.vector.z,
+            moveObj.vector.y,
+            math.cos(moveObj.rot.y/(180f/math.Pi)).toFloat*moveObj.vector.z
+        )
         moveObj.pos.applyVector(moveVector*renderTime);
-        
         moveObj.pos.clamp(worldSize-2.5f);
         
         pigcatapultLink.applyLink;
@@ -574,7 +570,6 @@ object Game {
         }
         if(Keyboard.isKeyDown(Keyboard.KEY_1)) { fattrees = false; tree.compile }
         if(Keyboard.isKeyDown(Keyboard.KEY_2)) { fattrees = true; tree.compile }
-
         
         val keymove = 0.7f*renderTime;
         
@@ -592,14 +587,7 @@ object Game {
             if(Keyboard.isKeyDown(Keyboard.KEY_F)) campigLink.vector.y-=keymove;
             if(Keyboard.isKeyDown(Keyboard.KEY_X)) campigLink.vector.z+=keymove;
             if(Keyboard.isKeyDown(Keyboard.KEY_V)) campigLink.vector.z-=keymove;
-        } else {            
-            if(Keyboard.isKeyDown(Keyboard.KEY_Q)) cam.rot.x+=keymove*2000;
-            if(Keyboard.isKeyDown(Keyboard.KEY_E)) cam.rot.x-=keymove*2000;
-            if(Keyboard.isKeyDown(Keyboard.KEY_A)) cam.rot.y+=keymove*2000;
-            if(Keyboard.isKeyDown(Keyboard.KEY_D)) cam.rot.y-=keymove*2000;
-            if(Keyboard.isKeyDown(Keyboard.KEY_Y)) cam.rot.z+=keymove*2000;
-            if(Keyboard.isKeyDown(Keyboard.KEY_C)) cam.rot.z-=keymove*2000;
-
+        } else {
             if(Keyboard.isKeyDown(Keyboard.KEY_W)) cam.pos.x+=keymove;
             if(Keyboard.isKeyDown(Keyboard.KEY_R)) cam.pos.x-=keymove;
             if(Keyboard.isKeyDown(Keyboard.KEY_S)) cam.pos.y+=keymove;
@@ -608,8 +596,6 @@ object Game {
             if(Keyboard.isKeyDown(Keyboard.KEY_V)) cam.pos.z-=keymove;
         }
 
-        //if(Keyboard.isKeyDown(Keyboard.KEY_LEFT))  moveObj.vector.x+=keymove/3f;
-        //if(Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) moveObj.vector.x-=keymove/3f;
         if(Keyboard.isKeyDown(Keyboard.KEY_LEFT))  moveObj.rot.y+=keymove*3f;
         if(Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) moveObj.rot.y-=keymove*3f;
         if(Keyboard.isKeyDown(Keyboard.KEY_UP))    moveObj.vector.z+=keymove/5f;
@@ -624,8 +610,8 @@ object Game {
                 pig.vector.y=5f;
                 pig.vector.z=8f;
             } else {
-                pig.vector.y=2f;
-                pig.vector.z=2f;
+                pig.vector.y=3f;
+                pig.vector.z=4f;
             }
             TimeLock.lockIt(1000);
         }
@@ -637,8 +623,8 @@ object Game {
         }
 
         if(Keyboard.isKeyDown(Keyboard.KEY_P)) {
-            println(cam.toString);
-            println(pig.toString);
+            println("Cam: "+cam.toString);
+            println("Pig: "+pig.toString);
         }
         if(Keyboard.isKeyDown(Keyboard.KEY_8) && campigLink.isLinked) {
             campigLink.breakLink
