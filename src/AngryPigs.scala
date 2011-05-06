@@ -532,7 +532,7 @@ object Game {
         
         // move pig or catapult
         moveObj.vector.z -= 0.05f*moveObj.vector.z*renderTime;
-        moveObj.vector.clamp3(0,0,8);
+        moveObj.vector.clamp(0,0,8);
 
         pig.vector.applyVector(gravity*renderTime);
 

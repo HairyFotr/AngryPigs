@@ -9,33 +9,29 @@ class Vec3(var x:Float, var y:Float, var z:Float) {
     def this() = this(0f,0f,0f);
     
     def getPoints = List(x,y,z);
-    def setPoints(p:List[Float]) = { x=p(0); y=p(1); z=p(2) }
-  
-    def map(f:Float=>Float) = {setPoints(getPoints.map(f)); this};
-  
-    def +(v:Vec3):Vec3 = { var res=this.clone; res.x += v.x; res.y += v.y; res.z += v.z; res }
-    def +=(v:Vec3) = { this.apply(this+v) }
-    def -(v:Vec3):Vec3 = { var res=this.clone; res.x -= v.x; res.y -= v.y; res.z -= v.z; res }
-    def -=(v:Vec3) = { this.apply(this+v) }
-    def *(f:Float):Vec3 = { var res=this.clone; res.map(_ * f); res };
-    def X(v:Vec3):Vec3 = { new Vec3(y*v.z-z*v.y,  z*v.x-x*v.z,  x*v.y-y*v.x) };
-    def dot(v:Vec3):Float = { (new Vec3(x*v.x, y*v.y, z*v.z)).getPoints.reduceLeft(_+_) };
-    def length:Float = { var l = this.clone; math.sqrt(l.map(math.pow(_,2).toFloat).getPoints.reduceLeft(_+_)).toFloat }
-    def applyVector(v:Vec3,multi:Float = 1) = { var res = this+(v*multi); this.apply(res) }
-    def ==(v:Vec3):Boolean = (x==v.x && y==v.y && z==v.z)
-    def !=(v:Vec3):Boolean = !(this==v)
-    def apply(v:Vec3) = { this.x=v.x; this.y=v.y; this.z=v.z }
+    def setPoints(v:Vec3):Vec3 = { this.x=v.x; this.y=v.y; this.z=v.z; this }
+    def setPoints(p:List[Float]):Vec3 = setPoints(new Vec3(p(0),p(1),p(2)))
+    def setPoints(x:Float,y:Float,z:Float):Vec3 = setPoints(new Vec3(x,y,z))
     
     override def clone = new Vec3(x,y,z);
-
+    def map(f:Float=>Float):Vec3 = { setPoints(getPoints.map(f)); this }
+    def applyVector(v:Vec3, multi:Float=1):Vec3 = setPoints(this+(v*multi))
+    
+    def +(v:Vec3):Vec3 = new Vec3(x+v.x, y+v.y, z+v.z)
+    def -(v:Vec3):Vec3 = new Vec3(x-v.x, y-v.y, z-v.z)
+    def +=(v:Vec3) = applyVector(this+v)
+    def -=(v:Vec3) = applyVector(this-v)
+    def *(f:Float):Vec3 = this.clone.map(_ * f)
+    def X(v:Vec3):Vec3 = new Vec3(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x)
+    def dot(v:Vec3):Float = (new Vec3(x*v.x, y*v.y, z*v.z)).getPoints.reduceLeft(_+_)
+    def length:Float = math.sqrt(this.clone.map(math.pow(_,2).toFloat).getPoints.reduceLeft(_+_)).toFloat
+    def ==(v:Vec3):Boolean = (x==v.x && y==v.y && z==v.z)
+    def !=(v:Vec3):Boolean = !(this==v)
+    
     // clamp values to some value(e.g. world size)
-    private def clamp(p:Float,clamp:Float):Float = if(math.abs(p) > clamp) clamp*(p/math.abs(p)) else p;
+    private def clamp(p:Float,clamp:Float):Float = if(clamp!=0 && math.abs(p) > clamp) clamp*(p/math.abs(p)) else p
     def clamp(c:Float):Vec3 = this.map(clamp(_,c));
-    def clamp3(cx:Float,cy:Float,cz:Float) = {
-        if(cx!=0) x = clamp(x, cx);
-        if(cy!=0) y = clamp(y, cy);
-        if(cz!=0) z = clamp(z, cz);
-    }
+    def clamp(cx:Float,cy:Float,cz:Float):Vec3 = setPoints(clamp(x, cx), clamp(y, cy),clamp(z, cz))
 
     override def toString = "%.2f, %.2f, %.2f".format(x,y,z);
 }
@@ -63,27 +59,27 @@ class Quad(var p1:Vec3, var p2:Vec3, var p3:Vec3, var p4:Vec3) {
     def map(f:Vec3=>Unit) = foreach(f);
 }
 
-// @most models will be static - compile them into displaylists / VBOs
-// lazily on first render vs loading time?
-// catapult as model-chain - has static parts which move
-
 abstract class BasicModel {
     var (pos,rot,scale) = (new Vec3, new Vec3, new Vec3(1f,1f,1f));
 
     def setPosition(x:Float,y:Float,z:Float) = { pos = new Vec3(x,y,z); }
-    def setPosition(v:Vec3) = { pos = new Vec3(v.x,v.y,v.z); }
+    def setPosition(v:Vec3) = { pos = v.clone }
     def setRotation(x:Float,y:Float,z:Float) = { rot = new Vec3(x,y,z); }
-    def setRotation(v:Vec3) = { rot = new Vec3(v.x,v.y,v.z); }
-    def setScale(x:Float,y:Float,z:Float) = { scale = new Vec3(x,y,z); }
-    def setScale(v:Vec3) = { scale = new Vec3(v.x,v.y,v.z); }
+    def setRotation(v:Vec3) = { rot = v.clone }
+    def setScale(x:Float,y:Float,z:Float) = { scale = new Vec3(x,y,z) }
+    def setScale(v:Vec3) = { scale = v.clone }
     
-    def doTranslate = GL11.glTranslatef(pos.x, pos.y, pos.z);
+    def doTranslate {
+        GL11.glTranslatef(pos.x, pos.y, pos.z);
+    }
     def doRotate {
         if(rot.x!=0) GL11.glRotatef(rot.x, 1, 0, 0);        
         if(rot.y!=0) GL11.glRotatef(rot.y, 0, 1, 0);
         if(rot.z!=0) GL11.glRotatef(rot.z, 0, 0, 1);
     }
-    def doScaling = GL11.glScalef(scale.x, scale.y, scale.z);
+    def doScaling {
+        GL11.glScalef(scale.x, scale.y, scale.z);
+    }
 
     def doTransforms {
         doTranslate
@@ -91,7 +87,6 @@ abstract class BasicModel {
         doScaling
     }
 
-    // How do I render this model?
     def render;
 
     override def toString:String = "p:("+pos.toString+"), " + "r:("+rot.toString+"), " + "s:("+scale.toString+")";
@@ -106,31 +101,81 @@ class DisplayModel(var displayList:Int) extends BasicModel with Vector {
     }
     var renderfunc:Unit=>Unit = Unit=>{};
     
-    def compile = {
+    def compile {
         displayList = GL11.glGenLists(1);
         GL11.glNewList(displayList,GL11.GL_COMPILE);
         renderfunc();
-        GL11.glEndList;
-        
+        GL11.glEndList;        
     }
     
     override def render {
         GL11.glPushMatrix;
         
-        /*GL11.glTranslatef(pos.x, pos.y, pos.z);
-        if(rot.z!=0) GL11.glRotatef(rot.z, 0, 0, 1);
-        if(rot.y!=0) GL11.glRotatef(rot.y, 0, 1, 0);
-        if(rot.x!=0) GL11.glRotatef(rot.x, 1, 0, 0);
-        GL11.glScalef(scale.x, scale.y, scale.z);*/
-        
         if(displayList == -1)
-            renderfunc();
+            renderfunc;
         else
             GL11.glCallList(displayList);
         
         GL11.glPopMatrix;
     }
     
+}
+
+class QuadPatch(points:Array[Vec3], width:Int) extends BasicModel with Points {
+    var displayList = -1
+    var compiled: Boolean = false;
+    
+    def renderfunc {
+        GL11.glBegin(GL11.GL_QUADS);
+        // Draw in clockwise - (00,10,11,01); must skip last point of line
+        for(i <- 0 until points.length-width-1; if((i+1)%width != 0))
+            List(points(i), points(i+1), points(i+width+1), points(i+width)).map(
+                (p:Vec3) => {
+                    //GL11.glColor3f(p.y/3, p.y*5, p.y/3);
+                    GL11.glColor3f(0.2f, 0.7f+p.y/2, 0.2f);
+                    GL11.glNormal3f(p.y, p.y, p.y);
+                    GL11.glVertex3f(p.x, p.y, p.z);
+                }
+            )
+        GL11.glEnd;//*/
+    }
+    def compile {
+        displayList = GL11.glGenLists(1);
+        GL11.glNewList(displayList,GL11.GL_COMPILE_AND_EXECUTE);
+        renderfunc;
+        GL11.glEndList;
+        compiled = true;
+    }
+    
+    override def render {
+        GL11.glPushMatrix;
+        
+        if(displayList == -1) {
+            if(compiled) //didn't compile right...
+                renderfunc;
+            else
+                compile;
+        } else {
+            GL11.glCallList(displayList);
+        }
+        
+        GL11.glPopMatrix;
+    }
+
+    // @make a method to merge/expand quadpatches (for infinite terrain)   
+}
+
+// first iter: cylnders for trees
+class GenModel extends BasicModel {
+
+    /*def this() {
+        this()
+        //Displaymodel,transform,displaymodel,... pop matrix
+        
+    }*/
+    
+    override def render {
+    }
 }
 
 class Camera extends BasicModel {
@@ -186,74 +231,6 @@ class Camera extends BasicModel {
     }
 }
 
-// @maybe normalize width&height to 1 and then scale?
-class QuadPatch extends BasicModel with Points {
-    var width = 1
-    var texPoints:Array[Vec3]=null
-    var displayList = -1
-    
-    // constructors
-    // @take in random points and make it into a valid quadpatch
-    //  also use quads
-    def this(p:Array[Vec3], w:Int) { 
-        this();
-        width = w;
-        points = p;
-    }
-    def this(p:Array[Vec3], tex:Array[Vec3], w:Int) {
-        this(p, w);
-        texPoints = tex;
-    }
-    private val rand = new Random;
-    
-    override def render {
-        GL11.glPushMatrix;
-        
-        /*GL11.glTranslatef(pos.x, pos.y, pos.z);
-        if(rot.z!=0) GL11.glRotatef(rot.z, 0, 0, 1);
-        if(rot.y!=0) GL11.glRotatef(rot.y, 0, 1, 0);
-        if(rot.x!=0) GL11.glRotatef(rot.x, 1, 0, 0);
-        GL11.glScalef(scale.x, scale.y, scale.z);*/
-
-        if(displayList == -1) {
-            displayList = GL11.glGenLists(1);
-            GL11.glNewList(displayList,GL11.GL_COMPILE_AND_EXECUTE);
-            GL11.glBegin(GL11.GL_QUADS);
-            // Draw in clockwise - (00,10,11,01); must skip last point of line
-            for(i <- 0 until points.length-width-1; if((i+1)%width != 0))
-                List(points(i), points(i+1), points(i+width+1), points(i+width)).map(
-                    (p:Vec3) => {
-                        //GL11.glColor3f(p.y/3, p.y*5, p.y/3);
-                        GL11.glColor3f(0.2f, 0.7f+p.y/2, 0.2f);
-                        GL11.glNormal3f(p.y, p.y, p.y);
-                        GL11.glVertex3f(p.x, p.y, p.z);
-                    }
-                )
-            GL11.glEnd;//*/
-            GL11.glEndList;
-        } else {
-            GL11.glCallList(displayList);
-        }
-        GL11.glPopMatrix;
-    }
-
-    // @make a method to merge quadpatches (for infinite terrain)   
-}
-
-// first iter: cylnders for trees
-class GenModel extends BasicModel {
-
-    /*def this() {
-        this()
-        //Displaymodel,transform,displaymodel,... pop matrix
-        
-    }*/
-    
-    override def render {
-    }
-}
-
-
 class ModelLink(var m1:BasicModel, var m2:BasicModel) extends Vector with Vector2 {
     def this(m1:BasicModel,m2:BasicModel,vector:Vec3, vector2:Vec3) {
         this(m1,m2)
@@ -265,11 +242,11 @@ class ModelLink(var m1:BasicModel, var m2:BasicModel) extends Vector with Vector
     }
 
     private var linked = true;
-    def breakLink() = linked = false;
-    def forgeLink() = linked = true;
-    def isLinked() = linked;
+    def isLinked = linked;
+    def breakLink { linked = false }
+    def forgeLink { linked = true }
     
-    def applyLink() = {
+    def applyLink {
         if(linked) {
             m2.setPosition(m1.pos+vector);
             m2.setRotation(m1.rot+vector2);
