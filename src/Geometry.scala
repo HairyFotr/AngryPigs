@@ -19,8 +19,8 @@ class Vec3(var x:Float, var y:Float, var z:Float) {
     
     def +(v:Vec3):Vec3 = new Vec3(x+v.x, y+v.y, z+v.z)
     def -(v:Vec3):Vec3 = new Vec3(x-v.x, y-v.y, z-v.z)
-    def +=(v:Vec3) = applyVector(this+v)
-    def -=(v:Vec3) = applyVector(this-v)
+    def +=(v:Vec3) = applyVector(v, +1)
+    def -=(v:Vec3) = applyVector(v, -1)
     def *(f:Float):Vec3 = this.clone.map(_ * f)
     def X(v:Vec3):Vec3 = new Vec3(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x)
     def dot(v:Vec3):Float = (new Vec3(x*v.x, y*v.y, z*v.z)).getPoints.reduceLeft(_+_)

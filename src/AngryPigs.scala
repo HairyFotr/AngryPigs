@@ -385,8 +385,7 @@ object Game {
         
         pigcatapultLink = new ModelLink(catapult, pig, new Vec3(0f,2.5f,0f));
         campigLink = new ModelLink(pig, cam, new Vec3(0f,7,-50), new Vec3(0,0,0));
-        
-        
+                
         tree = new DisplayModel(Unit=>{
             var depth=0;
             //this ugly makes below code a little less ugly
@@ -435,7 +434,7 @@ object Game {
                                         
                     return (for(i <- 0 to 3) yield if(i==3) 1f else vec(i)*vec(3) + vector(i)*vector(3)).toArray
                 } else {
-                    if(!isJavaList(asArray(a(1)).apply(0))) for(i <- 0 until a.length) {
+                    if(a.length==1 || !isJavaList(asArray(a(1)).apply(0))) for(i <- 0 until a.length) {
                         //last level
                         depth += 1;
                         drawTree(v, asArray(a(i)))
