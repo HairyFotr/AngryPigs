@@ -25,7 +25,7 @@
 
 
 (def primes [2 3 5 7 11 13 17 23 29])
-(def max-depth 0)
+(def max-depth 1)
 (def I [[1 0 0]
 	[0 1 0]
 	[0 0 1]])
@@ -35,22 +35,6 @@
 (defn travel [node]
   (let [d (last node)]
     (map #(* %1 d) (butlast node))))
-
-(defn plane [N]
-  (let [point (travel N)]
-    (concat (butlast N)
-	    [(apply + (map #(* (nth N %1) (nth point %1))
-			   (take (count point) nums)))])))
-
-(defn point-on-plane [plane]
-  (let [d (last plane)]
-    (let [x (rand-int d)]
-      (let [y (rand-int (- d x))]
-        [x y (- d (+ x y))]))))
-
-(defn vector-between-points [a b]
-  (map #(- (nth b %1) (nth a %1))
-       (take (count a) nums)))
 
 (defn length [v]
   (Math/sqrt (apply + (map #(* %1 %1) v))))
@@ -161,15 +145,9 @@
      (if (> depth max-depth) node
 
          (let [d (/ baselen (nth primes depth))]
-           ; finding the plane requires knowing where our vector starts
-           ;(let [first-branch (normalize (vector-between-points
-	;				  (point-on-plane (plane node))
-         ;                                 (travel node)))]
-
            (let [first-branch (perpendicular-vector (butlast node))]
 
              (defn make-branches []
-               (println "about to divide by zero")
                (let [angle (/ (* 2 Math/PI) (nth primes depth))]
                  (loop [branches []
                         n (dec (nth primes depth))]
@@ -180,27 +158,21 @@
                                     branches)
                               (dec n))))))
 
-	     (concat [node]
-		     [(map #(give-me-tree
-			     (make-node %1 d)
-			     baselen
-			     (inc depth))
-			  (make-branches))]))))))
+             (defn curve-up [branches]
+               (let [up-angle (/ Math/PI 3)]
+                 (map #(rotate %1
+                               (cross-product %1
+                                              (normalize (butlast node)))
+                               up-angle)
+                      branches)))
 
-             ;(let [up-angle (/ Math/PI 3)]
-             ;  (println "upAngle" up-angle)
-             ;  (println (make-branches))
-             ;  (apply list
-             ;         (concat [node]
-             ;                 [(apply list
-             ;                         (map #(give-me-tree
-             ;                                (make-node (rotate %1
-	;							(cross-product %1 node)
-	;							up-angle)
-         ;                                               d)
-          ;                                   baselen
-           ;                                  (inc depth))
-            ;                               (make-branches)))]))))))))
 
+
+             (concat [node]
+                     [(map #(give-me-tree
+                             (make-node %1 d)
+                             baselen
+                             (inc depth))
+                           (curve-up (make-branches)))]))))))
 
 (println (give-me-tree 0 2 0 5))
