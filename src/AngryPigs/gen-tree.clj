@@ -25,7 +25,7 @@
 
 
 (def primes [2 3 5 7 11 13 17 23 29])
-(def max-depth 1)
+(def max-depth 0)
 (def I [[1 0 0]
 	[0 1 0]
 	[0 0 1]])
@@ -34,7 +34,7 @@
 ; generate a tree from starting position v
 (defn travel [node]
   (let [d (last node)]
-    (map #(+ %1 d) (butlast node))))
+    (map #(* %1 d) (butlast node))))
 
 (defn plane [N]
   (let [point (travel N)]
@@ -55,9 +55,13 @@
 (defn length [v]
   (Math/sqrt (apply + (map #(* %1 %1) v))))
 
+(defn round [decimals n]
+  (let [m (Math/pow 10 decimals)]
+    (/ (Math/round (* n m)) m)))
+
 (defn normalize [v]
   (let [l (length v)]
-    (map #(/ %1 l) v)))
+    (map #(round 4 (/ %1 l)) v)))
 
 (defn make-node [v l]
   (apply list (concat v [(float l)])))
@@ -68,9 +72,9 @@
 ;        [v] = [vx, vy, vz]      the vector to be rotated.
 ;        [l] = [lx, ly, lz]      the vector about rotation
 ;              | 1  0  0|
-;        [i] = | 0  1  0|           the identity matrix        
+;        [i] = | 0  1  0|           the identity matrix
 ;              | 0  0  1|
-;              
+;
 ;              |   0  lz -ly |
 ;        [L] = | -lz   0  lx |
 ;              |  ly -lx   0 |
@@ -82,7 +86,7 @@
 ;
 ;   matrix operations gives:
 ;
-;    [v] = [v]x{[i] + sin(a)/d*[L] + ((1 - cos(a))/(d*d)*([L]x[L]))} 
+;    [v] = [v]x{[i] + sin(a)/d*[L] + ((1 - cos(a))/(d*d)*([L]x[L]))}
 (defn dot-product [v1 v2]
   (apply + (map #(* (nth v1 %1) (nth v2 %1))
 		(take (count v1) nums))))
@@ -121,49 +125,60 @@
 (defn transpose [m]
   (map #(column m %1) (take (count (first m)) nums)))
 
-;    [v] = [v]x{[i] + sin(a)/d*[L] + ((1 - cos(a))/(d*d)*([L]x[L]))} 
+;    [v] = [v]x{[i] + sin(a)/d*[L] + ((1 - cos(a))/(d*d)*([L]x[L]))}
 (defn rotate [v axis angle]
-  (let [L [[0                (nth axis 2)      (- (nth axis 1))]
-	  [(- (nth axis 2))  0                 (nth axis 0)]
-	  [(nth axis 1)      (- (nth axis 0))  0]]]
-    (let [d (length (butlast axis))]
-      
-      (first (*matrices [(butlast v)]
-			(+matrices (+matrices I
-					      (*scalar L (/ (Math/sin angle) d)))
-				   (*scalar (*matrices L L)
-					    (/ (- 1 (Math/cos angle)) (* d d)))))))))
-  
+  (let [ax (nth axis 0)
+        ay (nth axis 1)
+        az (nth axis 2)]
+    (let [L [[0       az      (- ay)]
+             [(- az)  0       ax]
+             [ay      (- ax)  0 ]]]
+      (let [d (length axis)]
+
+        (first
+         (*matrices [v]
+                    (+matrices I
+                               (+matrices
+                                (*scalar L
+                                         (/ (Math/sin angle)
+                                            d))
+                                (*scalar (*matrices L L)
+                                         (/ (- 1 (Math/cos angle))
+                                            (* d d)))))))))))
+
+
+(defn perpendicular-vector [v]
+  (let [perp (reverse (sort v))]
+    (normalize (cross-product v
+                              (cons (* 0.5 (first perp))
+                                    (rest perp))))))
+
 (defn give-me-tree
   ([a b c d] (give-me-tree (make-node [a b c] d)
                            d
                            0))
   ([node baselen depth]
      (if (> depth max-depth) node
-      
-         (let [d (/ baselen (nth primes depth))]
-           (let [first-branch (normalize (vector-between-points
-					  (point-on-plane (plane node))
-                                          (travel node)))]
 
-             (let [plane (plane node)]
-               (let [point (point-on-plane plane)]
-                 (let [vector (vector-between-points (travel node) point)]
-                   (println "plane" plane)
-                   (println "point" point)
-                   (println "point0" (travel node))
-                   (println "vector" vector)
-                   (println "normalized" (normalize vector)))))
-             
+         (let [d (/ baselen (nth primes depth))]
+           ; finding the plane requires knowing where our vector starts
+           ;(let [first-branch (normalize (vector-between-points
+	;				  (point-on-plane (plane node))
+         ;                                 (travel node)))]
+
+           (let [first-branch (perpendicular-vector (butlast node))]
+
              (defn make-branches []
-	       (let [angle (/ (* 2 Math/PI) (nth primes depth))]
-		 (loop [branches [] n (dec (nth primes depth))]
-		   (if (<= n 0) (cons first-branch branches)
-		       (recur (cons (rotate first-branch
-					    node
-					    (* angle n))
-				    branches)
-			      (dec n))))))
+               (println "about to divide by zero")
+               (let [angle (/ (* 2 Math/PI) (nth primes depth))]
+                 (loop [branches []
+                        n (dec (nth primes depth))]
+                   (if (<= n 0) (cons first-branch branches)
+                       (recur (cons (normalize (rotate first-branch
+                                                       (normalize (butlast node))
+                                                       (* angle n)))
+                                    branches)
+                              (dec n))))))
 
 	     (concat [node]
 		     [(map #(give-me-tree
@@ -171,7 +186,7 @@
 			     baselen
 			     (inc depth))
 			  (make-branches))]))))))
-             
+
              ;(let [up-angle (/ Math/PI 3)]
              ;  (println "upAngle" up-angle)
              ;  (println (make-branches))
@@ -188,4 +203,4 @@
             ;                               (make-branches)))]))))))))
 
 
-(println (give-me-tree 1 1 1 5))
+(println (give-me-tree 0 2 0 5))
