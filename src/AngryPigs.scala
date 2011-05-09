@@ -420,12 +420,12 @@ object Game {
                     } else {
                         glBegin(GL_LINES)
                         glVertex3f(vec(0)*vec(3),
-                                        vec(1)*vec(3),
-                                        vec(2)*vec(3));
+                                   vec(1)*vec(3),
+                                   vec(2)*vec(3));
                         
                         glVertex3f(vec(0)*vec(3) + vector(0)*vector(3),
-                                        vec(1)*vec(3) + vector(1)*vector(3),
-                                        vec(2)*vec(3) + vector(2)*vector(3))
+                                   vec(1)*vec(3) + vector(1)*vector(3),
+                                   vec(2)*vec(3) + vector(2)*vector(3))
                         glEnd
                     }
 
@@ -441,7 +441,7 @@ object Game {
                         depth -= 1;
                     } else {
                         depth += 1;
-                        drawTree(drawTree(v, asArray(a(0))), asArray(a(1)))
+                        for(i <- 1 until a.length) drawTree(drawTree(v, asArray(a(0))), asArray(a(i)))
                         depth -= 1;
                     }
 
@@ -533,14 +533,14 @@ object Game {
         moveObj.vector.z -= 0.05f*moveObj.vector.z*renderTime;
         moveObj.vector.clamp(0,0,8);
 
-        pig.vector.applyVector(gravity*renderTime);
+        pig.vector += gravity*renderTime
 
         val moveVector = new Vec3(
             math.sin(moveObj.rot.y/(180f/math.Pi)).toFloat*moveObj.vector.z,
             moveObj.vector.y,
             math.cos(moveObj.rot.y/(180f/math.Pi)).toFloat*moveObj.vector.z
         )
-        moveObj.pos.applyVector(moveVector*renderTime);
+        moveObj.pos += moveVector*renderTime;
         moveObj.pos.clamp(worldSize-2.5f);
         
         pigcatapultLink.applyLink;
