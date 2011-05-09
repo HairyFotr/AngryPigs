@@ -155,7 +155,7 @@
                               (dec n))))))
 
              (defn curve-up [branches]
-               (let [up-angle (/ Math/PI 3)]
+               (let [up-angle (/ Math/PI (+ 2 (rand-int 3)))]
                  (map #(normalize (rotate %1
 					  (cross-product %1
 							 (normalize (butlast node)))
