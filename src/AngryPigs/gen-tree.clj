@@ -25,17 +25,13 @@
 
 
 (def primes [2 3 5 7 11 13 17 23 29])
-(def max-depth 1)
+(def max-depth 2)
 (def I [[1 0 0]
 	[0 1 0]
 	[0 0 1]])
 (def nums (iterate inc 0))
 
 ; generate a tree from starting position v
-(defn travel [node]
-  (let [d (last node)]
-    (map #(* %1 d) (butlast node))))
-
 (defn length [v]
   (Math/sqrt (apply + (map #(* %1 %1) v))))
 
@@ -160,10 +156,10 @@
 
              (defn curve-up [branches]
                (let [up-angle (/ Math/PI 3)]
-                 (map #(rotate %1
-                               (cross-product %1
-                                              (normalize (butlast node)))
-                               up-angle)
+                 (map #(normalize (rotate %1
+					  (cross-product %1
+							 (normalize (butlast node)))
+					  up-angle))
                       branches)))
 
 
