@@ -28,7 +28,8 @@
 
 
 (def primes [2 3 5 7 11 13 17 23 29])
-(def max-depth 2)
+(def lengths [0.8 0.7 0.5 0.3 0.099 0.097 0.093 0.088 0.081])
+(def max-depth 3)
 
 
 (defn make-node [v l]
@@ -47,7 +48,7 @@
   ([node baselen depth]
      (if (> depth max-depth) node
 
-         (let [d (/ baselen (nth primes depth))]
+         (let [d (* baselen (nth lengths depth))]
            (let [first-branch (perpendicular-vector (butlast node))]
 
              (defn make-branches []
@@ -78,4 +79,4 @@
                              (inc depth))
                            (curve-up (make-branches)))]))))))
 
-(println (give-me-tree 0 2 0 5))
+;(println (give-me-tree 0 2 0 5))
