@@ -317,8 +317,8 @@ object Game {
                     glColor3f(0.1f,0.1f,0.1f);
                     Quadrics.sphere.draw(0.25f,10,10);
                     if(glasses) {
-                        glTranslatef(0,0,0);
-                        Quadrics.disk.draw(0.7f,0.8f, 20,20);
+                        glTranslatef(0,0,0.1f);
+                        Quadrics.disk.draw(0.67f,0.77f, 20,20);
                     }
                     glPopMatrix
                 }
@@ -427,7 +427,18 @@ object Game {
                         glPushMatrix
                         glTranslatef(vecB.x,vecB.y,vecB.z);
                         glRotatef(angle,cross.x,cross.y,cross.z);
-                        Quadrics.cylinder.draw(0.2f/depth,0.3f/depth, if(depth==1) vector(1)*vector(3) else vector(3), 25,1);
+                        glColor3f(0.7f,0.2f,0f);
+                        if(depth==1)
+                            Quadrics.cylinder.draw(0.2f/depth,0.3f/depth,  vector(1)*vector(3), 22,1);
+                        else
+                            Quadrics.cylinder.draw(0.2f/(depth-1),0.3f/(depth-1),  vector(3), 22,1);
+                            
+                        if(rand.nextFloat < 0.075 * depth) {
+                            glScalef(1,1.6f,1)
+                            glTranslatef(0,-0.2f,0)
+                            glColor3f(0.2f,0.8f,0.1f);
+                            Quadrics.disk.draw(0,0.175f, 7,1);
+                        }
                         glPopMatrix
                     } else {
                         glBegin(GL_LINES)
@@ -458,9 +469,6 @@ object Game {
                 }
             }
             
-            glColor3f(1,1,1);
-            glColor3f(0.7f,0.2f,0f);
-
             val tree = asArray(genTree/("give-me-tree", 0f, 2f, 0f, 5f));
             drawTree(null, tree);
         });
@@ -575,10 +583,11 @@ object Game {
         
         if(Keyboard.isKeyDown(Keyboard.KEY_T) && !TimeLock.isLocked) {
             treeView = !treeView
-            TimeLock.lockIt(1000);
+            TimeLock.lockIt(500);
         }
         if(Keyboard.isKeyDown(Keyboard.KEY_1)) { fattrees = false; tree.compile }
         if(Keyboard.isKeyDown(Keyboard.KEY_2)) { fattrees = true; tree.compile }
+        if(Keyboard.isKeyDown(Keyboard.KEY_9) && !TimeLock.isLocked) { pig.compile; TimeLock.lockIt(300); }
         
         val keymove = 0.7f*renderTime;
         
