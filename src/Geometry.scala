@@ -24,6 +24,10 @@ class Vec3(var x:Float, var y:Float, var z:Float) {
     def *(f:Float):Vec3 = this.clone.map(_ * f)
     def X(v:Vec3):Vec3 = new Vec3(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x)
     def dot(v:Vec3):Float = (new Vec3(x*v.x, y*v.y, z*v.z)).getPoints.reduceLeft(_+_)
+
+    //maybe this needs to be normalized too
+    def angle(v: Vec3):Float = (180f/math.Pi * math.acos((this dot v)/v.length)).toFloat;
+
     def length:Float = math.sqrt(this.clone.map(math.pow(_,2).toFloat).getPoints.reduceLeft(_+_)).toFloat
     def ==(v:Vec3):Boolean = (x==v.x && y==v.y && z==v.z)
     def !=(v:Vec3):Boolean = !(this==v)
