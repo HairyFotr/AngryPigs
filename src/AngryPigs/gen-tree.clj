@@ -8,7 +8,7 @@
 
 ; operative keyword: fractals
 
-; data structure: ... sort of
+; data structure:sort of
 ; node: (x y z d)  (vector with distance)
 ; tree: (node
 ;        (node
@@ -46,6 +46,14 @@
     (/ Math/PI (rand-nth (list 3 3 4 4 5)))
     (/ Math/PI (rand-nth (list 2 2 3 3 4 4 4 5 5 5 6 7)))))
 
+(defn angle-noise []
+  (/ Math/PI (* (rand-nth (flatten (list (replicate 3 10)
+                                         (replicate 4 11)
+                                         (replicate 5 12)
+                                         (replicate 6 13)
+                                         (replicate 7 14))))
+                (rand-nth (list -1 1 -1 1 -1 1)))))
+
 (defn give-me-tree
   ([a b c d] (give-me-tree (make-node [a b c] d)
                            d
@@ -63,7 +71,7 @@
                    (if (<= n 0) (cons first-branch branches)
                        (recur (cons (normalize (rotate first-branch
                                                        (normalize (butlast node))
-                                                       (* angle n)))
+                                                       (+ (angle-noise) (* angle n))))
                                     branches)
                               (dec n))))))
 
