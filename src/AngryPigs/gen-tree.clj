@@ -8,7 +8,7 @@
 
 ; operative keyword: fractals
 
-; data structure:
+; data structure: ... sort of
 ; node: (x y z d)  (vector with distance)
 ; tree: (node
 ;        (node
@@ -41,6 +41,11 @@
                               (cons (* 0.5 (first perp))
                                     (rest perp))))))
 
+(defn random-up-angle [depth]
+  (if (zero? depth)
+    (/ Math/PI (rand-nth (list 3 3 4 4 5)))
+    (/ Math/PI (rand-nth (list 2 2 3 3 4 4 4 5 5 5 6 7)))))
+
 (defn give-me-tree
   ([a b c d] (give-me-tree (make-node [a b c] d)
                            d
@@ -62,16 +67,11 @@
                                     branches)
                               (dec n))))))
 
-	     (defn random-up-angle []
-	       (let [choices (list 2 2 3 3 3 4 4 4 5 5 5 6 6 6 6 6 6 6)]
-		 (/ Math/PI (nth choices (rand-int (count choices))))))
-
-
              (defn curve-up [branches]
 	       (map #(normalize (rotate %1
 					(cross-product %1
 						       (normalize (butlast node)))
-					(random-up-angle)))
+					(random-up-angle depth)))
 				branches))
 
 
@@ -83,4 +83,5 @@
                              (inc depth))
                            (curve-up (make-branches)))]))))))
 
-(println (give-me-tree 0 2 0 5))
+;(println (give-me-tree 0 2 0 5))
+
