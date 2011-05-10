@@ -330,7 +330,6 @@ object Game {
             glPopMatrix
         });
         pig.setPosition(0,-worldSize+7f,-worldSize/2+25);
-        //pig.setScale(worldSize/,worldSize,worldSize);//*/
 
         catapult = new DisplayModel(Unit=>{
             val scale = new Vec3(4f,1f,6.5f)
@@ -475,9 +474,10 @@ object Game {
         fb.put(floatarray).asInstanceOf[FloatBuffer].flip();
         return fb;
     }
-      /**
-     * Initial setup of projection of the scene onto screen, lights etc.
-     */
+    
+    /**
+    * Initial setup of projection of the scene onto screen, lights etc.
+    */
     def setupView {
         glEnable(GL_DEPTH_TEST); // enable depth buffer (off by default)
         //glEnable(GL_CULL_FACE);  // enable culling of back sides of polygons
