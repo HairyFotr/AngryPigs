@@ -294,9 +294,10 @@ object Game {
                 Quadrics.disk.draw(0,size, 20,1);
             }
             //moustache
+            //@make swizec make a moustache generator :P
             if(rand.nextFloat > 0.2) {
                 glScalef(2,1,1);
-                glColor3f(0.8f,0.3f,0f);
+                glColor3f(0.7f,0.2f,0f);
                 glTranslatef(0,-0.7f,-0.2f)
                 Quadrics.disk.draw(0,0.5f, 20,1);
             }
@@ -305,6 +306,8 @@ object Game {
             glPushMatrix;
             {
                 val x = 1.2f;
+                val glasses = if(rand.nextFloat > 0.5) true else false
+
                 def drawEye = {
                     glPushMatrix;
                     glColor3f(0.8f,0.8f,0.8f);
@@ -313,6 +316,10 @@ object Game {
                     glTranslatef(0,0,z);
                     glColor3f(0.1f,0.1f,0.1f);
                     Quadrics.sphere.draw(0.25f,10,10);
+                    if(glasses) {
+                        glTranslatef(0,0,0);
+                        Quadrics.disk.draw(0.7f,0.8f, 20,20);
+                    }
                     glPopMatrix
                 }
                 glTranslatef(x,0.6f,1.2f);
@@ -402,7 +409,7 @@ object Game {
             def drawTree(v:Array[Float], a:Array[Object]):Array[Float] = {
                 if(a.length==4 && !isJavaList(a(0))) {
                     val vector = a.toList.map(_.toString.toFloat).toArray;
-                    val vec = if(v == null) Array[Float](0f,0f,0f,1f) else v
+                    val vec = if(v == null) Array[Float](0,0,0,1) else v
                     
                     if(fattrees) {
                         val vecA = new Vec3(vec(0)*vec(3),
@@ -440,15 +447,12 @@ object Game {
                                         
                     return (for(i <- 0 to 3) yield if(i==3) 1f else vec(i)*vec(3) + vector(i)*vector(3)).toArray
                 } else {
-                    if(a.length==1 || !isJavaList(asArray(a(1)).apply(0))) { //last level
-                        depth += 1;
+                    depth += 1;
+                    if(a.length==1 || !isJavaList(asArray(a(1)).apply(0)))
                         for(i <- 0 until a.length) drawTree(v, asArray(a(i)))
-                        depth -= 1;
-                    } else { //other levels
-                        depth += 1;
+                    else 
                         for(i <- 1 until a.length) drawTree(drawTree(v, asArray(a(0))), asArray(a(i)))
-                        depth -= 1;
-                    }
+                    depth -= 1;
 
                     // gotta return something...
                     return v;
