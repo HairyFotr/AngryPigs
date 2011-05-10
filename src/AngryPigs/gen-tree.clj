@@ -62,13 +62,17 @@
                                     branches)
                               (dec n))))))
 
+	     (defn random-up-angle []
+	       (let [choices (list 2 2 3 3 3 4 4 4 5 5 5 6 6 6 6 6 6 6)]
+		 (/ Math/PI (nth choices (rand-int (count choices))))))
+
+
              (defn curve-up [branches]
-               (let [up-angle (/ Math/PI (+ 2 (rand-int 3)))]
-                 (map #(normalize (rotate %1
-					  (cross-product %1
-							 (normalize (butlast node)))
-					  up-angle))
-                      branches)))
+	       (map #(normalize (rotate %1
+					(cross-product %1
+						       (normalize (butlast node)))
+					(random-up-angle)))
+				branches))
 
 
 
@@ -79,4 +83,4 @@
                              (inc depth))
                            (curve-up (make-branches)))]))))))
 
-;(println (give-me-tree 0 2 0 5))
+(println (give-me-tree 0 2 0 5))
