@@ -290,10 +290,17 @@ object Game {
                 glTranslatef(0,0.4f,1.4f);
                 val size=0.7f
                 Quadrics.cylinder.draw(size,size, 1, 20,1);
-                glTranslatef(0,0f,1f);
+                glTranslatef(0,0,1);
                 Quadrics.disk.draw(0,size, 20,1);
             }
-            glPopMatrix
+            //moustache
+            if(rand.nextFloat > 0.2) {
+                glScalef(2,1,1);
+                glColor3f(0.8f,0.3f,0f);
+                glTranslatef(0,-0.7f,-0.2f)
+                Quadrics.disk.draw(0,0.5f, 20,1);
+            }
+            glPopMatrix            
             //eyes
             glPushMatrix;
             {
@@ -399,23 +406,22 @@ object Game {
                     
                     if(fattrees) {
                         val vecA = new Vec3(vec(0)*vec(3),
-                                            vec(1)*vec(3),
-                                            vec(2)*vec(3))
+                                             vec(1)*vec(3),
+                                             vec(2)*vec(3))
                                             
                         val vecB = new Vec3(vec(0)*vec(3) + vector(0)*vector(3),
-                                            vec(1)*vec(3) + vector(1)*vector(3),
-                                            vec(2)*vec(3) + vector(2)*vector(3))
+                                             vec(1)*vec(3) + vector(1)*vector(3),
+                                             vec(2)*vec(3) + vector(2)*vector(3))
                                             
                         val z = new Vec3(0,0,1)
                         val p = vecA - vecB
-                        val t = z X p;
-
-                        val angle = 180f/math.Pi * math.acos((z dot p)/p.length);
+                        val cross = z X p
+                        val angle = z angle p
 
                         glPushMatrix
                         glTranslatef(vecB.x,vecB.y,vecB.z);
-                        glRotatef(angle.toFloat,t.x,t.y,t.z);
-                        Quadrics.cylinder.draw(0.2f/(depth),0.3f/(depth), if(depth==1) vector(1)*vector(3) else vector(3), 25,1);
+                        glRotatef(angle,cross.x,cross.y,cross.z);
+                        Quadrics.cylinder.draw(0.2f/depth,0.3f/depth, if(depth==1) vector(1)*vector(3) else vector(3), 25,1);
                         glPopMatrix
                     } else {
                         glBegin(GL_LINES)
@@ -434,12 +440,11 @@ object Game {
                                         
                     return (for(i <- 0 to 3) yield if(i==3) 1f else vec(i)*vec(3) + vector(i)*vector(3)).toArray
                 } else {
-                    if(a.length==1 || !isJavaList(asArray(a(1)).apply(0))) for(i <- 0 until a.length) {
-                        //last level
+                    if(a.length==1 || !isJavaList(asArray(a(1)).apply(0))) { //last level
                         depth += 1;
-                        drawTree(v, asArray(a(i)))
+                        for(i <- 0 until a.length) drawTree(v, asArray(a(i)))
                         depth -= 1;
-                    } else {
+                    } else { //other levels
                         depth += 1;
                         for(i <- 1 until a.length) drawTree(drawTree(v, asArray(a(0))), asArray(a(i)))
                         depth -= 1;
@@ -457,6 +462,7 @@ object Game {
             drawTree(null, tree);
         });
         tree.setPosition(0,-worldSize+2.5f,-worldSize/2+30);
+        //*/
     }
     
     //@ Y is this not in some LWJGL lib, if it's really needed?
