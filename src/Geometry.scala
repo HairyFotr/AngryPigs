@@ -111,6 +111,13 @@ class DisplayModel(var displayList:Int) extends BasicModel with Vector {
         renderfunc();
         GL11.glEndList;        
     }
+    override def clone:DisplayModel = {
+        val res = new DisplayModel(this.renderfunc);
+        res.pos = this.pos.clone
+        res.rot = this.rot.clone
+        res.scale = this.scale.clone
+        res
+    }
     
     override def render {
         GL11.glPushMatrix;

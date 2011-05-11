@@ -174,6 +174,7 @@ object Game {
     var pig:DisplayModel=null;
     var catapult:DisplayModel=null;
     var tree:DisplayModel=null;
+    var trees = new ListBuffer[DisplayModel];
     var pigcatapultLink:ModelLink=null;
     var campigLink:ModelLink=null;
     //size of world
@@ -301,7 +302,7 @@ object Game {
                 glTranslatef(0,-0.7f,-0.2f)
                 Quadrics.disk.draw(0,0.5f, 20,1);
             }
-            glPopMatrix            
+            glPopMatrix
             //eyes
             glPushMatrix;
             {
@@ -429,15 +430,15 @@ object Game {
                         glRotatef(angle,cross.x,cross.y,cross.z);
                         glColor3f(0.7f,0.2f,0f);
                         if(depth==1)
-                            Quadrics.cylinder.draw(0.2f/depth,0.3f/depth,  vector(1)*vector(3), 22,1);
+                            Quadrics.cylinder.draw(0.2f/depth,0.3f/depth,  vector(1)*vector(3), 20,1);
                         else
-                            Quadrics.cylinder.draw(0.2f/(depth-1),0.3f/(depth-1),  vector(3), 22,1);
+                            Quadrics.cylinder.draw(0.2f/(depth-1),0.3f/(depth-1),  vector(3), 20,1);
                             
-                        if(rand.nextFloat < 0.075 * depth) {
+                        if(rand.nextFloat < 0.07 * depth) {
                             glScalef(1,1.6f,1)
                             glTranslatef(0,-0.2f,0)
                             glColor3f(0.2f,0.8f,0.1f);
-                            Quadrics.disk.draw(0,0.175f, 7,1);
+                            Quadrics.disk.draw(0,0.175f, 6,1);
                         }
                         glPopMatrix
                     } else {
@@ -473,6 +474,17 @@ object Game {
             drawTree(null, tree);
         });
         tree.setPosition(0,-worldSize+2.5f,-worldSize/2+30);
+        
+        trees += tree
+        
+        val (dx,dz) = (17, 11);
+        for(i <- 0 until 5) {
+            val t = tree.clone;
+            def pm = if(rand.nextFloat > 0.5) 1 else -1;
+            val vec = new Vec3(dx*pm*i, 0, dz*pm*i)
+            t.pos += vec
+            trees += t
+        }
         //*/
     }
     
@@ -537,14 +549,14 @@ object Game {
     * Renders current frame
     */
     def renderFrame {       
-        val models = List(
+        val models = ListBuffer(
             //cam,
             //coordsys,
             terrain,
             //skybox,
             pig,
-            catapult,
-            tree
+            catapult
+            //tree
         )
         
         // move pig or catapult
@@ -574,6 +586,13 @@ object Game {
             glPushMatrix;
             model.doTransforms
             model.render
+            glPopMatrix;
+        }
+        
+        for(tree <- trees) {
+            glPushMatrix;
+            tree.doTransforms
+            tree.render
             glPopMatrix;
         }
     }
