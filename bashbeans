@@ -11,6 +11,7 @@
 ###pass names without .ext, and let it figure it out?
 ##save last few hashes and mock me if I tried the exact same thing already :D
 ###also "compile by lookup"
+##make a github repo
 #toimprove
 #search .bashbeanshash and shift out already compiled, instead of doing a pure compare
 
