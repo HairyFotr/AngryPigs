@@ -150,7 +150,7 @@ object Game {
             // @menda se da sproti/bolš gledat input
             processInput // process input events 
             if(pause) Thread.sleep(50)
-
+            
             resetView;      // clear view and reset transformations
             renderFrame;    // draw stuff
             Display.update; // update window contents and process input messages
@@ -441,9 +441,9 @@ object Game {
                         glRotatef(angle,cross.x,cross.y,cross.z);
                         glColor3f(0.7f,0.2f,0f);
                         if(depth==1)
-                            Quadrics.cylinder.draw(0.2f/depth,0.3f/depth,  vector(1)*vector(3), 20,1);
+                            Quadrics.cylinder.draw(0.3f/depth,0.4f/depth,  vector(1)*vector(3), 20,1);
                         else
-                            Quadrics.cylinder.draw(0.2f/(depth-1),0.3f/(depth-1),  vector(3), 20,1);
+                            Quadrics.cylinder.draw(0.3f/(depth-1),0.4f/(depth-1),  vector(3), 20,1);
                             
                         if(rand.nextFloat < 0.07 * depth) {
                             glScalef(1,1.6f,1)
@@ -465,7 +465,7 @@ object Game {
                     }
 
                     //vector.toList.foreach(println)
-                    println(depth)
+                    //println(depth)
                                         
                     return (for(i <- 0 to 3) yield if(i==3) 1f else vec(i)*vec(3) + vector(i)*vector(3)).toArray
                 } else {
@@ -611,57 +611,59 @@ object Game {
     }
     
     def processInput {
-        if(Display.isCloseRequested || Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)) isRunning = false;
+        import Keyboard._ // static imports.. fuckyeah
         
-        if(Keyboard.isKeyDown(Keyboard.KEY_T) && !timeLock.isLocked) {
+        if(Display.isCloseRequested || isKeyDown(KEY_ESCAPE)) isRunning = false;
+                
+        if(isKeyDown(KEY_T) && !timeLock.isLocked) {
             treeView = !treeView
             timeLock.lockIt(500);
         }
-        if(Keyboard.isKeyDown(Keyboard.KEY_1)) { fattrees = false; tree.compile }
-        if(Keyboard.isKeyDown(Keyboard.KEY_2)) { fattrees = true; tree.compile }
-        if(Keyboard.isKeyDown(Keyboard.KEY_9) && !timeLock.isLocked) { pig.compile; timeLock.lockIt(300); }
+        if(isKeyDown(KEY_1)) { fattrees = false; tree.compile }
+        if(isKeyDown(KEY_2)) { fattrees = true; tree.compile }
+        if(isKeyDown(KEY_9) && !timeLock.isLocked) { pig.compile; timeLock.lockIt(300); }
         
         val keymove = 0.7f*renderTime;
         
         if(campigLink.isLinked) {
-            if(Keyboard.isKeyDown(Keyboard.KEY_Q)) campigLink.vector2.x+=keymove;
-            if(Keyboard.isKeyDown(Keyboard.KEY_E)) campigLink.vector2.x-=keymove;
-            if(Keyboard.isKeyDown(Keyboard.KEY_A)) campigLink.vector2.y+=keymove;
-            if(Keyboard.isKeyDown(Keyboard.KEY_D)) campigLink.vector2.y-=keymove;
-            if(Keyboard.isKeyDown(Keyboard.KEY_Y)) campigLink.vector2.z+=keymove;
-            if(Keyboard.isKeyDown(Keyboard.KEY_C)) campigLink.vector2.z-=keymove;
+            if(isKeyDown(KEY_Q)) campigLink.vector2.x+=keymove;
+            if(isKeyDown(KEY_E)) campigLink.vector2.x-=keymove;
+            if(isKeyDown(KEY_A)) campigLink.vector2.y+=keymove;
+            if(isKeyDown(KEY_D)) campigLink.vector2.y-=keymove;
+            if(isKeyDown(KEY_Y)) campigLink.vector2.z+=keymove;
+            if(isKeyDown(KEY_C)) campigLink.vector2.z-=keymove;
 
-            if(Keyboard.isKeyDown(Keyboard.KEY_W)) campigLink.vector.x+=keymove;
-            if(Keyboard.isKeyDown(Keyboard.KEY_R)) campigLink.vector.x-=keymove;
-            if(Keyboard.isKeyDown(Keyboard.KEY_S)) campigLink.vector.y+=keymove;
-            if(Keyboard.isKeyDown(Keyboard.KEY_F)) campigLink.vector.y-=keymove;
-            if(Keyboard.isKeyDown(Keyboard.KEY_X)) campigLink.vector.z+=keymove;
-            if(Keyboard.isKeyDown(Keyboard.KEY_V)) campigLink.vector.z-=keymove;
+            if(isKeyDown(KEY_W)) campigLink.vector.x+=keymove;
+            if(isKeyDown(KEY_R)) campigLink.vector.x-=keymove;
+            if(isKeyDown(KEY_S)) campigLink.vector.y+=keymove;
+            if(isKeyDown(KEY_F)) campigLink.vector.y-=keymove;
+            if(isKeyDown(KEY_X)) campigLink.vector.z+=keymove;
+            if(isKeyDown(KEY_V)) campigLink.vector.z-=keymove;
         } else {
-            if(Keyboard.isKeyDown(Keyboard.KEY_W)) cam.pos.x+=keymove;
-            if(Keyboard.isKeyDown(Keyboard.KEY_R)) cam.pos.x-=keymove;
-            if(Keyboard.isKeyDown(Keyboard.KEY_S)) cam.pos.y+=keymove;
-            if(Keyboard.isKeyDown(Keyboard.KEY_F)) cam.pos.y-=keymove;
-            if(Keyboard.isKeyDown(Keyboard.KEY_X)) cam.pos.z+=keymove;
-            if(Keyboard.isKeyDown(Keyboard.KEY_V)) cam.pos.z-=keymove;
+            if(isKeyDown(KEY_W)) cam.pos.x+=keymove;
+            if(isKeyDown(KEY_R)) cam.pos.x-=keymove;
+            if(isKeyDown(KEY_S)) cam.pos.y+=keymove;
+            if(isKeyDown(KEY_F)) cam.pos.y-=keymove;
+            if(isKeyDown(KEY_X)) cam.pos.z+=keymove;
+            if(isKeyDown(KEY_V)) cam.pos.z-=keymove;
         }
 
-        if(Keyboard.isKeyDown(Keyboard.KEY_P)) {
+        if(isKeyDown(KEY_P)) {
             pause = true;
             println("paused")
         }
-        if(Keyboard.isKeyDown(Keyboard.KEY_RSHIFT)) {
+        if(isKeyDown(KEY_RSHIFT)) {
             pause = false;
             println("unpaused")
         }
         if(pause) return;
 
-        if(Keyboard.isKeyDown(Keyboard.KEY_LEFT))  moveObj.rot.y+=keymove*3f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) moveObj.rot.y-=keymove*3f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_UP))    moveObj.vector.z+=keymove/5f;
-        if(Keyboard.isKeyDown(Keyboard.KEY_DOWN))  moveObj.vector.z-=keymove/5f;
+        if(isKeyDown(KEY_LEFT))  moveObj.rot.y+=keymove*3f;
+        if(isKeyDown(KEY_RIGHT)) moveObj.rot.y-=keymove*3f;
+        if(isKeyDown(KEY_UP))    moveObj.vector.z+=keymove/5f;
+        if(isKeyDown(KEY_DOWN))  moveObj.vector.z-=keymove/5f;
         
-        if(Keyboard.isKeyDown(Keyboard.KEY_SPACE) && !timeLock.isLocked){
+        if(isKeyDown(KEY_SPACE) && !timeLock.isLocked){
             if(pigcatapultLink.isLinked) {
                 pigcatapultLink.breakLink;
                 println("pig-catapult Link Broken")
@@ -675,26 +677,26 @@ object Game {
             }
             timeLock.lockIt(1000);
         }
-        if(Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) && !pigcatapultLink.isLinked) {
+        if(isKeyDown(KEY_LCONTROL) && !pigcatapultLink.isLinked) {
             pigcatapultLink.forgeLink;
             println("pig-catapult Link Forged")
             campigLink.forgeLink
             println("cam-pig Link Forged")
         }
         
-        if(Keyboard.isKeyDown(Keyboard.KEY_O)) {
+        if(isKeyDown(KEY_O)) {
             println("Cam: "+cam.toString);
             println("Pig: "+pig.toString);
         }
-        if(Keyboard.isKeyDown(Keyboard.KEY_8) && campigLink.isLinked) {
+        if(isKeyDown(KEY_8) && campigLink.isLinked) {
             campigLink.breakLink
             println("cam-pig Link Broken")
         }
-        if(Keyboard.isKeyDown(Keyboard.KEY_7) && !campigLink.isLinked) {
+        if(isKeyDown(KEY_7) && !campigLink.isLinked) {
             campigLink.forgeLink
             println("cam-pig Link Forged")
         }
-        if(Keyboard.isKeyDown(Keyboard.KEY_0)) {
+        if(isKeyDown(KEY_0)) {
             cam.setPosition(0,worldSize-5,-worldSize+5);
             cam.setRotation(0,180,0);
             println("cam Reset")
