@@ -445,11 +445,11 @@ object Game {
                         else
                             Quadrics.cylinder.draw(0.3f/(depth-1),0.4f/(depth-1),  vector(3), 20,1);
                             
-                        if(rand.nextFloat < 0.07 * depth) {
+                        if(rand.nextFloat < 0.075 * depth) {
                             glScalef(1,1.6f,1)
                             glTranslatef(0,-0.2f,0)
                             glColor3f(0.2f,0.8f,0.1f);
-                            Quadrics.disk.draw(0,0.175f, 6,1);
+                            Quadrics.disk.draw(0,0.175f, 9,1);
                         }
                         glPopMatrix
                     } else {
