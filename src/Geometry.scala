@@ -109,7 +109,7 @@ class DisplayModel(var renderfunc:()=>Unit) extends BasicModel with Vector {
     
     var displayList:Int = -1;
     
-    def compile() {        
+    def compile() {
         displayList = GL11.glGenLists(1);
         GL11.glNewList(displayList,GL11.GL_COMPILE);
         renderfunc();
@@ -133,64 +133,18 @@ class DisplayModel(var renderfunc:()=>Unit) extends BasicModel with Vector {
             GL11.glCallList(displayList);
         
         GL11.glPopMatrix;
-    }
-    
+    }    
 }
 
-//ask me about this class... I dare you:P
-class GeneratorModel(var generator:()=>Object, var draw:Object=>Unit) extends DisplayModel {
+class GeneratorModel(var generator:()=>Object, draw:Object=>Unit) extends DisplayModel {
     var data:Object = generator();
-    renderfunc = ()=>{draw(data);()};
+    renderfunc = ()=>{draw(data);()}
     compile();
     
     def regenerate() = {
         data = generator();
         compile();
     }
-}
-
-class QuadPatch(points:Array[Vec3], width:Int) extends BasicModel with Points {
-    var displayList = -1
-    var compiled: Boolean = false;
-    
-    def renderfunc {
-        GL11.glBegin(GL11.GL_QUADS);
-        // Draw in clockwise - (00,10,11,01); must skip last point of line
-        for(i <- 0 until points.length-width-1; if((i+1)%width != 0))
-            List(points(i), points(i+1), points(i+width+1), points(i+width)).map(
-                (p:Vec3) => {
-                    //GL11.glColor3f(p.y/3, p.y*5, p.y/3);
-                    GL11.glColor3f(0.2f, 0.7f+p.y/2, 0.2f);
-                    GL11.glNormal3f(p.y, p.y, p.y);
-                    GL11.glVertex3f(p.x, p.y, p.z);
-                }
-            )
-        GL11.glEnd;//*/
-    }
-    def compile {
-        displayList = GL11.glGenLists(1);
-        GL11.glNewList(displayList,GL11.GL_COMPILE_AND_EXECUTE);
-        renderfunc;
-        GL11.glEndList;
-        compiled = true;
-    }
-    
-    override def render {
-        GL11.glPushMatrix;
-        
-        if(displayList == -1) {
-            if(compiled) //didn't compile right...
-                renderfunc;
-            else
-                compile;
-        } else {
-            GL11.glCallList(displayList);
-        }
-        
-        GL11.glPopMatrix;
-    }
-
-    // @make a method to merge/expand quadpatches (for infinite terrain)   
 }
 
 class Camera extends BasicModel {

@@ -18,7 +18,13 @@ import java.nio._
 // stuff that is used in all the (wrong) places, but not deserving of their own files :P
 // ... it's made of fail and state
 object Global {
-    var settings = new HashMap[String, Any];
+    class SettingMap[A] extends HashMap[A,Any] {
+        def getBool(key:A):Boolean = getOrElse(key, true).asInstanceOf[Boolean];
+        
+        
+        // @settings loader, doh
+    }
+    var settings = new SettingMap[String];
     settings += "fattrees" -> true;
 
     val rand = new Random;
@@ -416,7 +422,7 @@ object Game {
                     val vector = a.toList.map(_.toString.toFloat).toArray;
                     val vec = if(v == null) Array[Float](0,0,0,1) else v
                     
-                    if(settings.getOrElse("fattrees", true).asInstanceOf[Boolean]) {
+                    if(settings.getBool("fattrees")) {
                         val vecA = new Vec3(vec(0)*vec(3),
                                              vec(1)*vec(3),
                                              vec(2)*vec(3))
