@@ -14,6 +14,8 @@ Y->V ... translate/rotate Z
 
 T ... become a tree
 1,2, ... tree display mode
+3 ... regenerate tree
+9 ... regenerate pig
 
 P ... pause
 RShift .. unpause :)

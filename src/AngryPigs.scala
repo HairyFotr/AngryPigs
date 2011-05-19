@@ -7,57 +7,34 @@ import org.lwjgl.util.glu._
 import org.lwjgl.util.vector._
 import scala.util.Random
 import scala.collection.mutable._
+import java.util.{List => JavaList}
 import clojure.lang._
 import clojure.core._
 import java.nio._
-import java.util.{List => JavaList}
 
 // TODO:
 // search for @ <task>
 
-class clojureWrap(ns:String,obj:String) {
-    RT.loadResourceScript(obj+".clj");  
-    
-    //@morda bi se dal s parcialno funkcijo obj/"func"(args) in bi invoke prevzel vse (args)
-    def /(func:String, a:Any) = (RT.`var`(ns+"."+obj, func).invoke(a.asInstanceOf[Object]))
-    def /(func:String, a:Any, b:Any) = (RT.`var`(ns+"."+obj, func).invoke(a.asInstanceOf[Object], b.asInstanceOf[Object]))
-    def /(func:String, a:Any, b:Any, c:Any) = (RT.`var`(ns+"."+obj, func).invoke(a.asInstanceOf[Object], b.asInstanceOf[Object], c.asInstanceOf[Object]))
-    def /(func:String, a:Any, b:Any, c:Any, d:Any) = (RT.`var`(ns+"."+obj, func).invoke(a.asInstanceOf[Object], b.asInstanceOf[Object], c.asInstanceOf[Object], d.asInstanceOf[Object]))
-}
+// stuff that is used in all the (wrong) places, but not deserving of their own files :P
+// ... it's made of fail and state
+object Global {
+    var settings = new HashMap[String, Any];
+    settings += "fattrees" -> true;
 
-class TimeLock {
-    private var lock = false;
-    def isLocked:Boolean = {
-        if(lock) {
-            if(milliTime-lockTime > lockDuration) {
-                lock = false;
-                return false;
-            } else {
-                return true;
-            }
-        } else {
-            return false;
-        }
-    }
+    val rand = new Random;
     
-    private def milliTime = System.nanoTime()/1000000L
-    
-    private var lockTime = milliTime;
-    private var lockDuration = 0L;
-    def lockIt(ms:Int) = {
-        lockTime = milliTime;
-        lockDuration = ms;
-        lock = true
-    }
-}
-object Quadrics {
-    val sphere = new Sphere;
-    val cylinder = new Cylinder;
-    val disk = new Disk;
-    val partialdisk = new PartialDisk;
+    object gluQuadrics {
+        val sphere = new Sphere;
+        val cylinder = new Cylinder;
+        val disk = new Disk;
+        val partialdisk = new PartialDisk;
+    }    
+
+    val genTree = new ClojureWrap("AngryPigs", "gen-tree");
 }
 
 object Game {
+    import Global._
     import org.lwjgl.opengl.GL11._
 
     var isRunning = false; // is main loop running
@@ -65,8 +42,6 @@ object Game {
     var (winWidth, winHeight)=(3000,3000); // window size
     var renderTime=0f;
     val cam = new Camera;
-    val rand = new Random;
-    val genTree = new clojureWrap("AngryPigs", "gen-tree");
     
     val timeLock = new TimeLock;
     val pauseLock = new TimeLock;
@@ -75,13 +50,6 @@ object Game {
      * Initializes display and enters main loop
      */
     def main(Args:Array[String]) {
-        //var h = new AngryPig.helloworld2;
-        //printlnset(h.neki(6));
-        
-        //println(genTree/("give-me-tree", new Array[Int](1,2,3,5), 0))
-        //val i = new clojure.lang.Sequence(5, 6);
-        //val i = new clojure.core.seq(List(5,6));
-        
         try {
           initDisplay;
         } catch {
@@ -93,10 +61,10 @@ object Game {
 
         // enter loop
         isRunning = true;
-        mainLoop;
+        mainLoop();
         
         // cleanup
-        Display.destroy;
+        Display.destroy();
     }
 
     def initDisplay {
@@ -121,8 +89,8 @@ object Game {
             // FSAA
             Display.create(new PixelFormat(8, 16, 0, 1));
         } catch {
+            // No FSAA            
             case _ =>
-                // No FSAA
                 Display.create;
         }
         Display.setTitle("Angry Pigs");
@@ -136,7 +104,7 @@ object Game {
     /**
      * Main loop: renders and processes input events
      */
-    def mainLoop { 
+    def mainLoop() { 
         //loadModels; // load models
         makeModels; // make generative models
         setupView;  // setup camera and lights
@@ -169,25 +137,22 @@ object Game {
             }
 
             renderTime = (now-frameTime)/frameIndepRatio;
-            frameTime = now;            
+            frameTime = now; 
         }
     }
     
     //models
-    var terrain:QuadPatch=null;
+    var terrain:GeneratorModel=null;
     var skybox:DisplayModel=null;
     var coordsys:DisplayModel=null;
     var pig:DisplayModel=null;
     var catapult:DisplayModel=null;
-    var tree:DisplayModel=null;
-    var trees = new ListBuffer[DisplayModel];
+    var trees = new ListBuffer[GeneratorModel];
     var pigcatapultLink:ModelLink=null;
     var campigLink:ModelLink=null;
     //size of world
     val worldSize = 400;
     val gravity = new Vec3(0f,-0.5f,0f);
-    
-    var fattrees = true;
     
     // @would it pay-off to make model generation lazy and generate them on the fly?
     // @infinite terrain patches and stuff
@@ -196,14 +161,35 @@ object Game {
         val detail=40;
         val height=0.3f;
         
-        def getTerrainPoint(x:Int, y:Int):Vec3 = new Vec3(x/detail.toFloat,rand.nextFloat*height,y/detail.toFloat);
-        val p = (for(i <- 0 to detail; j <- 0 to detail) yield getTerrainPoint(i,j)).toArray;        
-        terrain = new QuadPatch(p, detail+1);
+        def genTerrain:()=>Object = ()=>{
+            def getTerrainPoint(x:Int, y:Int):Vec3 = new Vec3(x/detail.toFloat,rand.nextFloat*height,y/detail.toFloat);
+            val p = (for(i <- 0 to detail; j <- 0 to detail) yield getTerrainPoint(i,j)).toArray;
+            p;
+        }
+        def drawTerrain = (data:Object)=>{
+            val points = data.asInstanceOf[Array[Vec3]];
+            GL11.glBegin(GL11.GL_QUADS);
+            // Draw in clockwise - (00,10,11,01); must skip last point of line
+            val width = math.sqrt(points.length).toInt;
+            for(i <- 0 until points.length-width-1; if((i+1)%width != 0))
+                List(points(i), points(i+1), points(i+width+1), points(i+width)).map(
+                    (p:Vec3) => {
+                        //GL11.glColor3f(p.y/3, p.y*5, p.y/3);
+                        GL11.glColor3f(0.2f, 0.7f+p.y/2, 0.2f);
+                        GL11.glNormal3f(p.y, p.y, p.y);
+                        GL11.glVertex3f(p.x, p.y, p.z);
+                    }
+                )
+            GL11.glEnd;//*/
+            ();
+        }
+        
+        terrain = new GeneratorModel(genTerrain, drawTerrain);
         terrain.setPosition(-worldSize,-worldSize,-worldSize);
         terrain.setScale(worldSize*2, 5, worldSize*2);
         
         // coordinate system
-        coordsys = new DisplayModel(Unit=>{
+        coordsys = new DisplayModel(()=>{
             glBegin(GL_LINES);
                 glColor3f(1,0,0);
                 glVertex3f(0,0,0);
@@ -221,7 +207,7 @@ object Game {
         coordsys.setScale(worldSize,worldSize,worldSize);
 
         // sky-box
-        skybox = new DisplayModel(Unit=>{
+        skybox = new DisplayModel(()=>{
             glBegin(GL_QUADS);
                 glColor3f(0.5f,0.5f,0.5f);
                 // top
@@ -267,13 +253,13 @@ object Game {
         skybox.setScale(worldSize,worldSize,worldSize);//*/
 
         // pig
-        pig = new DisplayModel(Unit=>{
+        pig = new DisplayModel(()=>{
             //body
             glColor3f(0.3f,0.8f,0.3f);
             glPushMatrix;
             {
                 glScalef(0.95f,1,1.05f);
-                Quadrics.sphere.draw(2,22,22);
+                gluQuadrics.sphere.draw(2,22,22);
             }
             glPopMatrix
             //ears
@@ -283,9 +269,9 @@ object Game {
                 val x = 0.9f;
                 glRotatef(180,0,1,0)
                 glTranslatef(x,1.7f,-0.7f);
-                Quadrics.disk.draw(0,0.35f, 15,1);
+                gluQuadrics.disk.draw(0,0.35f, 15,1);
                 glTranslatef(-2*x,0,0);
-                Quadrics.disk.draw(0,0.35f, 15,1);
+                gluQuadrics.disk.draw(0,0.35f, 15,1);
             }
             glPopMatrix
             //nose            
@@ -296,9 +282,9 @@ object Game {
                 //glRotatef(90, 0,1,0)
                 glTranslatef(0,0.4f,1.4f);
                 val size=0.7f
-                Quadrics.cylinder.draw(size,size, 1, 20,1);
+                gluQuadrics.cylinder.draw(size,size, 1, 20,1);
                 glTranslatef(0,0,1);
-                Quadrics.disk.draw(0,size, 20,1);
+                gluQuadrics.disk.draw(0,size, 20,1);
             }
             //moustache
             //@make swizec make a moustache generator :P
@@ -307,10 +293,10 @@ object Game {
                 glColor3f(0.7f,0.2f,0f);
                 if(rand.nextFloat > 0.2) {
                     glTranslatef(0,-0.7f,-0.2f)
-                    Quadrics.disk.draw(0,0.5f, 20,1);
+                    gluQuadrics.disk.draw(0,0.5f, 20,1);
                 } else {
                     glTranslatef(0,-0.8f,-0.3f)
-                    Quadrics.partialdisk.draw(0,0.5f, 20,1, 270, 180);
+                    gluQuadrics.partialdisk.draw(0,0.5f, 20,1, 270, 180);
                 }
             }
             glPopMatrix
@@ -323,14 +309,14 @@ object Game {
                 def drawEye = {
                     glPushMatrix;
                     glColor3f(0.8f,0.8f,0.8f);
-                    Quadrics.sphere.draw(0.5f,10,10);
+                    gluQuadrics.sphere.draw(0.5f,10,10);
                     val z = 0.35f;
                     glTranslatef(0,0,z);
                     glColor3f(0.1f,0.1f,0.1f);
-                    Quadrics.sphere.draw(0.25f,10,10);
+                    gluQuadrics.sphere.draw(0.25f,10,10);
                     if(glasses) {
                         glTranslatef(0,0,0.1f);
-                        Quadrics.disk.draw(0.67f,0.77f, 20,20);
+                        gluQuadrics.disk.draw(0.67f,0.77f, 20,20);
                     }
                     glPopMatrix
                 }
@@ -342,8 +328,9 @@ object Game {
             glPopMatrix
         });
         pig.setPosition(0,-worldSize+7f,-worldSize/2+25);
+        pig.compile();
 
-        catapult = new DisplayModel(Unit=>{
+        catapult = new DisplayModel(()=>{
             val scale = new Vec3(4f,1f,6.5f)
             glPushMatrix;
             glScalef(scale.x,scale.y,scale.z);
@@ -390,10 +377,10 @@ object Game {
 
             def drawWheel = {
                 glRotatef(90, 0,1,0)
-                Quadrics.cylinder.draw(1f,1f, scale.x*2+2, 25,1);
-                Quadrics.disk.draw(0,1,20,1);
+                gluQuadrics.cylinder.draw(1f,1f, scale.x*2+2, 25,1);
+                gluQuadrics.disk.draw(0,1,20,1);
                 glTranslatef(0,0,scale.x*2+2);
-                Quadrics.disk.draw(0,1,20,1);
+                gluQuadrics.disk.draw(0,1,20,1);
             }
             // Front wheel
             glPushMatrix;
@@ -407,22 +394,29 @@ object Game {
             glPopMatrix;
         });
         catapult.setPosition(0,-worldSize+2.5f,-worldSize/2+25);
+        catapult.compile();
         
         pigcatapultLink = new ModelLink(catapult, pig, new Vec3(0f,2.5f,0f));
         campigLink = new ModelLink(pig, cam, new Vec3(0f,7,-50), new Vec3(0,0,0));
-                
-        tree = new DisplayModel(Unit=>{
+        
+        def giveMeTree:()=>Object = ()=>genTree/("give-me-tree", 0f, 2f, 0f, 5f);
+        
+        def renderTree:Object=>Unit = (data:Object)=>{
+            import org.lwjgl.opengl.GL11._
+            import Global._
+            
             var depth=0;
             //this ugly makes below code a little less ugly
+            //@checkout: import scala.collection.JavaConversions._
             def isJavaList(a:Object):Boolean = a.isInstanceOf[JavaList[Object]]
             def asArray(a:Object):Array[Object] = a.asInstanceOf[JavaList[Object]].toArray;
-            
+
             def drawTree(v:Array[Float], a:Array[Object]):Array[Float] = {
                 if(a.length==4 && !isJavaList(a(0))) {
                     val vector = a.toList.map(_.toString.toFloat).toArray;
                     val vec = if(v == null) Array[Float](0,0,0,1) else v
                     
-                    if(fattrees) {
+                    if(settings.getOrElse("fattrees", true).asInstanceOf[Boolean]) {
                         val vecA = new Vec3(vec(0)*vec(3),
                                              vec(1)*vec(3),
                                              vec(2)*vec(3))
@@ -441,18 +435,19 @@ object Game {
                         glRotatef(angle,cross.x,cross.y,cross.z);
                         glColor3f(0.7f,0.2f,0f);
                         if(depth==1)
-                            Quadrics.cylinder.draw(0.3f/depth,0.4f/depth,  vector(1)*vector(3), 20,1);
+                            gluQuadrics.cylinder.draw(0.3f/depth,0.4f/depth,  vector(1)*vector(3), 20,1);
                         else
-                            Quadrics.cylinder.draw(0.3f/(depth-1),0.4f/(depth-1),  vector(3), 20,1);
+                            gluQuadrics.cylinder.draw(0.3f/(depth-1),0.4f/(depth-1),  vector(3), 20,1);
                             
                         if(rand.nextFloat < 0.075 * depth) {
                             glScalef(1,1.6f,1)
                             glTranslatef(0,-0.2f,0)
                             glColor3f(0.2f,0.8f,0.1f);
-                            Quadrics.disk.draw(0,0.175f, 9,1);
+                            gluQuadrics.disk.draw(0,0.175f, 9,1);
                         }
                         glPopMatrix
                     } else {
+                        glColor3f(0.7f,0.2f,0f);
                         glBegin(GL_LINES)
                         glVertex3f(vec(0)*vec(3),
                                    vec(1)*vec(3),
@@ -466,8 +461,8 @@ object Game {
 
                     //vector.toList.foreach(println)
                     //println(depth)
-                                        
-                    return (for(i <- 0 to 3) yield if(i==3) 1f else vec(i)*vec(3) + vector(i)*vector(3)).toArray
+                         
+                    return (for(i <- 0 to 3) yield if(i==3) 1f else vec(i)*vec(3) + vector(i)*vector(3)).toArray;
                 } else {
                     depth += 1;
                     if(a.length==1 || !isJavaList(asArray(a(1)).apply(0)))
@@ -480,12 +475,20 @@ object Game {
                     return v;
                 }
             }
-            
-            val tree = asArray(genTree/("give-me-tree", 0f, 2f, 0f, 5f));
-            drawTree(null, tree);
-        });
-        tree.setPosition(0,-worldSize+2.5f,-worldSize/2+30);
+            drawTree(null, asArray(data));
+            ();
+        }
         
+        var tree = new GeneratorModel(giveMeTree, renderTree);
+        tree.setPosition(0,-worldSize+2.5f,-worldSize/2+30);
+        trees += tree
+        
+        tree = new GeneratorModel(giveMeTree, renderTree);
+        tree.setPosition(17,-worldSize+2.5f,-worldSize/2+30);
+        trees += tree
+
+        tree = new GeneratorModel(giveMeTree, renderTree);
+        tree.setPosition(-17,-worldSize+2.5f,-worldSize/2+30);
         trees += tree
         /*
         val (dx,dz) = (17, 11);
@@ -555,7 +558,7 @@ object Game {
     var treeView = false;
     var pause = false
 
-    def moveObj = if(treeView) tree else { if(pigcatapultLink.isLinked) catapult else pig };
+    def moveObj = if(treeView) trees(0) else { if(pigcatapultLink.isLinked) catapult else pig };
     
     /**
     * Renders current frame
@@ -619,8 +622,9 @@ object Game {
             treeView = !treeView
             timeLock.lockIt(500);
         }
-        if(isKeyDown(KEY_1)) { fattrees = false; tree.compile }
-        if(isKeyDown(KEY_2)) { fattrees = true; tree.compile }
+        if(isKeyDown(KEY_1)) { settings += "fattrees" -> false; trees(0).compile() }
+        if(isKeyDown(KEY_2)) { settings += "fattrees" -> true; trees(0).compile() }
+        if(isKeyDown(KEY_3)) { trees(0).regenerate() }
         if(isKeyDown(KEY_9) && !timeLock.isLocked) { pig.compile; timeLock.lockIt(300); }
         
         val keymove = 0.7f*renderTime;

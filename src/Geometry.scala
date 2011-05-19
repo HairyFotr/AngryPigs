@@ -4,6 +4,8 @@ import org.lwjgl._
 import org.lwjgl.opengl._
 import org.lwjgl.util.glu._
 import scala.util._
+import scala.collection.mutable._
+import java.util.{List => JavaList}
 
 class Vec3(var x:Float, var y:Float, var z:Float) {
     def this() = this(0f,0f,0f);
@@ -55,6 +57,10 @@ trait Vector2 {
 trait Points {
     var points:Array[Vec3]=null;
 }
+//inner list= (pos, vec)
+trait Lines {
+    var lines:List[List[Vec3]]=null;
+}
 
 class Quad(var p1:Vec3, var p2:Vec3, var p3:Vec3, var p4:Vec3) {
     def getPoints = List(p1,p2,p3,p4);
@@ -97,29 +103,28 @@ abstract class BasicModel {
 }
 
 // doesn't care about points and stuff
-class DisplayModel(var displayList:Int) extends BasicModel with Vector {
-    def this(renderf:Unit=>Unit) {
-        this(-1);
-        renderfunc = renderf;
-        compile;
-    }
-    var renderfunc:Unit=>Unit = Unit=>{};
+class DisplayModel(var renderfunc:()=>Unit) extends BasicModel with Vector {
+    def this() = this(()=>null)
+    var compiled = false;
     
-    def compile {
+    var displayList:Int = -1;
+    
+    def compile() {        
         displayList = GL11.glGenLists(1);
         GL11.glNewList(displayList,GL11.GL_COMPILE);
         renderfunc();
-        GL11.glEndList;        
+        GL11.glEndList;
+        compiled = true;
     }
     override def clone:DisplayModel = {
-        val res = new DisplayModel(this.renderfunc);
+        val res = new DisplayModel(this.renderfunc)
         res.pos = this.pos.clone
         res.rot = this.rot.clone
         res.scale = this.scale.clone
         res
     }
     
-    override def render {
+    override def render() {
         GL11.glPushMatrix;
         
         if(displayList == -1)
@@ -130,6 +135,18 @@ class DisplayModel(var displayList:Int) extends BasicModel with Vector {
         GL11.glPopMatrix;
     }
     
+}
+
+//ask me about this class... I dare you:P
+class GeneratorModel(var generator:()=>Object, var draw:Object=>Unit) extends DisplayModel {
+    var data:Object = generator();
+    renderfunc = ()=>{draw(data);()};
+    compile();
+    
+    def regenerate() = {
+        data = generator();
+        compile();
+    }
 }
 
 class QuadPatch(points:Array[Vec3], width:Int) extends BasicModel with Points {
@@ -174,19 +191,6 @@ class QuadPatch(points:Array[Vec3], width:Int) extends BasicModel with Points {
     }
 
     // @make a method to merge/expand quadpatches (for infinite terrain)   
-}
-
-// first iter: cylnders for trees
-class GenModel extends BasicModel {
-
-    /*def this() {
-        this()
-        //Displaymodel,transform,displaymodel,... pop matrix
-        
-    }*/
-    
-    override def render {
-    }
 }
 
 class Camera extends BasicModel {
