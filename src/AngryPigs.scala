@@ -15,30 +15,6 @@ import java.nio._
 // TODO:
 // search for @ <task>
 
-// stuff that is used in all the (wrong) places, but not deserving of their own files :P
-// ... it's made of fail and state
-object Global {
-    class SettingMap[A] extends HashMap[A,Any] {
-        def getBool(key:A):Boolean = getOrElse(key, true).asInstanceOf[Boolean];
-        
-        
-        // @settings loader, doh
-    }
-    var settings = new SettingMap[String];
-    settings += "fattrees" -> true;
-
-    val rand = new Random;
-    
-    object gluQuadrics {
-        val sphere = new Sphere;
-        val cylinder = new Cylinder;
-        val disk = new Disk;
-        val partialdisk = new PartialDisk;
-    }    
-
-    val genTree = new ClojureWrap("AngryPigs", "gen-tree");
-}
-
 object Game {
     import Global._
     import org.lwjgl.opengl.GL11._
@@ -139,6 +115,18 @@ object Game {
                 tenSecondTimer = now;
                 // print fps
                 println("FPS: "+frameCounter/10);
+
+                if((frameCounter/10) < 30 && settings.getFloat("graphics") > 1f) {
+                    settings += "graphics" -> (settings.getFloat("graphics")-1f);
+                    println("decreased graphic detail");
+                    compiledmodels.map(_.compile);
+                }
+                if((frameCounter/10) > 50 && settings.getFloat("graphics") < 10f) {
+                    settings += "graphics" -> (settings.getFloat("graphics")+1f);
+                    println("inreased graphic detail");
+                    compiledmodels.map(_.compile);
+                }
+
                 frameCounter = 0;
             }
 
@@ -156,6 +144,8 @@ object Game {
     var trees = new ListBuffer[GeneratorModel];
     var pigcatapultLink:ModelLink=null;
     var campigLink:ModelLink=null;
+    var compiledmodels = new ListBuffer[DisplayModel];
+    
     //size of world
     val worldSize = 400;
     val gravity = new Vec3(0f,-0.5f,0f);
@@ -265,7 +255,7 @@ object Game {
             glPushMatrix;
             {
                 glScalef(0.95f,1,1.05f);
-                gluQuadrics.sphere.draw(2,22,22);
+                gluQuadrics.sphere.draw(2,(settings.getFloat("graphics")*15f).toInt,(settings.getFloat("graphics")*15f).toInt);
             }
             glPopMatrix
             //ears
@@ -275,9 +265,9 @@ object Game {
                 val x = 0.9f;
                 glRotatef(180,0,1,0)
                 glTranslatef(x,1.7f,-0.7f);
-                gluQuadrics.disk.draw(0,0.35f, 15,1);
+                gluQuadrics.disk.draw(0,0.35f, (settings.getFloat("graphics")*8f).toInt,1);
                 glTranslatef(-2*x,0,0);
-                gluQuadrics.disk.draw(0,0.35f, 15,1);
+                gluQuadrics.disk.draw(0,0.35f, (settings.getFloat("graphics")*8f).toInt,1);
             }
             glPopMatrix
             //nose            
@@ -288,9 +278,9 @@ object Game {
                 //glRotatef(90, 0,1,0)
                 glTranslatef(0,0.4f,1.4f);
                 val size=0.7f
-                gluQuadrics.cylinder.draw(size,size, 1, 20,1);
+                gluQuadrics.cylinder.draw(size,size, 1, (settings.getFloat("graphics")*10f).toInt,1);
                 glTranslatef(0,0,1);
-                gluQuadrics.disk.draw(0,size, 20,1);
+                gluQuadrics.disk.draw(0,size, (settings.getFloat("graphics")*10f).toInt,1);
             }
             //moustache
             //@make swizec make a moustache generator :P
@@ -299,10 +289,10 @@ object Game {
                 glColor3f(0.7f,0.2f,0f);
                 if(rand.nextFloat > 0.2) {
                     glTranslatef(0,-0.7f,-0.2f)
-                    gluQuadrics.disk.draw(0,0.5f, 20,1);
+                    gluQuadrics.disk.draw(0,0.5f, (settings.getFloat("graphics")*10f).toInt,1);
                 } else {
                     glTranslatef(0,-0.8f,-0.3f)
-                    gluQuadrics.partialdisk.draw(0,0.5f, 20,1, 270, 180);
+                    gluQuadrics.partialdisk.draw(0,0.5f, (settings.getFloat("graphics")*10f).toInt,1, 270, 180);
                 }
             }
             glPopMatrix
@@ -315,14 +305,14 @@ object Game {
                 def drawEye = {
                     glPushMatrix;
                     glColor3f(0.8f,0.8f,0.8f);
-                    gluQuadrics.sphere.draw(0.5f,10,10);
+                    gluQuadrics.sphere.draw(0.5f,(settings.getFloat("graphics")*8f).toInt,(settings.getFloat("graphics")*8f).toInt);
                     val z = 0.35f;
                     glTranslatef(0,0,z);
                     glColor3f(0.1f,0.1f,0.1f);
-                    gluQuadrics.sphere.draw(0.25f,10,10);
+                    gluQuadrics.sphere.draw(0.25f,(settings.getFloat("graphics")*8f).toInt,(settings.getFloat("graphics")*8f).toInt);
                     if(glasses) {
                         glTranslatef(0,0,0.1f);
-                        gluQuadrics.disk.draw(0.67f,0.77f, 20,20);
+                        gluQuadrics.disk.draw(0.67f,0.77f, (settings.getFloat("graphics")*8f).toInt,(settings.getFloat("graphics")*8f).toInt);
                     }
                     glPopMatrix
                 }
@@ -383,7 +373,7 @@ object Game {
 
             def drawWheel = {
                 glRotatef(90, 0,1,0)
-                gluQuadrics.cylinder.draw(1f,1f, scale.x*2+2, 25,1);
+                gluQuadrics.cylinder.draw(1f,1f, scale.x*2+2, (settings.getFloat("graphics")*10f).toInt,1);
                 gluQuadrics.disk.draw(0,1,20,1);
                 glTranslatef(0,0,scale.x*2+2);
                 gluQuadrics.disk.draw(0,1,20,1);
@@ -422,7 +412,7 @@ object Game {
                     val vector = a.toList.map(_.toString.toFloat).toArray;
                     val vec = if(v == null) Array[Float](0,0,0,1) else v
                     
-                    if(settings.getBool("fattrees")) {
+                    if(settings.getBoolean("fattrees")) {
                         val vecA = new Vec3(vec(0)*vec(3),
                                              vec(1)*vec(3),
                                              vec(2)*vec(3))
@@ -441,15 +431,15 @@ object Game {
                         glRotatef(angle,cross.x,cross.y,cross.z);
                         glColor3f(0.7f,0.2f,0f);
                         if(depth==1)
-                            gluQuadrics.cylinder.draw(0.3f/depth,0.4f/depth,  vector(1)*vector(3), 20,1);
+                            gluQuadrics.cylinder.draw(0.2f/depth,0.4f/depth,  vector(1)*vector(3), (settings.getFloat("graphics")*5f).toInt,1);
                         else
-                            gluQuadrics.cylinder.draw(0.3f/(depth-1),0.4f/(depth-1),  vector(3), 20,1);
+                            gluQuadrics.cylinder.draw(0.2f/(depth-1),0.4f/(depth-1),  vector(3), (settings.getFloat("graphics")*5f).toInt,1);
                             
                         if(rand.nextFloat < 0.075 * depth) {
                             glScalef(1,1.6f,1)
                             glTranslatef(0,-0.2f,0)
                             glColor3f(0.2f,0.8f,0.1f);
-                            gluQuadrics.disk.draw(0,0.175f, 9,1);
+                            gluQuadrics.disk.draw(0,0.175f, (settings.getFloat("graphics")*5f).toInt,1);
                         }
                         glPopMatrix
                     } else {
@@ -506,6 +496,14 @@ object Game {
             trees += t
         }
         //*/
+        compiledmodels = compiledmodels ++ List(
+            //terrain,
+            //skybox,
+            //coordsys,
+            pig,
+            catapult        
+        );
+        compiledmodels = compiledmodels ++ trees;
     }
     
     //@ Y is this not in some LWJGL lib, if it's really needed?
@@ -628,9 +626,17 @@ object Game {
             treeView = !treeView
             timeLock.lockIt(500);
         }
-        if(isKeyDown(KEY_1)) { settings += "fattrees" -> false; trees(0).compile() }
-        if(isKeyDown(KEY_2)) { settings += "fattrees" -> true; trees(0).compile() }
-        if(isKeyDown(KEY_3)) { trees(0).regenerate() }
+        if(isKeyDown(KEY_1)) { settings += "fattrees" -> false; trees.toList.map(_.compile()) }
+        if(isKeyDown(KEY_2)) { settings += "fattrees" -> true; trees.toList.map(_.compile()) }
+        if(isKeyDown(KEY_3)) { trees.toList.map(_.regenerate()) }
+        if(isKeyDown(KEY_5)) { 
+            settings += "graphics" -> (settings.getFloat("graphics")+1f);
+            compiledmodels.map(_.compile()) 
+        }
+        if(isKeyDown(KEY_6) && settings.getFloat("graphics") > 1) { 
+            settings += "graphics" -> (settings.getFloat("graphics")-1f);
+            compiledmodels.map(_.compile()) 
+        }
         if(isKeyDown(KEY_9) && !timeLock.isLocked) { pig.compile; timeLock.lockIt(300); }
         
         val keymove = 0.7f*renderTime;
