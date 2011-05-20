@@ -139,7 +139,6 @@ class DisplayModel(var renderfunc:()=>Unit) extends BasicModel with Vector {
 class GeneratorModel(var generator:()=>Object, draw:Object=>Unit) extends DisplayModel {
     var data:Object = generator();
     renderfunc = ()=>{draw(data);()}
-    compile();
     
     def regenerate() = {
         data = generator();

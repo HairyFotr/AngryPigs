@@ -139,7 +139,7 @@ object Game {
     var terrain:GeneratorModel=null;
     var skybox:DisplayModel=null;
     var coordsys:DisplayModel=null;
-    var pig:DisplayModel=null;
+    var pig:GeneratorModel=null;
     var catapult:DisplayModel=null;
     var trees = new ListBuffer[GeneratorModel];
     var pigcatapultLink:ModelLink=null;
@@ -183,6 +183,7 @@ object Game {
         terrain = new GeneratorModel(genTerrain, drawTerrain);
         terrain.setPosition(-worldSize,-worldSize,-worldSize);
         terrain.setScale(worldSize*2, 5, worldSize*2);
+        terrain.compile();
         
         // coordinate system
         coordsys = new DisplayModel(()=>{
@@ -249,7 +250,16 @@ object Game {
         skybox.setScale(worldSize,worldSize,worldSize);//*/
 
         // pig
-        pig = new DisplayModel(()=>{
+        
+        def genPig:()=>Object = ()=>{
+            var pigData = new SettingMap[String];
+            pigData += "Moustache.has" -> (rand.nextFloat > 0.2)
+            pigData += "Moustache.no" -> (rand.nextInt(2))
+            pigData += "Glasses.has" -> (rand.nextFloat > 0.2)
+        }
+        
+        def drawPig(data:Object):Unit = {
+            var pigData = data.asInstanceOf[SettingMap[String]];
             //body
             glColor3f(0.3f,0.8f,0.3f);
             glPushMatrix;
@@ -284,15 +294,19 @@ object Game {
             }
             //moustache
             //@make swizec make a moustache generator :P
-            if(rand.nextFloat > 0.2) {
+            if(pigData.get[Boolean]("Moustache.has")) {
                 glScalef(2,1,1);
                 glColor3f(0.7f,0.2f,0f);
-                if(rand.nextFloat > 0.2) {
-                    glTranslatef(0,-0.7f,-0.2f)
-                    gluQuadrics.disk.draw(0,0.5f, (settings.getFloat("graphics")*10f).toInt,1);
-                } else {
-                    glTranslatef(0,-0.8f,-0.3f)
-                    gluQuadrics.partialdisk.draw(0,0.5f, (settings.getFloat("graphics")*10f).toInt,1, 270, 180);
+                pigData.get[Int]("Moustache.no") match {
+                    case 0 =>                
+                        glTranslatef(0,-0.7f,-0.2f)
+                        gluQuadrics.disk.draw(0,0.5f, (settings.getFloat("graphics")*10f).toInt,1);
+                    case 1 =>
+                        glTranslatef(0,-0.8f,-0.3f)
+                        gluQuadrics.partialdisk.draw(0,0.5f, (settings.getFloat("graphics")*10f).toInt,1, 270, 180);
+                    case _ =>
+                        glTranslatef(0,-0.8f,-0.3f)
+                        gluQuadrics.partialdisk.draw(0,0.5f, (settings.getFloat("graphics")*10f).toInt,1, 270, 180);
                 }
             }
             glPopMatrix
@@ -300,8 +314,6 @@ object Game {
             glPushMatrix;
             {
                 val x = 1.2f;
-                val glasses = if(rand.nextFloat > 0.5) true else false
-
                 def drawEye = {
                     glPushMatrix;
                     glColor3f(0.8f,0.8f,0.8f);
@@ -310,7 +322,7 @@ object Game {
                     glTranslatef(0,0,z);
                     glColor3f(0.1f,0.1f,0.1f);
                     gluQuadrics.sphere.draw(0.25f,(settings.getFloat("graphics")*8f).toInt,(settings.getFloat("graphics")*8f).toInt);
-                    if(glasses) {
+                    if(pigData.get[Boolean]("Glasses.has")) {
                         glTranslatef(0,0,0.1f);
                         gluQuadrics.disk.draw(0.67f,0.77f, (settings.getFloat("graphics")*8f).toInt,(settings.getFloat("graphics")*8f).toInt);
                     }
@@ -322,7 +334,9 @@ object Game {
                 drawEye;
             }
             glPopMatrix
-        });
+        }        
+        
+        pig = new GeneratorModel(genPig, drawPig);
         pig.setPosition(0,-worldSize+7f,-worldSize/2+25);
         pig.compile();
 
@@ -477,14 +491,17 @@ object Game {
         
         var tree = new GeneratorModel(giveMeTree, renderTree);
         tree.setPosition(0,-worldSize+2.5f,-worldSize/2+30);
+        tree.compile();
         trees += tree
         
         tree = new GeneratorModel(giveMeTree, renderTree);
         tree.setPosition(17,-worldSize+2.5f,-worldSize/2+30);
+        tree.compile();
         trees += tree
 
         tree = new GeneratorModel(giveMeTree, renderTree);
         tree.setPosition(-17,-worldSize+2.5f,-worldSize/2+30);
+        tree.compile();
         trees += tree
         /*
         val (dx,dz) = (17, 11);
@@ -637,7 +654,8 @@ object Game {
             settings += "graphics" -> (settings.getFloat("graphics")-1f);
             compiledmodels.map(_.compile()) 
         }
-        if(isKeyDown(KEY_9) && !timeLock.isLocked) { pig.compile; timeLock.lockIt(300); }
+        if(isKeyDown(KEY_8) && !timeLock.isLocked) { pig.regenerate(); timeLock.lockIt(200); }
+        if(isKeyDown(KEY_9) && !timeLock.isLocked) { pig.compile(); timeLock.lockIt(200); }
         
         val keymove = 0.7f*renderTime;
         
