@@ -90,7 +90,7 @@ else
         #fast scala compile (loads compile deamon)
         #@detect if it says Deamon not loaded and retry, or fallback to scala
         #@also this will be a part of compiler spec later
-        compileErr=$( { fsc -deprecation -cp "`$pathprocess ../lib/clojure.jar:../class/AngryPigs:../class:.`" -d ../class -extdirs ../lib/lwjgl-2.7.1/jar/ $files ; } 2>&1 )
+        compileErr=$( { fsc -cp "`$pathprocess ../lib/clojure.jar`" -d ../class -extdirs ../lib/lwjgl-2.7.1/jar/ $files ; } 2>&1 )
         builderror=$?
         if [ "$compileErr" != "" ]; then
             echo "$compileErr"
@@ -118,5 +118,5 @@ echo "Done("$builderror") in ${elapsedtime}s."
 #run it
 if [ "$builderror" == "0" -a "$Run" != "" ]; then
     cd ..
-    scala -cp "`$pathprocess .:src/:src/AngryPigs:class/AngryPigs:lib/lwjgl-2.7.1/jar/lwjgl.jar:lib/lwjgl-2.7.1/jar/lwjgl_util.jar:class:lib/clojure.jar`" -Djava.library.path="`$pathprocess lib/lwjgl-2.7.1/native/macosx/:lib/lwjgl-2.7.1/native/linux/:lib/lwjgl-2.7.1/native/windows/`" AngryPigs.Game
+    scala -cp "`$pathprocess src/AngryPigs:class:class/AngryPigs:lib/lwjgl-2.7.1/jar/lwjgl.jar:lib/lwjgl-2.7.1/jar/lwjgl_util.jar:lib/clojure.jar`" -Djava.library.path="`$pathprocess lib/lwjgl-2.7.1/native/linux/:lib/lwjgl-2.7.1/native/macosx/:lib/lwjgl-2.7.1/native/windows/`" AngryPigs.Game
 fi

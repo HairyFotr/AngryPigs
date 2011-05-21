@@ -1,15 +1,19 @@
 package AngryPigs
 
-import clojure.lang._
-import clojure.core._
+import clojure.lang.{RT,Var}
+//import clojure.core._
 
-class ClojureWrap(ns:String,obj:String) {
-    RT.loadResourceScript(obj+".clj");  
+class ClojureWrap(ns:String,objName:String) {
+    RT.loadResourceScript(objName+".clj")
+    val obj = ns+"."+objName
+    var funcs = new scala.collection.mutable.HashMap[String,Var]
     
-    //@morda bi se dal s parcialno funkcijo obj/"func"(args) in bi invoke prevzel vse (args)
-    def /(func:String, a:Any) = (RT.`var`(ns+"."+obj, func).invoke(a.asInstanceOf[Object]))
-    def /(func:String, a:Any, b:Any) = (RT.`var`(ns+"."+obj, func).invoke(a.asInstanceOf[Object], b.asInstanceOf[Object]))
-    def /(func:String, a:Any, b:Any, c:Any) = (RT.`var`(ns+"."+obj, func).invoke(a.asInstanceOf[Object], b.asInstanceOf[Object], c.asInstanceOf[Object]))
-    def /(func:String, a:Any, b:Any, c:Any, d:Any) = (RT.`var`(ns+"."+obj, func).invoke(a.asInstanceOf[Object], b.asInstanceOf[Object], c.asInstanceOf[Object], d.asInstanceOf[Object]))
+    def /(func:String, a:Any) =
+        funcs.getOrElseUpdate(func, RT.`var`(obj, func)).invoke(a.asInstanceOf[Object])
+    def /(func:String, a:Any, b:Any) =
+        funcs.getOrElseUpdate(func, RT.`var`(obj, func)).invoke(a.asInstanceOf[Object], b.asInstanceOf[Object])
+    def /(func:String, a:Any, b:Any, c:Any) =
+        funcs.getOrElseUpdate(func, RT.`var`(obj, func)).invoke(a.asInstanceOf[Object], b.asInstanceOf[Object], c.asInstanceOf[Object])
+    def /(func:String, a:Any, b:Any, c:Any, d:Any) =
+        funcs.getOrElseUpdate(func, RT.`var`(obj, func)).invoke(a.asInstanceOf[Object], b.asInstanceOf[Object], c.asInstanceOf[Object], d.asInstanceOf[Object])
 }
-

@@ -1,11 +1,7 @@
 package AngryPigs
 
-import org.lwjgl._
-import org.lwjgl.opengl._
-import org.lwjgl.util.glu._
-import scala.util._
-import scala.collection.mutable._
-import java.util.{List => JavaList}
+import org.lwjgl.opengl.GL11
+import org.lwjgl.util.glu.GLU
 
 class Vec3(var x:Float, var y:Float, var z:Float) {
     def this() = this(0f,0f,0f);
@@ -143,6 +139,15 @@ class GeneratorModel(var generator:()=>Object, draw:Object=>Unit) extends Displa
     def regenerate() = {
         data = generator();
         compile();
+    }
+
+    // make a data constructor, so clone has same data. (eliminate generator in static constructor)
+    override def clone:GeneratorModel = {
+        val res = new GeneratorModel(generator, draw)
+        res.pos = this.pos.clone
+        res.rot = this.rot.clone
+        res.scale = this.scale.clone
+        res
     }
 }
 

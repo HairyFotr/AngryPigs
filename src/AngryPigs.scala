@@ -1,15 +1,9 @@
 package AngryPigs
 
-import org.lwjgl._
-import org.lwjgl.opengl._
-import org.lwjgl.input._
-import org.lwjgl.util.glu._
-import org.lwjgl.util.vector._
-import scala.util.Random
-import scala.collection.mutable._
+import org.lwjgl.opengl.{Display,PixelFormat,DisplayMode,Util}
+import org.lwjgl.input.Keyboard
+import scala.collection.mutable.ListBuffer
 import java.util.{List => JavaList}
-import clojure.lang._
-import clojure.core._
 import java.nio._
 
 // TODO:
@@ -109,20 +103,20 @@ object Game {
             //gl error
             val errCode = glGetError;
             if (errCode != GL_NO_ERROR) 
-                println(opengl.Util.translateGLErrorString(errCode));
+                println(Util.translateGLErrorString(errCode));
 
             if(now-tenSecondTimer > E10) {
                 tenSecondTimer = now;
                 // print fps
                 println("FPS: "+frameCounter/10);
 
-                if((frameCounter/10) < 30 && settings.getFloat("graphics") > 1f) {
-                    settings += "graphics" -> (settings.getFloat("graphics")-1f);
+                if((frameCounter/10) < 30 && settings.get[Float]("graphics") > 1f) {
+                    settings += "graphics" -> (settings.get[Float]("graphics")-1f);
                     println("decreased graphic detail");
                     compiledmodels.map(_.compile);
                 }
-                if((frameCounter/10) > 50 && settings.getFloat("graphics") < 10f) {
-                    settings += "graphics" -> (settings.getFloat("graphics")+1f);
+                if((frameCounter/10) > 50 && settings.get[Float]("graphics") < 10f) {
+                    settings += "graphics" -> (settings.get[Float]("graphics")+1f);
                     println("inreased graphic detail");
                     compiledmodels.map(_.compile);
                 }
@@ -164,19 +158,19 @@ object Game {
         }
         def drawTerrain = (data:Object)=>{
             val points = data.asInstanceOf[Array[Vec3]];
-            GL11.glBegin(GL11.GL_QUADS);
+            glBegin(GL_QUADS);
             // Draw in clockwise - (00,10,11,01); must skip last point of line
             val width = math.sqrt(points.length).toInt;
             for(i <- 0 until points.length-width-1; if((i+1)%width != 0))
                 List(points(i), points(i+1), points(i+width+1), points(i+width)).map(
                     (p:Vec3) => {
-                        //GL11.glColor3f(p.y/3, p.y*5, p.y/3);
-                        GL11.glColor3f(0.2f, 0.7f+p.y/2, 0.2f);
-                        GL11.glNormal3f(p.y, p.y, p.y);
-                        GL11.glVertex3f(p.x, p.y, p.z);
+                        //glColor3f(p.y/3, p.y*5, p.y/3);
+                        glColor3f(0.2f, 0.7f+p.y/2, 0.2f);
+                        glNormal3f(p.y, p.y, p.y);
+                        glVertex3f(p.x, p.y, p.z);
                     }
                 )
-            GL11.glEnd;//*/
+            glEnd;//*/
             ();
         }
         
@@ -260,12 +254,13 @@ object Game {
         
         def drawPig(data:Object):Unit = {
             var pigData = data.asInstanceOf[SettingMap[String]];
+            val graphics = settings.get[Float]("graphics");
             //body
             glColor3f(0.3f,0.8f,0.3f);
             glPushMatrix;
             {
                 glScalef(0.95f,1,1.05f);
-                gluQuadrics.sphere.draw(2,(settings.getFloat("graphics")*15f).toInt,(settings.getFloat("graphics")*15f).toInt);
+                gluQuadrics.sphere.draw(2,(graphics*16f).toInt,(graphics*16f).toInt);
             }
             glPopMatrix
             //ears
@@ -275,9 +270,9 @@ object Game {
                 val x = 0.9f;
                 glRotatef(180,0,1,0)
                 glTranslatef(x,1.7f,-0.7f);
-                gluQuadrics.disk.draw(0,0.35f, (settings.getFloat("graphics")*8f).toInt,1);
+                gluQuadrics.disk.draw(0,0.35f, (graphics*8f).toInt,1);
                 glTranslatef(-2*x,0,0);
-                gluQuadrics.disk.draw(0,0.35f, (settings.getFloat("graphics")*8f).toInt,1);
+                gluQuadrics.disk.draw(0,0.35f, (graphics*8f).toInt,1);
             }
             glPopMatrix
             //nose            
@@ -288,25 +283,24 @@ object Game {
                 //glRotatef(90, 0,1,0)
                 glTranslatef(0,0.4f,1.4f);
                 val size=0.7f
-                gluQuadrics.cylinder.draw(size,size, 1, (settings.getFloat("graphics")*10f).toInt,1);
+                gluQuadrics.cylinder.draw(size,size, 1, (graphics*12f).toInt,1);
                 glTranslatef(0,0,1);
-                gluQuadrics.disk.draw(0,size, (settings.getFloat("graphics")*10f).toInt,1);
+                gluQuadrics.disk.draw(0,size, (graphics*12f).toInt,1);
             }
             //moustache
-            //@make swizec make a moustache generator :P
             if(pigData.get[Boolean]("Moustache.has")) {
                 glScalef(2,1,1);
                 glColor3f(0.7f,0.2f,0f);
                 pigData.get[Int]("Moustache.no") match {
                     case 0 =>                
                         glTranslatef(0,-0.7f,-0.2f)
-                        gluQuadrics.disk.draw(0,0.5f, (settings.getFloat("graphics")*10f).toInt,1);
+                        gluQuadrics.disk.draw(0,0.5f, (graphics*9f).toInt,1);
                     case 1 =>
                         glTranslatef(0,-0.8f,-0.3f)
-                        gluQuadrics.partialdisk.draw(0,0.5f, (settings.getFloat("graphics")*10f).toInt,1, 270, 180);
+                        gluQuadrics.partialdisk.draw(0,0.5f, (graphics*9f).toInt,1, 270, 180);
                     case _ =>
                         glTranslatef(0,-0.8f,-0.3f)
-                        gluQuadrics.partialdisk.draw(0,0.5f, (settings.getFloat("graphics")*10f).toInt,1, 270, 180);
+                        gluQuadrics.partialdisk.draw(0,0.5f, (graphics*9f).toInt,1, 270, 180);
                 }
             }
             glPopMatrix
@@ -317,14 +311,14 @@ object Game {
                 def drawEye = {
                     glPushMatrix;
                     glColor3f(0.8f,0.8f,0.8f);
-                    gluQuadrics.sphere.draw(0.5f,(settings.getFloat("graphics")*8f).toInt,(settings.getFloat("graphics")*8f).toInt);
+                    gluQuadrics.sphere.draw(0.5f,(graphics*8f).toInt,(graphics*8f).toInt);
                     val z = 0.35f;
                     glTranslatef(0,0,z);
                     glColor3f(0.1f,0.1f,0.1f);
-                    gluQuadrics.sphere.draw(0.25f,(settings.getFloat("graphics")*8f).toInt,(settings.getFloat("graphics")*8f).toInt);
+                    gluQuadrics.sphere.draw(0.25f,(graphics*8f).toInt,(graphics*8f).toInt);
                     if(pigData.get[Boolean]("Glasses.has")) {
                         glTranslatef(0,0,0.1f);
-                        gluQuadrics.disk.draw(0.67f,0.77f, (settings.getFloat("graphics")*8f).toInt,(settings.getFloat("graphics")*8f).toInt);
+                        gluQuadrics.disk.draw(0.67f,0.77f, (graphics*10f).toInt,1);
                     }
                     glPopMatrix
                 }
@@ -387,7 +381,7 @@ object Game {
 
             def drawWheel = {
                 glRotatef(90, 0,1,0)
-                gluQuadrics.cylinder.draw(1f,1f, scale.x*2+2, (settings.getFloat("graphics")*10f).toInt,1);
+                gluQuadrics.cylinder.draw(1f,1f, scale.x*2+2, (settings.get[Float]("graphics")*10f).toInt,1);
                 gluQuadrics.disk.draw(0,1,20,1);
                 glTranslatef(0,0,scale.x*2+2);
                 gluQuadrics.disk.draw(0,1,20,1);
@@ -409,10 +403,10 @@ object Game {
         pigcatapultLink = new ModelLink(catapult, pig, new Vec3(0f,2.5f,0f));
         campigLink = new ModelLink(pig, cam, new Vec3(0f,7,-50), new Vec3(0,0,0));
         
-        def giveMeTree:()=>Object = ()=>genTree/("give-me-tree", 0f, 2f, 0f, 5f);
+        def giveMeTree:()=>Object = ()=>(genTree/("give-me-tree", 0f, 2f, 0f, 5f));
         
         def renderTree:Object=>Unit = (data:Object)=>{
-            import org.lwjgl.opengl.GL11._
+            import org.lwjgl.opengl._
             import Global._
             
             var depth=0;
@@ -426,7 +420,7 @@ object Game {
                     val vector = a.toList.map(_.toString.toFloat).toArray;
                     val vec = if(v == null) Array[Float](0,0,0,1) else v
                     
-                    if(settings.getBoolean("fattrees")) {
+                    if(settings.get[Boolean]("fattrees")) {
                         val vecA = new Vec3(vec(0)*vec(3),
                                              vec(1)*vec(3),
                                              vec(2)*vec(3))
@@ -445,15 +439,15 @@ object Game {
                         glRotatef(angle,cross.x,cross.y,cross.z);
                         glColor3f(0.7f,0.2f,0f);
                         if(depth==1)
-                            gluQuadrics.cylinder.draw(0.2f/depth,0.4f/depth,  vector(1)*vector(3), (settings.getFloat("graphics")*5f).toInt,1);
+                            gluQuadrics.cylinder.draw(0.2f/depth,0.4f/depth,  vector(1)*vector(3), (settings.get[Float]("graphics")*4f).toInt,1);
                         else
-                            gluQuadrics.cylinder.draw(0.2f/(depth-1),0.4f/(depth-1),  vector(3), (settings.getFloat("graphics")*5f).toInt,1);
+                            gluQuadrics.cylinder.draw(0.2f/(depth-1),0.4f/(depth-1),  vector(3), (settings.get[Float]("graphics")*4f).toInt,1);
                             
                         if(rand.nextFloat < 0.075 * depth) {
                             glScalef(1,1.6f,1)
                             glTranslatef(0,-0.2f,0)
                             glColor3f(0.2f,0.8f,0.1f);
-                            gluQuadrics.disk.draw(0,0.175f, (settings.getFloat("graphics")*5f).toInt,1);
+                            gluQuadrics.disk.draw(0,0.175f, (settings.get[Float]("graphics")*4f).toInt,1);
                         }
                         glPopMatrix
                     } else {
@@ -647,11 +641,11 @@ object Game {
         if(isKeyDown(KEY_2)) { settings += "fattrees" -> true; trees.toList.map(_.compile()) }
         if(isKeyDown(KEY_3)) { trees.toList.map(_.regenerate()) }
         if(isKeyDown(KEY_5)) { 
-            settings += "graphics" -> (settings.getFloat("graphics")+1f);
+            settings += "graphics" -> (settings.get[Float]("graphics")+1f);
             compiledmodels.map(_.compile()) 
         }
-        if(isKeyDown(KEY_6) && settings.getFloat("graphics") > 1) { 
-            settings += "graphics" -> (settings.getFloat("graphics")-1f);
+        if(isKeyDown(KEY_6) && settings.get[Float]("graphics") > 1) { 
+            settings += "graphics" -> (settings.get[Float]("graphics")-1f);
             compiledmodels.map(_.compile()) 
         }
         if(isKeyDown(KEY_8) && !timeLock.isLocked) { pig.regenerate(); timeLock.lockIt(200); }
