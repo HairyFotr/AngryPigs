@@ -25,7 +25,11 @@ object Global {
 // some small classes
 
 class SettingMap[A] extends scala.collection.mutable.HashMap[A,Any] {
-    def get[B](key:A):B = getOrElse(key, null).asInstanceOf[B];
+    private var defaultMap = new scala.collection.mutable.HashMap[String, Any]
+    def setDefault[B](v:B)(implicit m:Manifest[B]) = defaultMap += m.toString -> v
+    def getDefault[B](implicit m:Manifest[B]):B = defaultMap.getOrElse(m.toString, null).asInstanceOf[B];
+    
+    def get[B:Manifest](key:A):B = getOrElse(key, getDefault[B]).asInstanceOf[B];
 }
 
 class TimeLock {
