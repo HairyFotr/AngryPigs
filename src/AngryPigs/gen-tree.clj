@@ -54,6 +54,13 @@
                                          (replicate 7 14))))
                 (rand-nth (list -1 1 -1 1 -1 1)))))
 
+(defn random-length [baselen depth]
+  (* baselen (nth lengths (rand-nth (flatten (list (replicate 0 8)
+						   (replicate 1 4)
+						   (replicate 2 3)
+						   (replicate 3 2)
+						   (replicate 4 8)))))))
+
 (defn give-me-tree
   ([a b c d] (give-me-tree (make-node [a b c] d)
                            d
@@ -61,35 +68,35 @@
   ([node baselen depth]
      (if (> depth max-depth) node
 
-         (let [d (* baselen (nth lengths depth))]
-           (let [first-branch (perpendicular-vector (butlast node))]
+	 (let [first-branch (perpendicular-vector (butlast node))]
 
-             (defn make-branches []
-               (let [angle (/ (* 2 Math/PI) (nth primes depth))]
-                 (loop [branches []
-                        n (dec (nth primes depth))]
-                   (if (<= n 0) (cons first-branch branches)
-                       (recur (cons (normalize (rotate first-branch
-                                                       (normalize (butlast node))
-                                                       (+ (angle-noise) (* angle n))))
-                                    branches)
-                              (dec n))))))
+	   (defn make-branches []
+	     (let [angle (/ (* 2 Math/PI) (nth primes depth))]
+	       (loop [branches []
+		      n (dec (nth primes depth))]
+		 (if (<= n 0) (cons first-branch branches)
+		     (recur (cons (normalize (rotate first-branch
+						     (normalize (butlast node))
+						     (+ (angle-noise) (* angle n))))
+				  branches)
+			    (dec n))))))
 
-             (defn curve-up [branches]
-	       (map #(normalize (rotate %1
-					(cross-product %1
-						       (normalize (butlast node)))
-					(random-up-angle depth)))
-				branches))
-
+	   (defn curve-up [branches]
+	     (map #(normalize (rotate %1
+				      (cross-product %1
+						     (normalize (butlast node)))
+				      (random-up-angle depth)))
+		  branches))
 
 
-             (concat [node]
-                     [(map #(give-me-tree
-                             (make-node %1 d)
-                             baselen
-                             (inc depth))
-                           (curve-up (make-branches)))]))))))
+
+	   (concat [node]
+		   [(map #(give-me-tree
+			   (make-node %1
+				      (random-length baselen depth))
+			   baselen
+			   (inc depth))
+			 (curve-up (make-branches)))])))))
 
 ;(println (give-me-tree 0 2 0 5))
 
