@@ -55,11 +55,15 @@
                 (rand-nth (list -1 1 -1 1 -1 1)))))
 
 (defn random-length [baselen depth]
-  (* baselen (nth lengths (rand-nth (flatten (list (replicate 0 8)
-						   (replicate 1 4)
-						   (replicate 2 3)
-						   (replicate 3 2)
-						   (replicate 4 8)))))))
+  (* baselen
+     (nth lengths
+          (rand-nth
+           (flatten (map #(replicate (- (count lengths)
+                                        (Math/abs (- %1 depth))) %1)
+                         (take (count lengths)
+                               (iterate inc 0))))))))
+
+;(println (random-length 5 0))
 
 (defn give-me-tree
   ([a b c d] (give-me-tree (make-node [a b c] d)
