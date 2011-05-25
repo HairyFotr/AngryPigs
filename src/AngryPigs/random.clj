@@ -12,4 +12,7 @@
      (nth lengths
           (rand-nth (weighed depth)))))
 
-(println (weighed 0))
+(loop [i 0]
+  (println (weighed i))
+  (if (< i 8)
+    (recur (inc i))))
