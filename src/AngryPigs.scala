@@ -101,31 +101,31 @@ object Game {
             frameCounter += 1;
 
             //gl error
-            val errCode = glGetError;
-            if (errCode != GL_NO_ERROR) 
-                println(Util.translateGLErrorString(errCode));
+            //val errCode = glGetError;
+            //if (errCode != GL_NO_ERROR) 
+            //    println(Util.translateGLErrorString(errCode));
 
             if(now-tenSecondTimer > E10) {
-                tenSecondTimer = now;
                 // print fps
                 println("FPS: "+frameCounter/10);
 
-                if((frameCounter/10) < 30 && settings.get[Float]("graphics") > 1f) {
+                if((frameCounter/10) < 20 && settings.get[Float]("graphics") > 1f) {
                     settings += "graphics" -> (settings.get[Float]("graphics")-1f);
                     println("decreased graphic detail");
-                    compiledmodels.map(_.compile);
+                    models.map(_.compile);
                 }
                 if((frameCounter/10) > 50 && settings.get[Float]("graphics") < 10f) {
                     settings += "graphics" -> (settings.get[Float]("graphics")+1f);
                     println("inreased graphic detail");
-                    compiledmodels.map(_.compile);
+                    models.map(_.compile);
                 }
 
                 frameCounter = 0;
+                tenSecondTimer = now;
             }
 
             renderTime = (now-frameTime)/frameIndepRatio;
-            frameTime = now; 
+            frameTime = now;
         }
     }
     
@@ -138,7 +138,8 @@ object Game {
     var trees = new ListBuffer[GeneratorModel];
     var pigcatapultLink:ModelLink=null;
     var campigLink:ModelLink=null;
-    var compiledmodels = new ListBuffer[DisplayModel];
+    var models = new ListBuffer[DisplayModel];
+    var generatedModels = new ListBuffer[GeneratorModel];
     
     //size of world
     val worldSize = 400;
@@ -404,22 +405,12 @@ object Game {
         campigLink = new ModelLink(pig, cam, new Vec3(0f,7,-50), new Vec3(0,0,0));
         
         def giveMeTree:()=>Object = ()=>(genTree/("give-me-tree", 0f, 2f, 0f, 5f));
-        
         def renderTree:Object=>Unit = (data:Object)=>{
             import org.lwjgl.opengl._
             import Global._
             
-            var depth=0;
-            //this ugly makes below code a little less ugly
-            //@checkout: import scala.collection.JavaConversions._
-            def isJavaList(a:Object):Boolean = a.isInstanceOf[JavaList[Object]]
-            def asArray(a:Object):Array[Object] = a.asInstanceOf[JavaList[Object]].toArray;
-
-            def drawTree(v:Array[Float], a:Array[Object]):Array[Float] = {
-                if(a.length==4 && !isJavaList(a(0))) {
-                    val vector = a.toList.map(_.toString.toFloat).toArray;
-                    val vec = if(v == null) Array[Float](0,0,0,1) else v
-                    
+            traverseTree(data, 
+                (vector:Array[Float], vec:Array[Float], depth:Int) => {
                     if(settings.get[Boolean]("fattrees")) {
                         val vecA = new Vec3(vec(0)*vec(3),
                                              vec(1)*vec(3),
@@ -438,11 +429,12 @@ object Game {
                         glTranslatef(vecB.x,vecB.y,vecB.z);
                         glRotatef(angle,cross.x,cross.y,cross.z);
                         glColor3f(0.7f,0.2f,0f);
+
                         if(depth==1)
                             gluQuadrics.cylinder.draw(0.2f/depth,0.4f/depth,  vector(1)*vector(3), (settings.get[Float]("graphics")*4f).toInt,1);
                         else
                             gluQuadrics.cylinder.draw(0.2f/(depth-1),0.4f/(depth-1),  vector(3), (settings.get[Float]("graphics")*4f).toInt,1);
-                            
+
                         if(rand.nextFloat < 0.075 * depth) {
                             glScalef(1,1.6f,1)
                             glTranslatef(0,-0.2f,0)
@@ -455,32 +447,17 @@ object Game {
                         glBegin(GL_LINES)
                         glVertex3f(vec(0)*vec(3),
                                    vec(1)*vec(3),
-                                   vec(2)*vec(3));
-                        
+                                   vec(2)*vec(3));                        
+
                         glVertex3f(vec(0)*vec(3) + vector(0)*vector(3),
                                    vec(1)*vec(3) + vector(1)*vector(3),
                                    vec(2)*vec(3) + vector(2)*vector(3))
                         glEnd
                     }
 
-                    //vector.toList.foreach(println)
-                    //println(depth)
-                         
-                    return (for(i <- 0 to 3) yield if(i==3) 1f else vec(i)*vec(3) + vector(i)*vector(3)).toArray;
-                } else {
-                    depth += 1;
-                    if(a.length==1 || !isJavaList(asArray(a(1)).apply(0)))
-                        for(i <- 0 until a.length) drawTree(v, asArray(a(i)))
-                    else 
-                        for(i <- 1 until a.length) drawTree(drawTree(v, asArray(a(0))), asArray(a(i)))
-                    depth -= 1;
-
-                    // gotta return something...
-                    return v;
+                    ((for(i <- 0 to 3) yield if(i==3) 1f else vec(i)*vec(3) + vector(i)*vector(3)).toArray[Float]);
                 }
-            }
-            drawTree(null, asArray(data));
-            ();
+            )
         }
         
         var tree = new GeneratorModel(giveMeTree, renderTree);
@@ -497,24 +474,9 @@ object Game {
         tree.setPosition(-17,-worldSize+2.5f,-worldSize/2+30);
         tree.compile();
         trees += tree
-        /*
-        val (dx,dz) = (17, 11);
-        for(i <- 0 until 5) {
-            val t = tree.clone;
-            def pm = if(rand.nextFloat > 0.5) 1 else -1;
-            val vec = new Vec3(dx*pm*i, 0, dz*pm*i)
-            t.pos += vec
-            trees += t
-        }
-        //*/
-        compiledmodels = compiledmodels ++ List(
-            //terrain,
-            //skybox,
-            //coordsys,
-            pig,
-            catapult        
-        );
-        compiledmodels = compiledmodels ++ trees;
+
+        models = models ++ List(pig, catapult, terrain) ++ trees;
+        generatedModels = models.filter(_.isInstanceOf[GeneratorModel]).map(_.asInstanceOf[GeneratorModel]);
     }
     
     //@ Y is this not in some LWJGL lib, if it's really needed?
@@ -528,6 +490,8 @@ object Game {
     * Initial setup of projection of the scene onto screen, lights etc.
     */
     def setupView {
+        glClearColor(0.3f,0.6f,0.8f,1f);
+
         glEnable(GL_DEPTH_TEST); // enable depth buffer (off by default)
         //glEnable(GL_CULL_FACE);  // enable culling of back sides of polygons
         //glCullFace(GL_BACK);
@@ -561,7 +525,6 @@ object Game {
     */
     def resetView {
         // clear color and depth buffer
-        glClearColor(0.3f,0.6f,0.8f,1f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity;
@@ -578,16 +541,7 @@ object Game {
     /**
     * Renders current frame
     */
-    def renderFrame {       
-        val models = ListBuffer(
-            //cam,
-            //coordsys,
-            terrain,
-            //skybox,
-            pig,
-            catapult
-            //tree
-        )
+    def renderFrame {
         if(!pause) {
             // move pig or catapult
             moveObj.vector.z -= 0.05f*moveObj.vector.z*renderTime;
@@ -605,10 +559,8 @@ object Game {
             
             pigcatapultLink.applyLink;
             campigLink.applyLink;
-            //cam.pos.clamp(worldSize-5);
         }
                 
-        //set projection and reset modelview
         //look at this pig... look!
         cam.lookAt(moveObj)
         cam.render
@@ -619,48 +571,37 @@ object Game {
             model.render
             glPopMatrix;
         }
-        
-        for(tree <- trees) {
-            glPushMatrix;
-            tree.doTransforms
-            tree.render
-            glPopMatrix;
-        }
     }
     
     def processInput {
         import Keyboard._ // static imports.. fuckyeah
         
-        if(Display.isCloseRequested || isKeyDown(KEY_ESCAPE)) isRunning = false;
+        if(Display.isCloseRequested || isKeyDown(KEY_ESCAPE)) {
+            isRunning = false;
+            return;
+        }
                 
         if(isKeyDown(KEY_T) && !timeLock.isLocked) {
             treeView = !treeView
             timeLock.lockIt(500);
         }
-        if(isKeyDown(KEY_1)) { settings += "fattrees" -> false; trees.toList.map(_.compile()) }
-        if(isKeyDown(KEY_2)) { settings += "fattrees" -> true; trees.toList.map(_.compile()) }
-        if(isKeyDown(KEY_3)) { trees.toList.map(_.regenerate()) }
+        if(isKeyDown(KEY_1)) { settings += "fattrees" -> false; trees.toList.map(_.compile()) } else 
+        if(isKeyDown(KEY_2)) { settings += "fattrees" -> true; trees.toList.map(_.compile()) } else
+        if(isKeyDown(KEY_3)) { trees.toList.map(_.regenerate()) } else
         if(isKeyDown(KEY_5)) { 
             settings += "graphics" -> (settings.get[Float]("graphics")+1f);
-            compiledmodels.map(_.compile()) 
-        }
+            models.map(_.compile()) 
+        } else
         if(isKeyDown(KEY_6) && settings.get[Float]("graphics") > 1) { 
             settings += "graphics" -> (settings.get[Float]("graphics")-1f);
-            compiledmodels.map(_.compile()) 
-        }
-        if(isKeyDown(KEY_8) && !timeLock.isLocked) { pig.regenerate(); timeLock.lockIt(200); }
+            models.map(_.compile()) 
+        } else
+        if(isKeyDown(KEY_8) && !timeLock.isLocked) { pig.regenerate(); timeLock.lockIt(200); } else
         if(isKeyDown(KEY_9) && !timeLock.isLocked) { pig.compile(); timeLock.lockIt(200); }
         
         val keymove = 0.7f*renderTime;
         
         if(campigLink.isLinked) {
-            if(isKeyDown(KEY_Q)) campigLink.vector2.x+=keymove;
-            if(isKeyDown(KEY_E)) campigLink.vector2.x-=keymove;
-            if(isKeyDown(KEY_A)) campigLink.vector2.y+=keymove;
-            if(isKeyDown(KEY_D)) campigLink.vector2.y-=keymove;
-            if(isKeyDown(KEY_Y)) campigLink.vector2.z+=keymove;
-            if(isKeyDown(KEY_C)) campigLink.vector2.z-=keymove;
-
             if(isKeyDown(KEY_W)) campigLink.vector.x+=keymove;
             if(isKeyDown(KEY_R)) campigLink.vector.x-=keymove;
             if(isKeyDown(KEY_S)) campigLink.vector.y+=keymove;

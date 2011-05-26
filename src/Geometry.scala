@@ -30,6 +30,18 @@ class Vec3(var x:Float, var y:Float, var z:Float) {
     def ==(v:Vec3):Boolean = (x==v.x && y==v.y && z==v.z)
     def !=(v:Vec3):Boolean = !(this==v)
     
+    // take max or min value
+    def takeMax(v:Vec3) {
+        if(v.x > x) x = v.x;
+        if(v.y > y) y = v.y;
+        if(v.z > z) z = v.z;
+    }
+    def takeMin(v:Vec3) {
+        if(v.x > x) x = v.x;
+        if(v.y > y) y = v.y;
+        if(v.z > z) z = v.z;
+    }
+    
     // clamp values to some value(e.g. world size)
     private def clamp(p:Float,clamp:Float):Float = if(clamp!=0 && math.abs(p) > clamp) clamp*(p/math.abs(p)) else p
     def clamp(c:Float):Vec3 = this.map(clamp(_,c));
@@ -150,7 +162,112 @@ class GeneratorModel(var generator:()=>Object, draw:Object=>Unit) extends Displa
         res
     }
 }
+/*
+class Branch {
+    def this(parent:Branch, diffV:Vec3 = null, rootV: Vec3 = null) {
+        this();
+        rootVec = rootV;
+        diffVec = diffV;
+        setParent(parent);
+    }
+    
+    import scala.collection.mutable.HashSet;
+    var parent: Branch = null;
+    var children = new HashSet[Branch];
+    
+    def setParent(b:Branch) {
+        this.parent = b;
+        b.children += this
+    }
+    def addChild(b:Branch) {
+        b.setParent(this);
+    }
+    
+    var hasLeaf:Boolean = false;
+    var diffVec:Vec3 = null;
+    var rootVec:Vec3 = null;
+    def destVec:Vec3 = rootVec + diffVec;
+    
+    def getTreeBox():List[Vec3] = {
+        var max = new Vec3;
+        var min = new Vec3;
+        
+        max.takeMax(rootVec)
+        max.takeMax(destVec)
+        min.takeMin(rootVec)
+        min.takeMin(destVec)
+        
+        for(child <- children) {
+            var maxmin = child.getTreeBox();
+            max.takeMax(maxmin(0));
+            min.takeMin(maxmin(1));
+        }
+        
+        List(max, min);
+    }
+    
+    def setDepths(start:Int) {
+        depth = start;
+        children.map(_.setDepths(start+1));        
+    }
+    
+    // OH THE HUGE MANATEEE!
+    def traverseTree(data:Object, branchFunc:(Array[Float], Array[Float], Int)=>Array[Float]):Branch {
+        import java.util.{List=>JavaList}
+        
+        var root = new Branch();
+        
+        def isJavaList(a:Object):Boolean = a.isInstanceOf[JavaList[Object]]
+        def asArray(a:Object):Array[Object] = a.asInstanceOf[JavaList[Object]].toArray;
+        def asFloatArray(a:Array[Object]):Array[Float] = a.toList.map(
+                (a)=>{
+                    if(a.isInstanceOf[java.lang.Double])
+                        a.asInstanceOf[java.lang.Double].floatValue();
+                    else
+                        a.asInstanceOf[Float]
+                }
+            ).toArray
 
+        var depth=0;
+        var currBranch = root;
+        def traverse(vec:Array[Float], data:Array[Object], branch:Branch):Array[Float] = {
+            if(data.length==4 && !isJavaList(data(0))) {
+                val vector = asFloatArray(data);
+                
+                currBranch.diffVec = new Vec3(vector(0), vector(1), vector(2));
+                
+                ((for(i <- 0 to 3) yield if(i==3) 1f else vec(i)*vec(3) + vector(i)*vector(3)).toArray[Float]);
+            } else {
+                if(data.length==1)
+                    traverse(vec, asArray(data(0)))
+                else if(!isJavaList(asArray(data(1)).apply(0))) {
+                    depth += 1;
+                    var currParent = currBranch;
+                    for(i <- 0 until data.length) {
+                        currBranch = new Branch(currParent, rootVec = new Vec3(vec(0), vec(1), vec(2)))
+                        traverse(vec, asArray(data(i)))                        
+                    }
+                    depth -= 1;
+                } else {
+                    depth += 1;
+                    var currParent = currBranch;
+                    var parentVec = traverse(vec, asArray(data(0))
+                    for(i <- 1 until data.length) {
+                        currBranch = new Branch(currParent, rootVec = new Vec3(vec(0), vec(1), vec(2)))
+                        traverse(), asArray(data(i)))
+                    }
+                    depth -= 1;
+                }
+
+                // gotta return something...
+                return vec;
+            }
+        }
+        
+        traverse(Array[Float](0,0,0,1), asArray(data))
+    }    
+}
+*/
 class Camera extends BasicModel {
     // default projection 
     var perspective = false
