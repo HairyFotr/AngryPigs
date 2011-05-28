@@ -54,26 +54,26 @@
                                          (replicate 7 14))))
                 (rand-nth (list -1 1 -1 1 -1 1)))))
 
-(defn weighed-random-choice [depth lengths]
-  (defn weight [x depth]
-  ; cos(x + sin(x)*0.9)*0.5+0.5
-    (let [x (* x (/ Math/PI (count lengths)))
-          depth (* depth (/ Math/PI (count lengths)))]
-      (int (Math/floor (* 10
-                          (+ 0.5 (* 0.5
-                                    (Math/cos (+ (- x depth)
-                                                 (* 1.5 (Math/sin (- x depth))))))))))))
-
-  (defn choices []
-    (flatten (map #(replicate (weight %1 depth) %1)
-                  (take (count lengths)
+(defn weighed-random-choice [choices weight]
+  (defn indexes []
+    (flatten (map #(replicate (weight %1) %1)
+                  (take (count choices)
                         (iterate inc 0)))))
 
-  (nth lengths
-       (rand-nth (choices))))
+  (nth choices
+       (rand-nth (indexes))))
 
 (defn random-length [baselen depth]
-  (* baselen (weighed-random-choice depth lengths)))
+  (defn weight [x pivot]
+  ; cos(x + sin(x)*0.9)*0.5+0.5
+    (let [x (* x (/ Math/PI (count lengths)))
+	  pivot (* pivot (/ Math/PI (count lengths)))]
+      (int (Math/floor (* 10
+			  (+ 0.5 (* 0.5
+				    (Math/cos (+ (- x pivot)
+						 (* 0.9 (Math/sin (- x pivot))))))))))))
+
+  (* baselen (weighed-random-choice lengths #(weight %1 depth))))
 
 ;(println (random-length 5 0))
 

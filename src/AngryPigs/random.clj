@@ -24,17 +24,19 @@
                                   (Math/cos (+ (- x pivot)
                                                (* 0.9 (Math/sin (- x pivot))))))))))))
 
-(defn weighed-random-choice [choices pivot weight]
+(defn weighed-random-choice [choices weight]
   (defn indexes []
-    (flatten (map #(replicate (weight %1 pivot) %1)
+    (flatten (map #(replicate (weight %1) %1)
                   (take (count choices)
                         (iterate inc 0)))))
+
+  (println (indexes))
 
   (nth choices
        (rand-nth (indexes))))
 
 
 (loop [i 0]
-  (println (weighed-random-choice lengths i weight))
+  (println (weighed-random-choice lengths #(weight %1 i)))
   (if (< i 8)
     (recur (inc i))))
