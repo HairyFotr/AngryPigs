@@ -54,14 +54,28 @@
                                          (replicate 7 14))))
                 (rand-nth (list -1 1 -1 1 -1 1)))))
 
+(defn weighed-random-choice [choices weight]
+  (defn indexes []
+    (flatten (map #(replicate (weight %1) %1)
+                  (take (count choices)
+                        (iterate inc 0)))))
+
+  (nth choices
+       (rand-nth (indexes))))
+
 (defn random-length [baselen depth]
-  (* baselen
-     (nth lengths
-          (rand-nth
-           (flatten (map #(replicate (- (count lengths)
-                                        (Math/abs (- %1 depth))) %1)
-                         (take (count lengths)
-                               (iterate inc 0))))))))
+  (defn weight [x pivot]
+    (if (or (< x pivot)
+            (< 2 (- x pivot))) 0
+  ; cos(x + sin(x)*0.9)*0.5+0.5
+        (let [x (* x (/ Math/PI (count lengths)))
+              pivot (* pivot (/ Math/PI (count lengths)))]
+          (int (Math/floor (* 10
+                              (+ 0.5 (* 0.5
+                                        (Math/cos (+ (- x pivot)
+                                                     (* 0.9 (Math/sin (- x pivot)))))))))))))
+
+  (* baselen (weighed-random-choice lengths #(weight %1 depth))))
 
 ;(println (random-length 5 0))
 
