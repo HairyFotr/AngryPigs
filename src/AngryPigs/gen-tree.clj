@@ -65,13 +65,15 @@
 
 (defn random-length [baselen depth]
   (defn weight [x pivot]
+    (if (or (< x pivot)
+            (< 2 (- x pivot))) 0
   ; cos(x + sin(x)*0.9)*0.5+0.5
-    (let [x (* x (/ Math/PI (count lengths)))
-	  pivot (* pivot (/ Math/PI (count lengths)))]
-      (int (Math/floor (* 10
-			  (+ 0.5 (* 0.5
-				    (Math/cos (+ (- x pivot)
-						 (* 0.9 (Math/sin (- x pivot))))))))))))
+        (let [x (* x (/ Math/PI (count lengths)))
+              pivot (* pivot (/ Math/PI (count lengths)))]
+          (int (Math/floor (* 10
+                              (+ 0.5 (* 0.5
+                                        (Math/cos (+ (- x pivot)
+                                                     (* 0.9 (Math/sin (- x pivot)))))))))))))
 
   (* baselen (weighed-random-choice lengths #(weight %1 depth))))
 
