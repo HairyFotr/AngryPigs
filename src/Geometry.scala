@@ -163,43 +163,41 @@ class GeneratorModel(var generator:()=>Object, draw:Object=>Unit) extends Displa
     }
 }
 
-class Branch {
+class Branch (var parent:Branch) {
     import scala.collection.mutable.ListBuffer;
-
-    def this(parent:Branch) {
-        this();
-        setParent(parent);
-    }
     
-    var depth = 0;
-    var parent: Branch = null;
-    var children = new ListBuffer[Branch];
-    
-    def setParent(b:Branch) {
-        if(this eq b) return;
-        
-        this.parent = b;
-        if(b!=null) 
-            b.children += this
-    }
-    def addChild(b:Branch) {
-        if(this eq b) return;
-
-        b.setParent(this);
-    }
-    def skipChild(b:Branch) {
-        b.children.foreach((child:Branch)=>{
-            b.setParent(b.parent);
-        });
-        b.setParent(null);
-    }
-    
-    var hasLeaf:Boolean = false;
     var diffVec:Vec3 = new Vec3;
     var rootVec:Vec3 = new Vec3;
     def destVec:Vec3 = rootVec + diffVec;
+
+    var properties = new SettingMap[String];
+    var depth = 1;
+    var children = new ListBuffer[Branch];
+
+    setParent(parent);
+
+    def setParent(p:Branch) {
+        if(p != null) {
+            p.children += this
+            depth = p.depth+1;
+        }
+        parent = p;
+    }
+    def addChild(c:Branch) {
+        if(this eq c) return;
+        c.setParent(this);
+    }
     
-    def getTreeBox():List[Vec3] = {
+    var boxes:List[Vec3] = null
+    def getBoxes():List[Vec3] = {
+        if(boxes==null)
+            generateBoxes();
+        else
+            boxes;
+    }
+    
+    // can be done on the fly.
+    def generateBoxes():List[Vec3] = {
         var max = new Vec3;
         var min = new Vec3;
         
@@ -209,90 +207,25 @@ class Branch {
         min.takeMin(destVec)
         
         for(child <- children) {
-            var maxmin = child.getTreeBox();
+            var maxmin = child.getBoxes();
             max.takeMax(maxmin(0));
             min.takeMin(maxmin(1));
         }
         
-        List(max, min);
+        boxes = List(max, min);
+        boxes;
     }
-    
-    def calculateDepths(start:Int) {
-        depth = start;
-        children.foreach(_.calculateDepths(start+1));
-    }
-    
+        
     def doTo(f:Branch=>Unit):Unit = {
         f(this);
         children.foreach(_.doTo(f));
     }
-    def fixVecs():Unit = {
-        /*if(parent != null) {
-            rootVec = parent.rootVec + parent.diffVec;
-        }*/
-        children.foreach((child:Branch)=>{
-            child.rootVec = rootVec + diffVec
-            child.fixVecs()
-        })
-    }
+
     def print():Unit = {
-        //println(" "*(depth*2) + rootVec +" -- " + diffVec)
+        println(depth+" "*(depth*2) + rootVec +" -- " + diffVec)
         children.foreach(_.print())
     }
-    
-    // OH THE HUGE MANATEEE!
-    def traverseTree(data:Object) = {
-        import java.util.{List=>JavaList}
-        
-        def isJavaList(a:Object):Boolean = a.isInstanceOf[JavaList[Object]]
-        def asArray(a:Object):Array[Object] = a.asInstanceOf[JavaList[Object]].toArray;
-        def asFloatArray(a:Array[Object]):Array[Float] = a.toList.map(
-                (a)=>{
-                    if(a.isInstanceOf[java.lang.Double])
-                        a.asInstanceOf[java.lang.Double].floatValue();
-                    else
-                        a.asInstanceOf[Float]
-                }
-            ).toArray
-
-        var depth=0;
-        var currBranch = this;
-        var parentBranch = this;
-        this.rootVec = new Vec3;
-        this.diffVec = new Vec3;
-        
-        def traverse(data:Array[Object], parent:Branch):Branch = {
-            if(data.length==4 && !isJavaList(data(0))) { // last level -> node
-                val vector = asFloatArray(data);
-                var res = new Branch();
-                res.rootVec = parent.rootVec+parent.diffVec;
-                res.diffVec = new Vec3(vector(0)*vector(3), vector(1)*vector(3), vector(2)*vector(3))
-                res.setParent(parent);
-                res;
-            } else {
-                if(data.length==1) { // unpack thingy -> ((...))
-                    traverse(asArray(data(0)), parent)
-                } else if(!isJavaList(asArray(data(0)).apply(0)) && (isJavaList(asArray(data(1)).apply(0)))) { // ((node) (...))
-                    var nuparent = traverse(asArray(data(0)), parent);
-                    for(i <- 1 until data.length) {
-                        traverse(asArray(data(i)), nuparent);
-                    }
-                    nuparent;//not really needed
-                } else { //if(!isJavaList(asArray(data(1)).apply(0))) // pentultimate level -> (node node node) or some ((...) (...) (...))
-                    for(i <- 0 until data.length) {
-                        traverse(asArray(data(i)), parent);
-                    }
-                    parent;//not really needed
-                }
-            }
-        }
-        this.addChild(traverse(asArray(data), this));
-        //for(i <- 0 to 5) this.fixVecs();
-        this.calculateDepths(1);
-        this.print;
-    }
 }
-
 
 class Camera extends BasicModel {
     // default projection 

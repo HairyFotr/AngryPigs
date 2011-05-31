@@ -109,12 +109,12 @@ object Game {
                 // print fps
                 println("FPS: "+frameCounter/10);
 
-                if((frameCounter/10) < 20 && settings.get[Float]("graphics") > 1f) {
+                if((frameCounter/10) < 17 && settings.get[Float]("graphics") > 1f) {
                     settings += "graphics" -> (settings.get[Float]("graphics")-1f);
                     println("decreased graphic detail");
                     models.map(_.compile);
                 }
-                if((frameCounter/10) > 50 && settings.get[Float]("graphics") < 10f) {
+                if((frameCounter/10) > 42 && settings.get[Float]("graphics") < 10f) {
                     settings += "graphics" -> (settings.get[Float]("graphics")+1f);
                     println("inreased graphic detail");
                     models.map(_.compile);
@@ -405,25 +405,54 @@ object Game {
         campigLink = new ModelLink(pig, cam, new Vec3(0f,7,-50), new Vec3(0,0,0));
         
         def giveMeTree:()=>Object = ()=>{
-            val tree = genTree/("give-me-tree", 0f, 2f, 0f, 5f)
-            var root = new Branch();
-            root.traverseTree(tree);
-            root = root.children(0);
-            root.calculateDepths(1);
-            root;
+            // OH THE HUGE MANATEEE!
+            import java.util.{List=>JavaList}
+            
+            def isJavaList(a:Object):Boolean = a.isInstanceOf[JavaList[Object]]
+            def asArray(a:Object):Array[Object] = a.asInstanceOf[JavaList[Object]].toArray;
+            def asFloatArray(a:Array[Object]):Array[Float] = {a.toList.map((a)=>{
+                if(a.isInstanceOf[java.lang.Double])
+                    a.asInstanceOf[java.lang.Double].floatValue();
+                else
+                    a.asInstanceOf[Float]
+            }).toArray}
+
+            def traverse(data:Array[Object], parent:Branch=null):Branch = {
+                if(data.length==1) { // unpack thingy ... ((...))
+                    traverse(asArray(data(0)), parent)
+                } else if(data.length==4 && !isJavaList(data(0))) { // leaves ... (node)
+                    val vector = asFloatArray(data);
+                    var res = new Branch(parent);
+                    if(parent!=null) res.rootVec = parent.rootVec+parent.diffVec;                        
+                    res.diffVec = (new Vec3(vector(0), vector(1), vector(2))) * vector(3)
+                    res.properties += (if(rand.nextFloat < 0.075*res.depth) "hasLeaf"->true else "hasLeaf"->false);
+                    res;
+                } else if(!isJavaList(asArray(data(0)).apply(0)) && isJavaList(asArray(data(1)).apply(0))) { // parent & subbranches ((node) (...))
+                    var newparent = traverse(asArray(data(0)), parent);
+                    for(i <- 1 until data.length) traverse(asArray(data(i)), newparent);
+                    newparent;
+                } else { // branches ... ((...) (...) (...))
+                    for(i <- 0 until data.length) traverse(asArray(data(i)), parent);
+                    parent;
+                }
+            }
+            
+            val tree = traverse(asArray(genTree/("give-me-tree", 0f, 2f, 0f, 5f)));
+            tree.generateBoxes();
+            tree;
+            //seal here:P
         };
 
         def renderTree:Object=>Unit = (data:Object)=>{
             import org.lwjgl.opengl._
             import Global._
 
-            val root = data.asInstanceOf[Branch];
-            root.doTo(
+            val tree = data.asInstanceOf[Branch];
+            tree.doTo(
                 (branch:Branch) => {
                     if(settings.get[Boolean]("fattrees")) {
                         val vecA = branch.rootVec;
                         val vecB = branch.destVec;
-                        //println(branch.depth + " "*branch.depth + branch.rootVec + " --- " + branch.destVec + " --- " + branch.diffVec)
                         
                         val z = new Vec3(0,0,1)
                         val p = vecA - vecB
@@ -434,8 +463,9 @@ object Game {
                         glTranslatef(vecB.x,vecB.y,vecB.z);
                         glRotatef(angle,cross.x,cross.y,cross.z);
                         glColor3f(0.7f,0.2f,0f);
+                        //branch.depth = 5
                         gluQuadrics.cylinder.draw(0.2f/branch.depth,0.4f/branch.depth, branch.diffVec.length, (settings.get[Float]("graphics")*4f).toInt,1);
-                        if(rand.nextFloat < 0.075 * branch.depth) {
+                        if(branch.properties.get[Boolean]("hasLeaf")) {
                             glScalef(1,1.6f,1)
                             glTranslatef(0,-0.2f,0)
                             glColor3f(0.2f,0.8f,0.1f)

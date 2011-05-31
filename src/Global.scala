@@ -20,56 +20,15 @@ object Global {
     }
 
     val genTree = new ClojureWrap("AngryPigs", "gen-tree");
-    
-    def time(name:String = "")(f: =>Unit):Int = {
+
+    // measures the running time of the provided func    
+    def time(name:String = "")(f: =>Unit):Long = {
         val startTime = System.nanoTime();
         
         f;
         
-        ((System.nanoTime()-startTime)).toInt
+        (System.nanoTime()-startTime)
     }
-
-    // OH THE HUGE MANATEEE!    
-    // just traverses some weird tree strucure
-    // don't read this, pls!
-    /*def traverseTree(data:Object, branchFunc:(Array[Float], Array[Float], Int)=>Array[Float]) {
-        import java.util.{List=>JavaList}
-        println("say what!?!?!?")
-
-        def isJavaList(a:Object):Boolean = a.isInstanceOf[JavaList[Object]]
-        def asArray(a:Object):Array[Object] = a.asInstanceOf[JavaList[Object]].toArray;
-        def asFloatArray(a:Array[Object]):Array[Float] = a.toList.map(
-                (a)=>{
-                    if(a.isInstanceOf[java.lang.Double])
-                        a.asInstanceOf[java.lang.Double].floatValue();
-                    else
-                        a.asInstanceOf[Float]
-                }
-            ).toArray
-
-        var depth=0;
-        def traverse(vec:Array[Float], data:Array[Object]):Array[Float] = {
-            if(data.length==4 && !isJavaList(data(0))) {
-                val vector = asFloatArray(data);
-                
-                return branchFunc(vector, vec, depth);
-            } else {
-                depth += 1;
-                if(data.length==1 || !isJavaList(asArray(data(1)).apply(0)))
-                    for(i <- 0 until data.length) traverse(vec, asArray(data(i)))
-                else {
-                    var root = traverse(vec, asArray(data(0)));
-                    for(i <- 1 until data.length) traverse(root, asArray(data(i)))
-                }
-                depth -= 1;
-
-                // gotta return something...
-                return vec;
-            }
-        }
-        
-        traverse(Array[Float](0,0,0,1), asArray(data))
-    }*/
 }
 
 // some small classes
@@ -80,6 +39,7 @@ class SettingMap[A] extends scala.collection.mutable.HashMap[A,Any] {
     def getDefault[B](implicit m:Manifest[B]):B = defaultMap.getOrElse(m.toString, null).asInstanceOf[B];
     
     def get[B:Manifest](key:A):B = getOrElse(key, getDefault[B]).asInstanceOf[B];
+    // add trigger hooks for when some value updates :P
 }
 
 class TimeLock {
