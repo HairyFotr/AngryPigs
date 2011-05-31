@@ -404,11 +404,59 @@ object Game {
         pigcatapultLink = new ModelLink(catapult, pig, new Vec3(0f,2.5f,0f));
         campigLink = new ModelLink(pig, cam, new Vec3(0f,7,-50), new Vec3(0,0,0));
         
-        def giveMeTree:()=>Object = ()=>(genTree/("give-me-tree", 0f, 2f, 0f, 5f));
+        def giveMeTree:()=>Object = ()=>{
+            val tree = genTree/("give-me-tree", 0f, 2f, 0f, 5f)
+            var root = new Branch();
+            root.traverseTree(tree);
+            root.children(0);
+        };
+
         def renderTree:Object=>Unit = (data:Object)=>{
             import org.lwjgl.opengl._
             import Global._
+
+            val root = data.asInstanceOf[Branch];
+            root.doTo(
+                (branch:Branch) => {
+                    if(settings.get[Boolean]("fattrees")) {
+                        val vecA = branch.rootVec;
+                        val vecB = branch.destVec;
+                        println(branch.depth + " "*branch.depth + branch.rootVec + " --- " + branch.destVec + " --- " + branch.diffVec)
+                        
+                        val z = new Vec3(0,0,1)
+                        val p = vecA - vecB
+                        val cross = z X p
+                        val angle = z angle p
+                        
+                        glPushMatrix
+                        glTranslatef(vecB.x,vecB.y,vecB.z);
+                        glRotatef(angle,cross.x,cross.y,cross.z);
+                        glColor3f(0.7f,0.2f,0f);
+                        gluQuadrics.cylinder.draw(0.2f/branch.depth,0.4f/branch.depth, branch.diffVec.length, (settings.get[Float]("graphics")*4f).toInt,1);
+                        if(rand.nextFloat < 0.075 * branch.depth) {
+                            glScalef(1,1.6f,1)
+                            glTranslatef(0,-0.2f,0)
+                            glColor3f(0.2f,0.8f,0.1f)
+                            gluQuadrics.disk.draw(0,0.175f, (settings.get[Float]("graphics")*4f).toInt,1)
+                        }
+                        glPopMatrix
+                    } else {
+                        glColor3f(0.7f,0.2f,0f);
+                        glBegin(GL_LINES)
+                        glVertex3f(branch.rootVec.x,
+                                   branch.rootVec.y,
+                                   branch.rootVec.z);                        
+
+                        glVertex3f(branch.destVec.x,
+                                   branch.destVec.y,
+                                   branch.destVec.z)
+                        glEnd
+                    }                    
+                }
+            );
             
+            
+            /*
             traverseTree(data, 
                 (vector:Array[Float], vec:Array[Float], depth:Int) => {
                     if(settings.get[Boolean]("fattrees")) {
@@ -457,7 +505,7 @@ object Game {
 
                     ((for(i <- 0 to 3) yield if(i==3) 1f else vec(i)*vec(3) + vector(i)*vector(3)).toArray[Float]);
                 }
-            )
+            )*/
         }
         
         var tree = new GeneratorModel(giveMeTree, renderTree);

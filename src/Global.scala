@@ -32,9 +32,10 @@ object Global {
     // OH THE HUGE MANATEEE!    
     // just traverses some weird tree strucure
     // don't read this, pls!
-    def traverseTree(data:Object, branchFunc:(Array[Float], Array[Float], Int)=>Array[Float]) {
+    /*def traverseTree(data:Object, branchFunc:(Array[Float], Array[Float], Int)=>Array[Float]) {
         import java.util.{List=>JavaList}
-        
+        println("say what!?!?!?")
+
         def isJavaList(a:Object):Boolean = a.isInstanceOf[JavaList[Object]]
         def asArray(a:Object):Array[Object] = a.asInstanceOf[JavaList[Object]].toArray;
         def asFloatArray(a:Array[Object]):Array[Float] = a.toList.map(
@@ -68,7 +69,7 @@ object Global {
         }
         
         traverse(Array[Float](0,0,0,1), asArray(data))
-    }
+    }*/
 }
 
 // some small classes

@@ -37,8 +37,23 @@ pathprocess="echo"
 
 originalcall="$*"
 
+
 cd src
 echo "$projectname"
+
+#check if some stuff exists
+classdir="../class"
+if [ ! -d "$classdir" ]; then 
+    mkdir $classdir
+fi
+classdir="../class/AngryPigs"
+if [ ! -d "$classdir" ]; then 
+    mkdir $classdir
+fi
+if [ ! -f "$hashpath" ];
+then
+    touch "$hashpath"
+fi
 
 #get arguments, process switches
 #@do it with getopt(s)
@@ -54,7 +69,7 @@ if [ $# -gt 0 ]; then
     files="$@"
 fi
 if [ "$files" == "" ]; then
-    files="  *.scala" 
+    files="  *.scala"
 fi
 
 #hash func
@@ -63,46 +78,27 @@ fileshash="`$hashfunc ../$0 $files`" #must be compiled with same bashbeans scrip
 #echo "$fileshash"
 
 #build
+builderror="0"
 if [ "$Unforce" != "" ]; then
-    echo "You told me not to compile."
-    builderror="0"
+    echo "You told me not to recompile."
 elif [ "$Force" == "" -a -e $hashpath -a "$fileshash" == "`cat $hashpath`" ]; then
-    echo "I don't think I need to compile. (use force if neccesary.)"
-    builderror="0"
+    echo "I don't think I need to recompile. (use force if neccesary.)"
 else
-    builderror="0"
-    #might still need it for Scala->Clojure interop :P
-    #if [ "$builderror" == "0" ]; then
-    #    echo "Compiling:"$files2
-        #clojurec -d ../class -extdirs $files2
+    echo "Compiling:"$files
+    #fast scala compile (loads compile deamon)
+
+    compileErr=$( { fsc -cp "`$pathprocess ../lib/clojure.jar`" -d ../class -extdirs ../lib/lwjgl-2.7.1/jar/ $files ; } 2>&1 )
+    builderror=$?
+    if [ "$compileErr" != "" ]; then
+        echo "$compileErr"
         
-        #remove .clj
-        #for file in AngryPigs/$files2
-        #do
-        #    ffiles2="$ffiles2 `basename $file .clj`"
-        #done
-        #java -cp .:../class:../lib/clojure.jar -Dclojure.compile.path=../class clojure.lang.Compile $ffiles2
-        #java -cp .:../class:../class/AngryPig:../lib/clojure.jar -Dclojure.compile.path=../class clojure.lang.Compile AngryPig.helloworld
-    #    builderror=$?
-    #fi
-    if [ "$builderror" == "0" ]; then
-        echo "Compiling:"$files
-        #fast scala compile (loads compile deamon)
-        #@detect if it says Deamon not loaded and retry, or fallback to scala
-        #@also this will be a part of compiler spec later
-        compileErr=$( { fsc -cp "`$pathprocess ../lib/clojure.jar`" -d ../class -extdirs ../lib/lwjgl-2.7.1/jar/ $files ; } 2>&1 )
-        builderror=$?
-        if [ "$compileErr" != "" ]; then
-            echo "$compileErr"
-            
-            if [ "$compileErr" == "Could not connect to compilation daemon." ]; then
-                echo "OK, let's try this again..."
-                echo ""
-                cd ..
-                echo "\$ $0 $originalcall"
-                $0 $originalcall
-                exit 0
-            fi
+        if [ "$compileErr" == "Could not connect to compilation daemon." ]; then
+            echo "OK, let's try this again..."
+            echo ""
+            cd ..
+            echo "\$ $0 $originalcall"
+            $0 $originalcall
+            exit 0
         fi
     fi
     

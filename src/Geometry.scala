@@ -162,30 +162,41 @@ class GeneratorModel(var generator:()=>Object, draw:Object=>Unit) extends Displa
         res
     }
 }
-/*
+
 class Branch {
-    def this(parent:Branch, diffV:Vec3 = null, rootV: Vec3 = null) {
+    import scala.collection.mutable.ListBuffer;
+
+    def this(parent:Branch) {
         this();
-        rootVec = rootV;
-        diffVec = diffV;
         setParent(parent);
     }
     
-    import scala.collection.mutable.HashSet;
+    var depth = 0;
     var parent: Branch = null;
-    var children = new HashSet[Branch];
+    var children = new ListBuffer[Branch];
     
     def setParent(b:Branch) {
+        if(this eq b) return;
+        
         this.parent = b;
-        b.children += this
+        if(b!=null) 
+            b.children += this
     }
     def addChild(b:Branch) {
+        if(this eq b) return;
+
         b.setParent(this);
+    }
+    def skipChild(b:Branch) {
+        b.children.foreach((child:Branch)=>{
+            b.setParent(b.parent);
+        });
+        b.setParent(null);
     }
     
     var hasLeaf:Boolean = false;
-    var diffVec:Vec3 = null;
-    var rootVec:Vec3 = null;
+    var diffVec:Vec3 = new Vec3;
+    var rootVec:Vec3 = new Vec3;
     def destVec:Vec3 = rootVec + diffVec;
     
     def getTreeBox():List[Vec3] = {
@@ -206,16 +217,32 @@ class Branch {
         List(max, min);
     }
     
-    def setDepths(start:Int) {
+    def calculateDepths(start:Int) {
         depth = start;
-        children.map(_.setDepths(start+1));        
+        children.foreach(_.calculateDepths(start+1));
+    }
+    
+    def doTo(f:Branch=>Unit):Unit = {
+        f(this);
+        children.foreach(_.doTo(f));
+    }
+    def fixVecs():Unit = {
+        /*if(parent != null) {
+            rootVec = parent.rootVec + parent.diffVec;
+        }*/
+        children.foreach((child:Branch)=>{
+            child.rootVec = rootVec + diffVec
+            child.fixVecs()
+        })
+    }
+    def print():Unit = {
+        //println(" "*(depth*2) + rootVec +" -- " + diffVec)
+        children.foreach(_.print())
     }
     
     // OH THE HUGE MANATEEE!
-    def traverseTree(data:Object, branchFunc:(Array[Float], Array[Float], Int)=>Array[Float]):Branch {
+    def traverseTree(data:Object) = {
         import java.util.{List=>JavaList}
-        
-        var root = new Branch();
         
         def isJavaList(a:Object):Boolean = a.isInstanceOf[JavaList[Object]]
         def asArray(a:Object):Array[Object] = a.asInstanceOf[JavaList[Object]].toArray;
@@ -229,45 +256,44 @@ class Branch {
             ).toArray
 
         var depth=0;
-        var currBranch = root;
-        def traverse(vec:Array[Float], data:Array[Object], branch:Branch):Array[Float] = {
-            if(data.length==4 && !isJavaList(data(0))) {
+        var currBranch = this;
+        var parentBranch = this;
+        this.rootVec = new Vec3;
+        this.diffVec = new Vec3;
+        
+        def traverse(data:Array[Object], parent:Branch):Branch = {
+            if(data.length==4 && !isJavaList(data(0))) { // last level -> node
                 val vector = asFloatArray(data);
-                
-                currBranch.diffVec = new Vec3(vector(0), vector(1), vector(2));
-                
-                ((for(i <- 0 to 3) yield if(i==3) 1f else vec(i)*vec(3) + vector(i)*vector(3)).toArray[Float]);
+                var res = new Branch();
+                res.rootVec = parent.rootVec+parent.diffVec;
+                res.diffVec = new Vec3(vector(0)*vector(3), vector(1)*vector(3), vector(2)*vector(3))
+                res.setParent(parent);
+                res;
             } else {
-                if(data.length==1)
-                    traverse(vec, asArray(data(0)))
-                else if(!isJavaList(asArray(data(1)).apply(0))) {
-                    depth += 1;
-                    var currParent = currBranch;
-                    for(i <- 0 until data.length) {
-                        currBranch = new Branch(currParent, rootVec = new Vec3(vec(0), vec(1), vec(2)))
-                        traverse(vec, asArray(data(i)))                        
-                    }
-                    depth -= 1;
-                } else {
-                    depth += 1;
-                    var currParent = currBranch;
-                    var parentVec = traverse(vec, asArray(data(0))
+                if(data.length==1) { // unpack thingy -> ((...))
+                    traverse(asArray(data(0)), parent)
+                } else if(!isJavaList(asArray(data(0)).apply(0)) && (isJavaList(asArray(data(1)).apply(0)))) { // ((node) (...))
+                    var nuparent = traverse(asArray(data(0)), parent);
                     for(i <- 1 until data.length) {
-                        currBranch = new Branch(currParent, rootVec = new Vec3(vec(0), vec(1), vec(2)))
-                        traverse(), asArray(data(i)))
+                        traverse(asArray(data(i)), nuparent);
                     }
-                    depth -= 1;
+                    nuparent;//not really needed
+                } else { //if(!isJavaList(asArray(data(1)).apply(0))) // pentultimate level -> (node node node) or some ((...) (...) (...))
+                    for(i <- 0 until data.length) {
+                        traverse(asArray(data(i)), parent);
+                    }
+                    parent;//not really needed
                 }
-
-                // gotta return something...
-                return vec;
             }
         }
-        
-        traverse(Array[Float](0,0,0,1), asArray(data))
-    }    
+        this.addChild(traverse(asArray(data), this));
+        //for(i <- 0 to 5) this.fixVecs();
+        this.calculateDepths(1);
+        this.print;
+    }
 }
-*/
+
+
 class Camera extends BasicModel {
     // default projection 
     var perspective = false
@@ -330,7 +356,7 @@ class ModelLink(var m1:BasicModel, var m2:BasicModel) extends Vector with Vector
     def this(m1:BasicModel,m2:BasicModel,vector:Vec3) {
         this(m1,m2, vector,new Vec3)
     }
-
+    
     private var linked = true;
     def isLinked = linked;
     def breakLink { linked = false }
