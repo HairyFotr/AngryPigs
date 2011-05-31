@@ -14,10 +14,8 @@ object Game {
     import org.lwjgl.opengl.GL11._
 
     var isRunning = false; // is main loop running
-    //val acceptModes
     var (winWidth, winHeight)=(3000,3000); // window size
     var renderTime=0f;
-    val cam = new Camera;
     
     val timeLock = new TimeLock;
     val pauseLock = new TimeLock;
@@ -69,6 +67,7 @@ object Game {
             case _ =>
                 Display.create;
         }
+
         Display.setTitle("Angry Pigs");
         Display.setVSyncEnabled(true);
     }
@@ -85,14 +84,14 @@ object Game {
         makeModels; // make generative models
         setupView;  // setup camera and lights
     
-        frameTime = now;
-        // @that is one ugly FPS counter :)
-        var tenSecondTimer = now;
-        var frameCounter = 0;
-        val E10 = 10000000000L;
+        // FPS counter
+        var frameCounter = 0
+        val second = 1000000000L
+        val FPSseconds = 5 
+        var FPStimer = now
+        frameTime = now
         while(isRunning) {
-            // @menda se da sproti/bolš gledat input
-            processInput // process input events 
+            processInput // process keyboard input
             if(pause) Thread.sleep(50)
             
             resetView;      // clear view and reset transformations
@@ -100,28 +99,24 @@ object Game {
             Display.update; // update window contents and process input messages
             frameCounter += 1;
 
-            //gl error
-            //val errCode = glGetError;
-            //if (errCode != GL_NO_ERROR) 
-            //    println(Util.translateGLErrorString(errCode));
+            if(now-FPStimer > second*FPSseconds) {
+                val FPS = frameCounter/FPSseconds;
+                println("FPS: "+FPS);
 
-            if(now-tenSecondTimer > E10) {
-                // print fps
-                println("FPS: "+frameCounter/10);
-
-                if((frameCounter/10) < 17 && settings.get[Float]("graphics") > 1f) {
+                // increase or decrease graphics detail
+                if(FPS < 15 && settings.get[Float]("graphics") > 1f) {
                     settings += "graphics" -> (settings.get[Float]("graphics")-1f);
                     println("decreased graphic detail");
-                    models.map(_.compile);
+                    models.foreach(_.compile);
                 }
-                if((frameCounter/10) > 42 && settings.get[Float]("graphics") < 10f) {
+                if(FPS > 50 && settings.get[Float]("graphics") < 10f) {
                     settings += "graphics" -> (settings.get[Float]("graphics")+1f);
                     println("inreased graphic detail");
-                    models.map(_.compile);
+                    models.foreach(_.compile);
                 }
 
                 frameCounter = 0;
-                tenSecondTimer = now;
+                FPStimer = now;
             }
 
             renderTime = (now-frameTime)/frameIndepRatio;
@@ -130,6 +125,7 @@ object Game {
     }
     
     //models
+    val cam = new Camera;
     var terrain:GeneratorModel=null;
     var skybox:DisplayModel=null;
     var coordsys:DisplayModel=null;
@@ -149,7 +145,7 @@ object Game {
     // @infinite terrain patches and stuff
     def makeModels {
         // terrain
-        val detail=40;
+        val detail=30;
         val height=0.3f;
         
         def genTerrain:()=>Object = ()=>{
@@ -163,7 +159,7 @@ object Game {
             // Draw in clockwise - (00,10,11,01); must skip last point of line
             val width = math.sqrt(points.length).toInt;
             for(i <- 0 until points.length-width-1; if((i+1)%width != 0))
-                List(points(i), points(i+1), points(i+width+1), points(i+width)).map(
+                List(points(i), points(i+1), points(i+width+1), points(i+width)).foreach(
                     (p:Vec3) => {
                         //glColor3f(p.y/3, p.y*5, p.y/3);
                         glColor3f(0.2f, 0.7f+p.y/2, 0.2f);
@@ -665,16 +661,16 @@ object Game {
             treeView = !treeView
             timeLock.lockIt(500);
         }
-        if(isKeyDown(KEY_1)) { settings += "fattrees" -> false; trees.toList.map(_.compile()) } else 
-        if(isKeyDown(KEY_2)) { settings += "fattrees" -> true; trees.toList.map(_.compile()) } else
-        if(isKeyDown(KEY_3)) { trees.toList.map(_.regenerate()) } else
+        if(isKeyDown(KEY_1)) { settings += "fattrees" -> false; trees.foreach(_.compile()) } else 
+        if(isKeyDown(KEY_2)) { settings += "fattrees" -> true; trees.foreach(_.compile()) } else
+        if(isKeyDown(KEY_3)) { trees.foreach(_.regenerate()) } else
         if(isKeyDown(KEY_5)) { 
             settings += "graphics" -> (settings.get[Float]("graphics")+1f);
-            models.map(_.compile()) 
+            models.foreach(_.compile()) 
         } else
         if(isKeyDown(KEY_6) && settings.get[Float]("graphics") > 1) { 
             settings += "graphics" -> (settings.get[Float]("graphics")-1f);
-            models.map(_.compile()) 
+            models.foreach(_.compile()) 
         } else
         if(isKeyDown(KEY_8) && !timeLock.isLocked) { pig.regenerate(); timeLock.lockIt(200); } else
         if(isKeyDown(KEY_9) && !timeLock.isLocked) { pig.compile(); timeLock.lockIt(200); }
