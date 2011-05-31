@@ -408,7 +408,9 @@ object Game {
             val tree = genTree/("give-me-tree", 0f, 2f, 0f, 5f)
             var root = new Branch();
             root.traverseTree(tree);
-            root.children(0);
+            root = root.children(0);
+            root.calculateDepths(1);
+            root;
         };
 
         def renderTree:Object=>Unit = (data:Object)=>{
@@ -421,7 +423,7 @@ object Game {
                     if(settings.get[Boolean]("fattrees")) {
                         val vecA = branch.rootVec;
                         val vecB = branch.destVec;
-                        println(branch.depth + " "*branch.depth + branch.rootVec + " --- " + branch.destVec + " --- " + branch.diffVec)
+                        //println(branch.depth + " "*branch.depth + branch.rootVec + " --- " + branch.destVec + " --- " + branch.diffVec)
                         
                         val z = new Vec3(0,0,1)
                         val p = vecA - vecB
