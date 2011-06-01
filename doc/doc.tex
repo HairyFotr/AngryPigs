@@ -93,7 +93,7 @@ Pristop se je izkazal za dobrega tudi, ko sva lahko zelo hitro razvila avtomatsk
 Problem generiranja primerno realističnih dreves se je izkazal za
 algoritemsko precej zanimivega. V namene seminarske naloge je bil
 rešen ``iz nule'', čeprav je ta problem že dokaj raziskan v obliki
-L-sistemov in verjetno še česa. Ampak to ni tako zabavno.
+L-sistemov in verjetno še česa. Ampak to ni tako zabavno.\pa
 
 Osnovna postavka merjenja uspeha končnega algoritma je bila funkcijska
 čistost, saj sem želel postaviti sistem, ki iz peščice začetnih
@@ -106,31 +106,32 @@ uspešno algoritem generira drevesa, porečem, da 7.
 \subsection{Osnovni princip}
 Algoritem je zasnovan kot generator fraktalov, ki mu podamo nek vektor
 in osnovno dolžino veje, ta pa potem rekurzivno kliče samega sebe,
-dokler ne doseže neke smiselno določene meje globine drevesa.
+dokler ne doseže neke smiselno določene meje globine drevesa.\pa
 
 Glavna funkcija algoritma se najprej odloči koliko vej je potrebnih na
 trenutni globini, kar je definirano z vrsto praštevil (2,3,5
 ...). Nato izračuna vektorski produkt med podanim vektorjem V in nekim
-izmišljenim vektorjem, s čimer dobi prvo vejo na trenutnem nivoju.
+izmišljenim vektorjem, s čimer dobi prvo vejo na trenutnem nivoju.\pa
 
 Ko je izbrana prva veja, jo samo (N-1)-krat duplicira in zavrti okrog
 vektorja V. Tako ima osnovno vejo (vektor V) ter N nanjo pravokotnih
 vej, ki predstavljajo poddrevo in so enakomerno razporejene po ravnini
 na vrhu V.
 
+\begin{center}
 \includegraphics[width=12cm]{algorithmsketch.jpg}
+\end{center}
 
 Naslednji korak je samo še preprosta rotacija vseh vej za nek kot v
 nasprotni smeri vektorja V in že imamo zgenerirano krošnjo za podano
 vejo oz. deblo. Nato algoritem spet pokliče samega sebe na vrhu vsake
 tako zgenerirane veje.
 
-
 \subsection{Naključnost}
 Po zgornjem algoritmu so drevesa sicer zgledala dokaj realistična,
 vendar pa so bila vsa enaka, kar je bilo tako dolgočasno, kot je
 onemogočalo, da bi tudi gozd deloval prilično resničen. Rešitev je
-torej neka stopnja naključnosti.
+torej neka stopnja naključnosti.\pa
 
 Že intuitivno je opaziti, da drevo ne more biti popolnoma naključno,
 saj potem izgubi na vsem kar ga sploh dela za drevo in postane samo
@@ -138,44 +139,90 @@ kup nekoherentnih črt. V interesu pravega znanstvenega pristopa in
 izogibanja intuitivnim skokom logike, je bilo zgenerirano tudi eno
 tako drevo.
 
+\begin{center}
 \includegraphics[width=12cm]{randomtree.png}
+\end{center}
 
 Naključnost je bilo zategadelj potrebno zapreti v neke smiselne
 okvire, tako da bo algoritem sposoben generirati dovolj različnih
-dreves, a bo vseeno vsakič zgeneriral drevo.
+dreves, a bo vseeno vsakič zgeneriral drevo.\pa
 
 Podobno kot se osnoven algoritem izvaja v treh korakih, je tudi
-naključnost dodana na tri osnovne načine.
+naključnost dodana na tri osnovne načine.\pa
 
 Prva stopnja naključnosti se zgodi pri razporejanju vej po ravnini nad
 osnovno vejo. Tu se pri vsaki rotaciji kotu preprosto doda nek
 naključno izbran majhen kot v naključno smer, tako da razporeditev ni
-čisto uniformna.
+čisto uniformna.\pa
 
 Druga stopnja naključnosti pride pri izbiri kota rotacije ``navzgor'',
 ki določa kako široka bo krošnja. Tu gre za dokaj osnovno verzijo
 uteženega naključnega izbiranja - algoritmu je namreč podan statično
 izbran spisek deliteljev polnega radiana, tako da so naključne izbire
 v končni fazi zgenerirale subjektivno zadvooljivo drevo. V končni
-verziji kode ta del verjetno ne bo več tako statičen.
+verziji kode ta del verjetno ne bo več tako statičen.\pa
 
 Najbolj zanimivo računanje naključnosti pa je pri izbiranju dolžine
 vej, saj se je izkazalo za izredno pomembno, da so vse naslednje veje
 krajše od prejšnjih, ter da se zelo kratke veje ne pripetijo prezgodaj
 v drevesu. V ta namen je bila ustvarjena funkcija naključne izbire,
 kateri lahko podamo funkcijo gostote verjetnosti. Na ta način
-pridobimo popoln nadzor nad obliko verjetnosti.
+pridobimo popoln nadzor nad obliko verjetnosti.\pa
 
 Funkcija gostote verjetnosti, ki se je izkazala za najboljšo, je
 zlepek, ki zagotavlja, da ima vsak naslednji nivo krajše veje od
 prejšnjega, ter vsaki naslednji možni izbiri dolžine določi tretjino
 verjetnosti prejšnje. (dolžine so namreč zaporedje vse manjših
-večkratnikov osnovne dolžine, ki je parameter algoritma).
+večkratnikov osnovne dolžine, ki je parameter algoritma).\pa
+
+Gostota verjetnosti torej pri globini nič, zgleda nekako takole:
+
+\begin{center}
+\includegraphics[width=10cm]{distribution.png}
+\end{center}
+
+Ker deluje v celoštevilskem ni problemov z neskončnostmi, kot bi bilo
+videti iz grafa.
 
 \subsection{Gravitacija}
+Gravitacija je dokaj nov dodatek algoritmu, ki bi ga bilo verjetno
+skorajda bolje narediti kje drugje, kot pri sami generaciji dreves -
+na primer v fizikalnem pogonu. Vendar pa zaradi obsega seminarske
+naloge nekega pravega fizikalnega pogona ni, hkrati pa ni dovolj časa,
+da bi bil ustvarjen do naslednjega tedna.\pa
 
+Tako je pristop do dreves, ki delujejo bolj naravno gravitacija, ki se
+drevesu doda že kar med samo generacijo. To se zgodi po dokaj
+preprostem principu, vsakič, ko algoritem izračuna novo vejo, ji
+preprosto ``doda gravitacijo''.\pa
+
+Dodajanje gravitacije poteka na dokaj preprost način: izračunamo točko
+v kateri se veja konča, to točko premaknemo po gravitacijskem vektorju
+za neko razdaljo in izračunamo nov smerni vektor veje, ki zdaj kaže v
+to točko.\pa
+
+Trenutno algoritem vejo premakne vedno za enako razdaljo, kar ustvari
+drevesa, ki delujejo izredno mlahava in žalostna. To se bo rešilo,
+tako da bo razdalja premika dinamično izračunana pri vsaki veji in bo
+odvisna od dolžine veje, pričakovane teže naslednjih vej ter debeline
+same veje.
+
+\section{Klic Clojure funkcij iz Scale}
+Za potrebe klicanja sem spisal majhen razred, prek katerega precej naravno kličem Clojure funkcije iz Scale -- edini problem je da se vmes zgubijo podatki o tipih, gre pa v primeru dreves za gnezdene sezname koordinat mešanih tipov.\pa
+
+Po nekaj dolgih dneh sem našel način za prepoznavo vseh možnih posebnosti strukture in se jo odločil raje čimprej prenesti v svojo strukturo, ki je precej bolj prijazna za uporabo.
 
 \chapter{Rezultati}
+
+
+\chapter{Navodila za uporabo}
+\subsection{Namestitev}
+Igra v principu deluje povsod, kjer je podprt LWJGL, a je skripta bashbeans za prevajanje in poganjanje napisana v bash-u. Torej deluje na Linux in MacOS, na Windows pa deluje v Cygwin bashu.\pa
+
+Najprej je potrebno naložiti Scalo verzije 2.8 ali 2.9 z \inline{\url{http://www.scala-lang.org/downloads}}. Tudi ta korak bi bilo mogoče preskočiti, če bi imeli boljšo skripto in Scalino .jar datoteko v classpathu.
+
+Nato poženemo bashbeans z zastavico -r (Run):
+\inliney{$ ./bashbeans -r}
 
 
 \end{document}

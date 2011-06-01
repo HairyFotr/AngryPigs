@@ -576,19 +576,19 @@ object Game {
             moveObj.pos.clamp(worldSize-2.5f);
             if(moveObj.pos.y==mY && settings.get[Boolean]("air")) {
                 settings += "air"->false;println("pig is on ground");
-                val trailcount = 3///
+                /*val trailcount = 3///
                 if(trails.length >= trailcount) 
-                    trails = trails.drop(1);
+                    trails = trails.drop(1);*/
             }
             
             if(settings.get[Boolean]("air")) {
-                (trails.last) += pig.pos;
+                (trails(0)) += moveObj.pos;
                 println(trails.last.data.asInstanceOf[List[Vec3]].length);
             }
-            if(trails.length == 0) 
+            /*if(trails.length == 0) 
                 trails += new TrailModel(List(pig.pos));
 
-            (trails.last) += pig.pos;
+            (trails.last) += pig.pos;*/
 
             pigcatapultLink.applyLink;
             campigLink.applyLink;
@@ -714,7 +714,6 @@ object Game {
 
         if(isKeyDown(KEY_Z) && !timeLock.isLocked){
             terrain.visible = !terrain.visible
-            //terrain.properties += "visible"->terrain.properties.get[Boolean]("visible");
                 
             timeLock.lockIt(100);            
         }
@@ -724,7 +723,7 @@ object Game {
         if(isKeyDown(KEY_UP))    moveObj.vector.z+=keymove/5f;
         if(isKeyDown(KEY_DOWN))  moveObj.vector.z-=keymove/5f;
         
-        if(isKeyDown(KEY_SPACE) && !settings.get[Boolean]("air")){
+        if(isKeyDown(KEY_SPACE) && (!settings.get[Boolean]("air"))) {
             if(pigcatapultLink.isLinked) {
                 pigcatapultLink.breakLink;
                 println("pig-catapult Link Broken")
@@ -737,7 +736,10 @@ object Game {
                 pig.vector.z=4f;
             }
             settings += "air" -> true;println("pig is in air");
-            trails += new TrailModel(List(pig.pos));
+            if(trails.length==0) 
+                trails += new TrailModel(List(pig.pos))
+            else
+                trails(0) = new TrailModel(List(pig.pos));  
         }
         if(isKeyDown(KEY_LCONTROL) && !pigcatapultLink.isLinked) {
             pigcatapultLink.forgeLink;
