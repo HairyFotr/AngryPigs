@@ -167,8 +167,35 @@ prejšnjega, ter vsaki naslednji možni izbiri dolžine določi tretjino
 verjetnosti prejšnje. (dolžine so namreč zaporedje vse manjših
 večkratnikov osnovne dolžine, ki je parameter algoritma).
 
-\subsection{Gravitacija}
+Gostota verjetnosti torej pri globini nič, zgleda nekako takole:
 
+\includegraphics[width=12cm]{probabilityplot.png}
+
+Ker deluje v celoštevilskem ni problemov z neskončnostmi, kot bi bilo
+videti iz grafa.
+
+\subsection{Gravitacija}
+Gravitacija je dokaj nov dodatek algoritmu, ki bi ga bilo verjetno
+skorajda bolje narediti kje drugje, kot pri sami generaciji dreves -
+na primer v fizikalnem pogonu. Vendar pa zaradi obsega seminarske
+naloge nekega pravega fizikalnega pogona ni, hkrati pa ni dovolj časa,
+da bi bil ustvarjen do naslednjega tedna.
+
+Tako je pristop do dreves, ki delujejo bolj naravno gravitacija, ki se
+drevesu doda že kar med samo generacijo. To se zgodi po dokaj
+preprostem principu, vsakič, ko algoritem izračuna novo vejo, ji
+preprosto ``doda gravitacijo''.
+
+Dodajanje gravitacije poteka na dokaj preprost način: izračunamo točko
+v kateri se veja konča, to točko premaknemo po gravitacijskem vektorju
+za neko razdaljo in izračunamo nov smerni vektor veje, ki zdaj kaže v
+to točko.
+
+Trenutno algoritem vejo premakne vedno za enako razdaljo, kar ustvari
+drevesa, ki delujejo izredno mlahava in žalostna. To se bo rešilo,
+tako da bo razdalja premika dinamično izračunana pri vsaki veji in bo
+odvisna od dolžine veje, pričakovane teže naslednjih vej ter debeline
+same veje.
 
 \chapter{Rezultati}
 
