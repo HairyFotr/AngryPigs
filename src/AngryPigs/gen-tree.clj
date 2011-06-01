@@ -3,33 +3,9 @@
 (require 'geometry)
 
 
-; the aim of this thing is to generate a tree
-; main program expects a list of point,vector tuples that represent cyllindres making up the tree
-
-; operative keyword: fractals
-
-; data structure:sort of
-; node: (x y z d)  (vector with distance)
-; tree: (node
-;        (node
-; 	(node
-; 	 (node) (node) (node) (node) (node))
-; 	(node
-; 	 (node) (node) (node) (node) (node))
-; 	(node
-; 	 (node) (node) (node) (node) (node)))
-;        (node
-; 	(node
-; 	 (node) (node) (node) (node) (node))
-; 	(node
-; 	 (node) (node) (node) (node) (node))
-; 	(node
-; 	 (node) (node) (node) (node) (node))))
-
-
 (def primes [2 3 5 7 11 13 17 23 29])
 (def lengths [0.8 0.7 0.5 0.3 0.099 0.097 0.093 0.088 0.081])
-(def max-depth 3)
+(def max-depth 4)
 
 
 (defn make-node [v l]
@@ -65,15 +41,8 @@
 
 (defn random-length [baselen depth]
   (defn weight [x pivot]
-    (if (or (< x pivot)
-            (< 2 (- x pivot))) 0
-  ; cos(x + sin(x)*0.9)*0.5+0.5
-        (let [x (* x (/ Math/PI (count lengths)))
-              pivot (* pivot (/ Math/PI (count lengths)))]
-          (int (Math/floor (* 10
-                              (+ 0.5 (* 0.5
-                                        (Math/cos (+ (- x pivot)
-                                                     (* 0.9 (Math/sin (- x pivot)))))))))))))
+    (if (< x pivot) 0
+	(int (Math/floor (/ 9 (inc (* 3 (- x pivot))))))))
 
   (* baselen (weighed-random-choice lengths #(weight %1 depth))))
 
