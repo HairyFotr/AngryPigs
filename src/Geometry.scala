@@ -20,6 +20,7 @@ class Vec3(var x:Float, var y:Float, var z:Float) {
     def +=(v:Vec3) = applyVector(v, +1)
     def -=(v:Vec3) = applyVector(v, -1)
     def *(f:Float):Vec3 = this.clone.map(_ * f)
+    def /(f:Float):Vec3 = this.clone.map(_ / f)
     def X(v:Vec3):Vec3 = new Vec3(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x)
     def dot(v:Vec3):Float = (new Vec3(x*v.x, y*v.y, z*v.z)).getPoints.reduceLeft(_+_)
 
@@ -145,7 +146,7 @@ class DisplayModel(var renderfunc:()=>Unit) extends BasicModel with Vector {
     }    
 }
 
-class GeneratorModel(var generator:()=>Object, draw:Object=>Unit) extends DisplayModel {
+class GeneratorModel(generator:()=>Object, draw:Object=>Unit) extends DisplayModel {
     var data:Object = generator();
     renderfunc = ()=>{draw(data);()}
     
@@ -224,6 +225,10 @@ class Branch(var parent:Branch) extends Properties {
         if(this eq c) return;
         c.setParent(this);
     }
+    def detach(){
+        parent.children -= this;
+        this.setParent(null);
+    }
     
     def doAll(f:Branch=>Unit):Unit = {
         f(this);
@@ -237,6 +242,46 @@ class Branch(var parent:Branch) extends Properties {
     def print():Unit = {
         println(depth+" "*(depth*2) + rootVec +" -- " + diffVec)
         children.foreach(_.print())
+    }
+    
+    def render() = if(visible) {
+        //import org.lwjgl.opengl._
+        import org.lwjgl.opengl.GL11._
+        import Global._
+        val branch = this // I'm lazy :P
+        if(settings.get[Boolean]("fatlines")) {
+            val vecA = branch.rootVec;
+            val vecB = branch.destVec;
+            
+            val z = new Vec3(0,0,1)
+            val p = vecA - vecB
+            val cross = z X p
+            val angle = z angle p
+            
+            glPushMatrix
+            glTranslatef(vecB.x,vecB.y,vecB.z);
+            glRotatef(angle,cross.x,cross.y,cross.z);
+            glColor3f(0.7f,0.2f,0f);
+            gluQuadrics.cylinder.draw(0.2f/branch.depth,0.4f/branch.depth, branch.diffVec.length, (settings.get[Float]("graphics")*4f).toInt,1);
+            if(branch.properties.get[Boolean]("hasLeaf")) {
+                glScalef(1,1.6f,1)
+                glTranslatef(0,-0.2f,0)
+                glColor3f(0.2f,0.8f,0.1f)
+                gluQuadrics.disk.draw(0,0.175f, (settings.get[Float]("graphics")*4f).toInt,1)
+            }
+            glPopMatrix;
+        } else {
+            glColor3f(0.7f,0.2f,0f);
+            glBegin(GL_LINES)
+            glVertex3f(branch.rootVec.x,
+                       branch.rootVec.y,
+                       branch.rootVec.z);                        
+            
+            glVertex3f(branch.destVec.x,
+                       branch.destVec.y,
+                       branch.destVec.z)
+            glEnd;
+        }    
     }
 }
 

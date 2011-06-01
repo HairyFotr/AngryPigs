@@ -136,6 +136,7 @@ object Game {
     var campigLink:ModelLink=null;
     var models = new ListBuffer[DisplayModel];
     var generatedModels = new ListBuffer[GeneratorModel];
+    var dropBranches = new ListBuffer[GeneratorModel];
     
     //size of world
     val worldSize = 400;
@@ -440,6 +441,7 @@ object Game {
             } catch {
                 case e:RuntimeException => {
                     println("give-me-tree threw exception");                    
+                    e.printStackTrace;
                     data = null;
                 }
             }
@@ -460,61 +462,7 @@ object Game {
             //seal here:P
         };
 
-        def renderTree:Object=>Unit = (data:Object)=>{
-            import org.lwjgl.opengl._
-            import Global._
-
-            val tree = data.asInstanceOf[Branch];
-            tree.doAll(
-                (branch:Branch) => if(branch.visible){                    
-                    if(settings.get[Boolean]("fattrees")) {
-                        val vecA = branch.rootVec;
-                        val vecB = branch.destVec;
-                        
-                        val z = new Vec3(0,0,1)
-                        val p = vecA - vecB
-                        val cross = z X p
-                        val angle = z angle p
-                        
-                        glPushMatrix
-                        glTranslatef(vecB.x,vecB.y,vecB.z);
-                        glRotatef(angle,cross.x,cross.y,cross.z);
-                        glColor3f(0.7f,0.2f,0f);
-                        gluQuadrics.cylinder.draw(0.2f/branch.depth,0.4f/branch.depth, branch.diffVec.length, (settings.get[Float]("graphics")*4f).toInt,1);
-                        if(branch.properties.get[Boolean]("hasLeaf")) {
-                            glScalef(1,1.6f,1)
-                            glTranslatef(0,-0.2f,0)
-                            glColor3f(0.2f,0.8f,0.1f)
-                            gluQuadrics.disk.draw(0,0.175f, (settings.get[Float]("graphics")*4f).toInt,1)
-                        }
-                        glPopMatrix;
-                        /*{
-                            val box = branch.properties.get[BoundingBox]("box");
-                            glColor3f(1f,1f,1f);
-                            glBegin(GL_LINES)
-                            glVertex3f(box.min.x,
-                                       box.min.y,
-                                       box.min.z);
-                            glVertex3f(box.max.x,
-                                       box.max.y,
-                                       box.max.z);                            
-                            glEnd
-                        }*/
-                    } else {
-                        glColor3f(0.7f,0.2f,0f);
-                        glBegin(GL_LINES)
-                        glVertex3f(branch.rootVec.x,
-                                   branch.rootVec.y,
-                                   branch.rootVec.z);                        
-                        
-                        glVertex3f(branch.destVec.x,
-                                   branch.destVec.y,
-                                   branch.destVec.z)
-                        glEnd;
-                    }
-                }
-            );
-        }
+        def renderTree:Object=>Unit = (data:Object)=>data.asInstanceOf[Branch].doAll(_.render);
         
         var tree = new GeneratorModel(giveMeTree, renderTree);
         tree.setPosition(0,-worldSize+2.5f,-worldSize/2+30);
@@ -598,7 +546,7 @@ object Game {
         glLoadIdentity;
     }
   
-    var frameIndepRatio = (20000000f);
+    var frameIndepRatio = (30000000f);
     var treeView = false;
     var pause = false
 
@@ -632,26 +580,50 @@ object Game {
                 var collision = false;
                 var branch = tree.data.asInstanceOf[Branch];
                 branch.doWhile((branch)=>{!done}, 
-                    (branch)=>{
-                        val box = new BoundingBox(List(branch.rootVec, branch.destVec));
-                        val globalBox = branch.properties.get[BoundingBox]("box");
+                    (branch)=>if(branch.visible) {
+                        val box = branch.properties.get[BoundingBox]("box");
                         if(branch.depth==1) {
-                            if(globalBox.pointCollide(pig.pos, tree.pos)) {
+                            if(box.pointCollide(pig.pos, tree.pos)) {
                                 println("collision2");
                             } else {
                                 done = true;// no collision
                             }
-                        } else {
-                            if(!branch.parent.visible) branch.visible = false;
-                            if(box.pointCollide(pig.pos, tree.pos) || globalBox.pointCollide(pig.pos, tree.pos)) {
-                                branch.visible = false;
-                                collision = true;
-                                println("collision");
-                            }
+                        } else if(box.pointCollide(pig.pos, tree.pos)) {
+                            //if (branch.depth > 2) branch.visible = false;
+                            collision = true;
+                            branch.detach;
+                            
+                            var drop = new GeneratorModel(()=>{branch}, (data:Object)=>data.asInstanceOf[Branch].doAll(_.render));
+                            val rootV = branch.rootVec;
+                            branch.doAll((_.rootVec -= rootV));
+                            drop.pos = tree.pos + rootV;
+                            drop.vector = new Vec3(
+                                math.sin(pig.rot.y/(180f/math.Pi)).toFloat*pig.vector.z,
+                                pig.vector.y,
+                                math.cos(pig.rot.y/(180f/math.Pi)).toFloat*pig.vector.z
+                            )
+                            println("dsfdsf");
+                            println(drop.pos);
+                            println(worldSize);
+                            drop.compile();
+                            dropBranches += drop
+                            
+                            //branch.doAll((b)=>b.visible=false)
+                            println("collision");
                         }
                     }
                 );
                 if(collision) tree.compile;
+            }
+            // drop branches
+            for(branch <- dropBranches) {
+                branch.vector += gravity/3*renderTime;
+                branch.vector -= branch.vector*renderTime*0.05f;
+                branch.pos += branch.vector*renderTime;
+                if(branch.pos.y < -worldSize-50) {
+                    dropBranches -= branch;
+                    println("dropped branch");
+                }
             }
         }
                 
@@ -659,7 +631,7 @@ object Game {
         cam.lookAt(moveObj)
         cam.render
 
-        for(model <- models) if(model.visible) {
+        for(model <- models ++ dropBranches) if(model.visible) {
             glPushMatrix;
             model.doTransforms
             model.render
@@ -679,8 +651,8 @@ object Game {
             treeView = !treeView
             timeLock.lockIt(500);
         }
-        if(isKeyDown(KEY_1)) { settings += "fattrees" -> false; trees.foreach(_.compile()) } else 
-        if(isKeyDown(KEY_2)) { settings += "fattrees" -> true; trees.foreach(_.compile()) } else
+        if(isKeyDown(KEY_1)) { settings += "fatlines" -> false; trees.foreach(_.compile()) } else 
+        if(isKeyDown(KEY_2)) { settings += "fatlines" -> true; trees.foreach(_.compile()) } else
         if(isKeyDown(KEY_3)) { trees.foreach(_.regenerate()) } else
         if(isKeyDown(KEY_5)) { 
             settings += "graphics" -> (settings.get[Float]("graphics")+1f);
