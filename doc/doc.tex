@@ -30,6 +30,7 @@
 \newcommand\br{%
  \ \\ \ \\%
 }
+\def\pa{\\[-6pt]}
 
 \usepackage{hyperref}
 \hypersetup{
@@ -62,27 +63,31 @@ AngryPigs je zabavna 3D igra, v kateri igralec katapultira prašiče v drevesa, 
 
 \chapter{Tehnologija}
 \section{Uvod}
-Igra je napisana v Scali, z izjemo dela, ki generira drevesa -- ta je bil napisan v jeziku Clojure. Scala je razmeroma nov jezik, ki teče na JVM(Java Virtual Machine) in hkrati podpira objektno ter funkcijsko programiranje. Clojure je moderen dialekt Lispa, ki tudi teče na JVM. Oba sva bila pred začetkom projekta skoraj čista začetnika v obeh jezikih.\\[-7pt]
+Igra je napisana v Scali, z izjemo dela, ki generira drevesa -- ta je bil napisan v jeziku Clojure. Scala je razmeroma nov jezik, ki teče na JVM(Java Virtual Machine) in hkrati podpira objektno ter funkcijsko programiranje. Clojure je moderen dialekt Lispa, ki tudi teče na JVM. Pred začetkom projekta sva bila čista začetnika v obeh jezikih -- sedaj Jaka zna nekaj Clojura in Matic nekaj Scale.\pa
 
 Za grafiko sva uporabila knjižnico LWJGL. Prevedla in priredila sva
 nekatere primere iz vaj. Igra ne uporablja naprednih tehnik in
 funkcionalnosti OpenGL-a, predvsem zato, ker ima Matic precej počasen
 prenosnik in za nameček na njem poganja Linux, ki ne podpira njegove
 vgrajene grafične kartice. Grafika mu teče v programsko-pospešenem
-načinu. (To ni le šala, ampak precej velik faktor pri nekaterih
+načinu. (To ni le šala, ampak je bil dejansko precej velik faktor pri nekaterih
 odločitvah)
 
 \section{Prevajanje}
-Prvi problem na katerega sva naletela je, kako hkrati prevajati Scalo in Clojure, ter kako v Scali uporabiti funkcije iz Clojura. Oba jezika sta v precejšnji meri kompatibilna z Javo, v smislu, da lahko uporabljata vse Javine razrede, z nekaj truda gre tudi obratno, z še nekaj več truda, pa lahko sodelujeta tudi Scala in Clojure.\\[-7pt]
+Prvi problem na katerega sva naletela je, kako hkrati prevajati Scalo in Clojure, ter kako v Scali uporabiti funkcije iz Clojura. Oba jezika sta v precejšnji meri kompatibilna z Javo, v smislu, da lahko uporabljata vse Javine razrede, z nekaj truda gre tudi obratno, z še nekaj več truda, pa lahko sodelujeta tudi Scala in Clojure.\pa
 
-Po približno tednu pisanja lastne skripte za prevajanje, ki sva jo poimenovala \textit{bashbeans}, sva ugotovila, da za oba jezika obstaja način, za dinamično nalaganje kode med delovanjem programa. Delno vlogo pri razvoju bashbeans pa je imelo tudi dejstvo, da ima Matic precej počasen prenosnik, ter da ima Scala precej počasen prevajalnik -- bashbeans tako vsakokrat shrani hash vrednosti izvornih datotek in ne prevaja ponovno tistih datotek, ki se niso spremenile. Kasneje sva odkrila, da ima Scala tudi fsc(fast scala compiler), ki naloži prevajalnik v ozadje kot daemon in tudi hrani delno prevedene datoteke in je tako le prvo prevajanje po zagonu sistema počasno. Tako je na žalost večina uporabnosti bashbeansa odpadla, imava pa še dovolj idej, kako ga poboljšati in morda uporabiti še na kakem drugem projektu.
+Po približno tednu pisanja lastne skripte za prevajanje, ki sva jo poimenovala ``bashbeans'', sva ugotovila, da za oba jezika obstaja način, za dinamično nalaganje kode med delovanjem programa. Tako se mora prevesti le del, ki je v Scali, ta pa nato dinamično naloži Clojure datoteke. Pri tem je nekaj slabosti glede razhroščevanja, ter hitrosti izvajanja, ampak je v primerjavi s prejšnjimi poskusi zelo enostavno.\pa
+
+Delno vlogo pri razvoju bashbeans je imelo spet tudi dejstvo, da ima Matic precej počasen prenosnik, ter da ima Scala zelo počasen prevajalnik -- bashbeans tako vsakokrat shrani MD5 hash vrednosti izvornih datotek in ne prevaja ponovno tistih datotek, ki se niso spremenile.\pa
+
+Kasneje sva odkrila, da ima Scala tudi fsc(fast scala compiler), ki naloži prevajalnik v ozadje kot daemon in tudi hrani delno prevedene datoteke in je tako le prvo prevajanje po zagonu sistema počasno. Tako je na žalost večina uporabnosti bashbeansa odpadla, imava pa še dovolj idej, kako ga poboljšati in morda uporabiti še na kakem drugem projektu.
 
 \section{Modeliranje}
-Zelo zgodaj v razvoju sva se odločila, da bodo vsi podatki in modeli generirani programsko -- nekateri so skorajda ročno napisani v kodi, kar ni najlepše, ampak večina pa uporablja nekakšne naključne algoritme za generiranje.\\[-7pt]
+Zelo zgodaj v razvoju sva se odločila, da bodo vsi modeli generirani programsko -- nekateri so tako skorajda ročno zapisani v kodi, kar ni najlepše, ampak večina pa uporablja nekakšne naključne algoritme za generiranje. Tu gre posebej poudariti generiranje dreves, kateremu je naprej v dokumentaciji posvečen precej dolg odsek.\pa
 
-Pri tem se je funkcijsko programiranje zelo izkazalo, saj je možno napisati razred, ki v konstruktor sprejme dve funkciji: eno ki generira objekte, ter drugo, ki iz zgeneriranih podatkov izriše grafiko -- razred nato znotraj sebe avtomatsko shrani izris kot OpenGL DisplayList in so tako nadaljni izrisi precej hitrejši, brez da bi bilo treba za to kaj posebej narediti.\\[-7pt]
+Pri generativnem pristopu se je funkcijsko programiranje zelo izkazalo, saj je možno npr. napisati razred, ki v konstruktor sprejme dve funkciji: eno ki generira objekte, ter drugo, ki iz zgeneriranih podatkov izriše grafiko -- razred nato znotraj sebe avtomatsko shrani izris kot OpenGL DisplayList in so tako nadaljni izrisi precej hitrejši, brez da bi bilo treba za to kaj posebej narediti.\pa
 
-Uporabnost tega se je pokazala tudi, ko sva lahko zelo hitro razvila avtomatsko prilagajanje stopnje detajlov, glede na hitrost računalnika -- ob spremembi stopnje detajlov, razredu preprosto povemo, naj posodobi svoj izris.
+Pristop se je izkazal za dobrega tudi, ko sva lahko zelo hitro razvila avtomatsko prilagajanje stopnje detajlov, glede na hitrost računalnika -- ob spremembi stopnje detajlov, razredu preprosto povemo, naj posodobi svoj izris.
 
 \section{Generiranje dreves}
 Problem generiranja primerno realističnih dreves se je izkazal za
