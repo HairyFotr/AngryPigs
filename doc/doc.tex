@@ -55,7 +55,7 @@
 \end{center}
 \end{titlepage}
 \chapter{O igri}
-AngryPigs je zabavna 3D igra, v kateri igralec katapultira prašiče v drevesa, ter skuša z njih sklatiti ptice, ter njihova gnezda. Igra je bila ustvarjena v sklopu seminarske naloge za predmet Računalniška grafika na univerzitetnem programu Fakultete za računalništvo in informatiko v Ljubljani. Repozitorij z izvorno kodo je na voljo na: \inline{\url{https://github.com/HairyFotr/AngryPigs}}
+AngryPigs je zabavna 3D igra, v kateri igralec katapultira prašiče v drevesa. Igra je bila ustvarjena v sklopu seminarske naloge za predmet Računalniška grafika na univerzitetnem programu Fakultete za računalništvo in informatiko v Ljubljani. Repozitorij z izvorno kodo je na voljo na:\\ \inline{\url{https://github.com/HairyFotr/AngryPigs}}
 \br
 \begin{center}
 \includegraphics[width=12cm]{conceptsmall}
@@ -212,17 +212,36 @@ Za potrebe klicanja sem spisal majhen razred, prek katerega precej naravno klič
 
 Po nekaj dolgih dneh sem našel način za prepoznavo vseh možnih posebnosti strukture in se jo odločil raje čimprej prenesti v svojo strukturo, ki je precej bolj prijazna za uporabo.
 
-\chapter{Rezultati}
+\section{Detekcija trkov}
+Prej omenjena struktura je lepa drevesna objektna struktura, ki sproti generira bounding-boxe in na prvem nivoju, kjer zaznamo trk, preprosto vejo staknemo z drevesa in ji damo vektor približno v smeri prašiča. Veje se lepo razpršijo po zraku in padejo na tla.
 
+\chapter{Rezultati}
+Rezultat vsega skupaj je funkcijsko čista igra z malce nenavadno
+igralnostjo. Kot že samo ime pove je AngryPigs igra po vzoru veliko
+slavnejše AngryBirds, kjer s katapultom streljamo jezne ptiče na uboge
+pujse, ki niso storili prav nič hudega razen pomendrali ali celo
+pojedli nekaj ptičjih jajc.
+
+\begin{center}
+\includegraphics[width=12cm]{PigPlushies.jpg}
+\end{center}
+AngryPigs so se sicer ptičom želeli maščevati, a so se zavedli, da so
+hudičevi ptiči zdaj vrlo slavne osebe in bi se lahko znašli v velikih
+težavah ako bi te ptiče napadli.
+\br
+Zato svoje frustracije zdaj sproščajo na drevesih.
+\br
+Pujsa lahko v igri vozimo na katapultu ter ustrelimo v drevo, od
+katerega se ob zadetku atraktivno odlomi velik del krošnje, ki nato
+odleti z drevesa v velikem loku. Ko pujs končno pristane se lahko
+sprehodi naokoli, dokler ga spet ne posadimo na katapult in se lotimo
+naslednjega drevesa.
 
 \chapter{Navodila za uporabo}
-\subsection{Namestitev}
-Igra v principu deluje povsod, kjer je podprt LWJGL, a je skripta bashbeans za prevajanje in poganjanje napisana v bash-u. Torej deluje na Linux in MacOS, na Windows pa deluje v Cygwin bashu.\pa
-
-Najprej je potrebno naložiti Scalo verzije 2.8 ali 2.9 z \inline{\url{http://www.scala-lang.org/downloads}}. Tudi ta korak bi bilo mogoče preskočiti, če bi imeli boljšo skripto in Scalino .jar datoteko v classpathu.
-
-Nato poženemo bashbeans z zastavico -r (Run):
-\inliney{$ ./bashbeans -r}
+Igra v principu deluje povsod, kjer je podprt LWJGL, a je skripta bashbeans za prevajanje in poganjanje napisana v bashu, torej deluje na Linux in MacOS, na Windows pa deluje v Cygwin bashu.\br
+Najprej je potrebno naložiti Scalo verzije 2.8 ali 2.9 (\inline{\url{http://www.scala-lang.org/downloads}}). Tudi ta korak bi bilo mogoče preskočiti, če bi imeli boljšo skripto in neko posebno Scala .jar datoteko v classpathu.
+\br
+Igro nato preprosto poženemo z: \inline{./bashbeans -r}
 
 
 \end{document}
