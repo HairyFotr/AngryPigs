@@ -54,15 +54,35 @@
 \end{center}
 \end{titlepage}
 \chapter{O igri}
-Angry Pigs je zabavna 3D igra, v kateri igralec obstreljuje drevesa in skuša z njih sklatiti ptiče, ter njihova gnezda.
-\br
-Igra je napisana v jezikih Clojure in Scala, z uporabo OpenGL knjižnice LWJGL.
+AngryPigs je zabavna 3D igra, v kateri igralec katapultira prašiče v drevesa, ter skuša z njih sklatiti ptice, ter njihova gnezda. Igra je bila ustvarjena v sklopu seminarske naloge za predmet Računalniška grafika na univerzitetnem programu Fakultete za računalništvo in informatiko v Ljubljani. Repozitorij z izvorno kodo je na voljo na: \inline{\url{https://github.com/HairyFotr/AngryPigs}}
 \br
 \begin{center}
 \includegraphics[width=12cm]{conceptsmall}
 \end{center}
 
 \chapter{Tehnologija}
+\section{Uvod}
+Igra je napisana v Scali, z izjemo dela, ki generira drevesa -- ta je bil napisan v jeziku Clojure. Scala je razmeroma nov jezik, ki teče na JVM(Java Virtual Machine) in hkrati podpira objektno ter funkcijsko programiranje. Clojure je moderen dialekt Lispa, ki tudi teče na JVM. Oba sva bila pred začetkom projekta skoraj čista začetnika v obeh jezikih.\\[-7pt]
+
+Za grafiko sva uporabila knjižnico LWJGL. Prevedla in priredila sva
+nekatere primere iz vaj. Igra ne uporablja naprednih tehnik in
+funkcionalnosti OpenGL-a, predvsem zato, ker ima Matic precej počasen
+prenosnik in za nameček na njem poganja Linux, ki ne podpira njegove
+vgrajene grafične kartice. Grafika mu teče v programsko-pospešenem
+načinu. (To ni le šala, ampak precej velik faktor pri nekaterih
+odločitvah)
+
+\section{Prevajanje}
+Prvi problem na katerega sva naletela je, kako hkrati prevajati Scalo in Clojure, ter kako v Scali uporabiti funkcije iz Clojura. Oba jezika sta v precejšnji meri kompatibilna z Javo, v smislu, da lahko uporabljata vse Javine razrede, z nekaj truda gre tudi obratno, z še nekaj več truda, pa lahko sodelujeta tudi Scala in Clojure.\\[-7pt]
+
+Po približno tednu pisanja lastne skripte za prevajanje, ki sva jo poimenovala \textit{bashbeans}, sva ugotovila, da za oba jezika obstaja način, za dinamično nalaganje kode med delovanjem programa. Delno vlogo pri razvoju bashbeans pa je imelo tudi dejstvo, da ima Matic precej počasen prenosnik, ter da ima Scala precej počasen prevajalnik -- bashbeans tako vsakokrat shrani hash vrednosti izvornih datotek in ne prevaja ponovno tistih datotek, ki se niso spremenile. Kasneje sva odkrila, da ima Scala tudi fsc(fast scala compiler), ki naloži prevajalnik v ozadje kot daemon in tudi hrani delno prevedene datoteke in je tako le prvo prevajanje po zagonu sistema počasno. Tako je na žalost večina uporabnosti bashbeansa odpadla, imava pa še dovolj idej, kako ga poboljšati in morda uporabiti še na kakem drugem projektu.
+
+\section{Modeliranje}
+Zelo zgodaj v razvoju sva se odločila, da bodo vsi podatki in modeli generirani programsko -- nekateri so skorajda ročno napisani v kodi, kar ni najlepše, ampak večina pa uporablja nekakšne naključne algoritme za generiranje.\\[-7pt]
+
+Pri tem se je funkcijsko programiranje zelo izkazalo, saj je možno napisati razred, ki v konstruktor sprejme dve funkciji: eno ki generira objekte, ter drugo, ki iz zgeneriranih podatkov izriše grafiko -- razred nato znotraj sebe avtomatsko shrani izris kot OpenGL DisplayList in so tako nadaljni izrisi precej hitrejši, brez da bi bilo treba za to kaj posebej narediti.\\[-7pt]
+
+Uporabnost tega se je pokazala tudi, ko sva lahko zelo hitro razvila avtomatsko prilagajanje stopnje detajlov, glede na hitrost računalnika -- ob spremembi stopnje detajlov, razredu preprosto povemo, naj posodobi svoj izris.
 
 \section{Generiranje dreves}
 Problem generiranja primerno realističnih dreves se je izkazal za
@@ -70,8 +90,92 @@ algoritemsko precej zanimivega. V namene seminarske naloge je bil
 rešen ``iz nule'', čeprav je ta problem že dokaj raziskan v obliki
 L-sistemov in verjetno še česa. Ampak to ni tako zabavno.
 
-Osnovna postavka merjenja uspeh akončnega algoritma je bila funkcijska
-čistost, saj sem želel postaviti siste, ki iz peščice začetnih
+Osnovna postavka merjenja uspeha končnega algoritma je bila funkcijska
+čistost, saj sem želel postaviti sistem, ki iz peščice začetnih
+podatkov generira neskončno število različnih dreves. Realističnost je
+parameter, ki ga je bilo malo težje meriti zato je umetniški vtis
+končnega rezultata bolj subjektivna ocena, da so drevesa uspešno
+zgenerirana kot pa neka številka. Ako bi že moral definirati kako
+uspešno algoritem generira drevesa, porečem, da 7.
+
+\subsection{Osnovni princip}
+Algoritem je zasnovan kot generator fraktalov, ki mu podamo nek vektor
+in osnovno dolžino veje, ta pa potem rekurzivno kliče samega sebe,
+dokler ne doseže neke smiselno določene meje globine drevesa.
+
+Glavna funkcija algoritma se najprej odloči koliko vej je potrebnih na
+trenutni globini, kar je definirano z vrsto praštevil (2,3,5
+...). Nato izračuna vektorski produkt med podanim vektorjem V in nekim
+izmišljenim vektorjem, s čimer dobi prvo vejo na trenutnem nivoju.
+
+Ko je izbrana prva veja, jo samo (N-1)-krat duplicira in zavrti okrog
+vektorja V. Tako ima osnovno vejo (vektor V) ter N nanjo pravokotnih
+vej, ki predstavljajo poddrevo in so enakomerno razporejene po ravnini
+na vrhu V.
+
+\includegraphics[width=12cm]{algorithmsketch.jpg}
+
+Naslednji korak je samo še preprosta rotacija vseh vej za nek kot v
+nasprotni smeri vektorja V in že imamo zgenerirano krošnjo za podano
+vejo oz. deblo. Nato algoritem spet pokliče samega sebe na vrhu vsake
+tako zgenerirane veje.
+
+
+\subsection{Naključnost}
+Po zgornjem algoritmu so drevesa sicer zgledala dokaj realistična,
+vendar pa so bila vsa enaka, kar je bilo tako dolgočasno, kot je
+onemogočalo, da bi tudi gozd deloval prilično resničen. Rešitev je
+torej neka stopnja naključnosti.
+
+Že intuitivno je opaziti, da drevo ne more biti popolnoma naključno,
+saj potem izgubi na vsem kar ga sploh dela za drevo in postane samo
+kup nekoherentnih črt. V interesu pravega znanstvenega pristopa in
+izogibanja intuitivnim skokom logike, je bilo zgenerirano tudi eno
+tako drevo.
+
+\includegraphics[width=12cm]{randomtree.png}
+
+Naključnost je bilo zategadelj potrebno zapreti v neke smiselne
+okvire, tako da bo algoritem sposoben generirati dovolj različnih
+dreves, a bo vseeno vsakič zgeneriral drevo.
+
+Podobno kot se osnoven algoritem izvaja v treh korakih, je tudi
+naključnost dodana na tri osnovne načine.
+
+Prva stopnja naključnosti se zgodi pri razporejanju vej po ravnini nad
+osnovno vejo. Tu se pri vsaki rotaciji kotu preprosto doda nek
+naključno izbran majhen kot v naključno smer, tako da razporeditev ni
+čisto uniformna.
+
+Druga stopnja naključnosti pride pri izbiri kota rotacije ``navzgor'',
+ki določa kako široka bo krošnja. Tu gre za dokaj osnovno verzijo
+uteženega naključnega izbiranja - algoritmu je namreč podan statično
+izbran spisek deliteljev polnega radiana, tako da so naključne izbire
+v končni fazi zgenerirale subjektivno zadvooljivo drevo. V končni
+verziji kode ta del verjetno ne bo več tako statičen.
+
+Najbolj zanimivo računanje naključnosti pa je pri izbiranju dolžine
+vej, saj se je izkazalo za izredno pomembno, da so vse naslednje veje
+krajše od prejšnjih, ter da se zelo kratke veje ne pripetijo prezgodaj
+v drevesu. V ta namen je bila ustvarjena funkcija naključne izbire,
+kateri lahko podamo funkcijo gostote verjetnosti. Na ta način
+pridobimo popoln nadzor nad obliko verjetnosti.
+
+Funkcija gostote verjetnosti, ki se je izkazala za najboljšo, je
+zlepek, ki zagotavlja, da ima vsak naslednji nivo krajše veje od
+prejšnjega, ter vsaki naslednji možni izbiri dolžine določi tretjino
+verjetnosti prejšnje. (dolžine so namreč zaporedje vse manjših
+večkratnikov osnovne dolžine, ki je parameter algoritma).
+
+\subsection{Gravitacija}
+\section{Generiranje dreves}
+Problem generiranja primerno realističnih dreves se je izkazal za
+algoritemsko precej zanimivega. V namene seminarske naloge je bil
+rešen ``iz nule'', čeprav je ta problem že dokaj raziskan v obliki
+L-sistemov in verjetno še česa. Ampak to ni tako zabavno.
+
+Osnovna postavka merjenja uspeha končnega algoritma je bila funkcijska
+čistost, saj sem želel postaviti sistem, ki iz peščice začetnih
 podatkov generira neskončno število različnih dreves. Realističnost je
 parameter, ki ga je bilo malo težje meriti zato je umetniški vtis
 končnega rezultata bolj subjektivna ocena, da so drevesa uspešno
@@ -149,7 +253,6 @@ večkratnikov osnovne dolžine, ki je parameter algoritma).
 
 \subsection{Gravitacija}
 
-\section{The rest}
 
 \chapter{Rezultati}
 
