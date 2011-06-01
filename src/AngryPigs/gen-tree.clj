@@ -74,9 +74,7 @@
 	     (make-node (let [endpoint (map #(* %1 (last branch))
 					    (butlast branch))
 			      gravity (map #(* %1 0.5) gravity)]
-			  (normalize (map #(+ (nth endpoint %1)
-					      (nth gravity %1))
-					  (take (count gravity) (iterate inc 0)))))
+			  (normalize (move-point endpoint gravity)))
 			(last branch)))
 
 	   (concat [node]
@@ -94,5 +92,5 @@
                            0
 			   (normalize (map - [a b c])))))
 
-(println (give-me-tree 0 2 0 5))
+;(println (give-me-tree 0 2 0 5))
 

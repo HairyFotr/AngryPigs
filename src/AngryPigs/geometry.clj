@@ -93,3 +93,8 @@
                                 (*scalar (*matrices L L)
                                          (/ (- 1 (Math/cos angle))
                                             (* d d)))))))))))
+
+(defn move-point [point vector]
+  (map #(+ (nth point %1)
+	   (nth vector %1))
+       (take (count vector) (iterate inc 0))))
