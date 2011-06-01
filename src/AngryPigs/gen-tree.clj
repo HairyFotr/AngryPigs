@@ -30,6 +30,9 @@
                                          (replicate 7 14))))
                 (rand-nth (list -1 1 -1 1 -1 1)))))
 
+(defn gravity-angle [depth]
+  (/ Math/PI 5))
+
 (defn weighed-random-choice [choices weight]
   (defn indexes []
     (flatten (map #(replicate (weight %1) %1)
@@ -75,7 +78,12 @@
 				      (random-up-angle depth)))
 		  branches))
 
-
+	   (defn gravity [branches]
+	     (map #(normalize (rotate %1
+				      (cross-product %1
+						     (normalize (butlast node)))
+				      1))
+		  branches))
 
 	   (concat [node]
 		   [(map #(give-me-tree
@@ -83,7 +91,7 @@
 				      (random-length baselen depth))
 			   baselen
 			   (inc depth))
-			 (curve-up (make-branches)))])))))
+			 (gravity (curve-up (make-branches))))])))))
 
-;(println (give-me-tree 0 2 0 5))
+(println (give-me-tree 0 2 0 5))
 
