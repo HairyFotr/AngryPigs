@@ -8,7 +8,8 @@ import org.lwjgl.util.glu.{Sphere,Cylinder,Disk,PartialDisk}
 object Global {
     var settings = new SettingMap[String];
     settings += "graphics" -> 2f; // polygon multiplier for generatives.
-    settings += "fatlines" -> true;
+    settings += "fatlines" -> true; // tree rendering
+    settings += "air" -> false; // lol, pig fly
 
     val rand = new Random;
     

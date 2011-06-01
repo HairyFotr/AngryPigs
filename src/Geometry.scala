@@ -66,11 +66,6 @@ trait Vector2 {
 trait Points {
     var points:Array[Vec3]=null;
 }
-//inner list= (pos, vec)
-trait Lines {
-    var lines:List[List[Vec3]]=null;
-}
-
 class Quad(var p1:Vec3, var p2:Vec3, var p3:Vec3, var p4:Vec3) {
     def getPoints = List(p1,p2,p3,p4);
     
@@ -162,6 +157,43 @@ class GeneratorModel(generator:()=>Object, draw:Object=>Unit) extends DisplayMod
         res.rot = this.rot.clone
         res.scale = this.scale.clone
         res
+    }
+}
+
+class TrailModel(var points:List[Vec3]) 
+    extends GeneratorModel(()=>{points}, 
+        (data:Object)=>{
+            import org.lwjgl.opengl.GL11._
+            import Global._
+
+            val points = data.asInstanceOf[List[Vec3]];
+            glColor3f(1f,1f,1f);
+
+            for(i <- 1 until points.length) {
+                val vecA = points(i-1);
+                val vecB = points(i);
+                
+                val z = new Vec3(0,0,1)
+                val p = vecA - vecB
+                val cross = z X p
+                val angle = z angle p
+                
+                glPushMatrix
+                glTranslatef(vecB.x,vecB.y,vecB.z);
+                glRotatef(angle,cross.x,cross.y,cross.z);
+                gluQuadrics.cylinder.draw(0.2f,0.2f, p.length, 5,1);
+                glPopMatrix
+            }
+
+            glBegin(GL_LINES)
+            for(p <- points) glVertex3f(p.x, p.y, p.z);
+            glEnd;
+            println("lolololo");
+        }) {
+        
+    def +=(v:Vec3) = {
+        data = data.asInstanceOf[List[Vec3]] ++ List(v);
+        compile();
     }
 }
 

@@ -137,6 +137,7 @@ object Game {
     var models = new ListBuffer[DisplayModel];
     var generatedModels = new ListBuffer[GeneratorModel];
     var dropBranches = new ListBuffer[GeneratorModel];
+    var trails = new ListBuffer[TrailModel];
     
     //size of world
     val worldSize = 400;
@@ -568,9 +569,27 @@ object Game {
                 moveObj.vector.y,
                 math.cos(moveObj.rot.y/(180f/math.Pi)).toFloat*moveObj.vector.z
             )
+
+            moveObj.pos.clamp(worldSize-2.5f);
+            val mY = moveObj.pos.y;
             moveObj.pos += moveVector*renderTime;
             moveObj.pos.clamp(worldSize-2.5f);
+            if(moveObj.pos.y==mY && settings.get[Boolean]("air")) {
+                settings += "air"->false;println("pig is on ground");
+                val trailcount = 3///
+                if(trails.length >= trailcount) 
+                    trails = trails.drop(1);
+            }
             
+            if(settings.get[Boolean]("air")) {
+                (trails.last) += pig.pos;
+                println(trails.last.data.asInstanceOf[List[Vec3]].length);
+            }
+            if(trails.length == 0) 
+                trails += new TrailModel(List(pig.pos));
+
+            (trails.last) += pig.pos;
+
             pigcatapultLink.applyLink;
             campigLink.applyLink;
             
@@ -631,7 +650,7 @@ object Game {
         cam.lookAt(moveObj)
         cam.render
 
-        for(model <- models ++ dropBranches) if(model.visible) {
+        for(model <- models ++ dropBranches ++ trails) if(model.visible) {
             glPushMatrix;
             model.doTransforms
             model.render
@@ -705,7 +724,7 @@ object Game {
         if(isKeyDown(KEY_UP))    moveObj.vector.z+=keymove/5f;
         if(isKeyDown(KEY_DOWN))  moveObj.vector.z-=keymove/5f;
         
-        if(isKeyDown(KEY_SPACE) && !timeLock.isLocked){
+        if(isKeyDown(KEY_SPACE) && !settings.get[Boolean]("air")){
             if(pigcatapultLink.isLinked) {
                 pigcatapultLink.breakLink;
                 println("pig-catapult Link Broken")
@@ -717,7 +736,8 @@ object Game {
                 pig.vector.y=3f;
                 pig.vector.z=4f;
             }
-            timeLock.lockIt(1000);
+            settings += "air" -> true;println("pig is in air");
+            trails += new TrailModel(List(pig.pos));
         }
         if(isKeyDown(KEY_LCONTROL) && !pigcatapultLink.isLinked) {
             pigcatapultLink.forgeLink;
