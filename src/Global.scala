@@ -41,6 +41,10 @@ class SettingMap[A] extends scala.collection.mutable.HashMap[A,Any] {
     def get[B:Manifest](key:A):B = getOrElse(key, getDefault[B]).asInstanceOf[B];
     // add trigger hooks for when some value updates :P
 }
+trait Properties {
+    var properties = new SettingMap[String];
+}
+
 
 class TimeLock {
     private var locked = false;

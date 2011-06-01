@@ -37,9 +37,9 @@ class Vec3(var x:Float, var y:Float, var z:Float) {
         if(v.z > z) z = v.z;
     }
     def takeMin(v:Vec3) {
-        if(v.x > x) x = v.x;
-        if(v.y > y) y = v.y;
-        if(v.z > z) z = v.z;
+        if(v.x < x) x = v.x;
+        if(v.y < y) y = v.y;
+        if(v.z < z) z = v.z;
     }
     
     // clamp values to some value(e.g. world size)
@@ -79,6 +79,7 @@ class Quad(var p1:Vec3, var p2:Vec3, var p3:Vec3, var p4:Vec3) {
 
 abstract class BasicModel {
     var (pos,rot,scale) = (new Vec3, new Vec3, new Vec3(1f,1f,1f));
+    var visible = true;
 
     def setPosition(x:Float,y:Float,z:Float) = { pos = new Vec3(x,y,z); }
     def setPosition(v:Vec3) = { pos = v.clone }
@@ -163,16 +164,52 @@ class GeneratorModel(var generator:()=>Object, draw:Object=>Unit) extends Displa
     }
 }
 
-class Branch (var parent:Branch) {
+class BoundingBox(var min:Vec3, var max:Vec3) {
+    def this(points:List[Vec3]) = {
+        this(points(0).clone, points(0).clone);
+        for(i <- 1 until points.length)
+            this += points(i);        
+    }
+    
+    def boxCollide(b:BoundingBox, offset:Vec3=new Vec3):Boolean = {///tolerance
+        ((min.x+offset.x < b.max.x) && (max.x+offset.x > b.min.x) && 
+         (min.y+offset.y < b.max.y) && (max.y+offset.y > b.min.y) &&
+         (min.z+offset.z < b.max.z) && (max.z+offset.z > b.min.z))
+    }
+    def pointCollide(v:Vec3, offset:Vec3=new Vec3):Boolean = {
+        ((min.x+offset.x < v.x) && (max.x+offset.x > v.x) && 
+         (min.y+offset.y < v.y) && (max.y+offset.y > v.y) &&
+         (min.z+offset.z < v.z) && (max.z+offset.z > v.z))
+    }
+    
+    def +=(v:Vec3):Unit = {
+        this.min.takeMin(v);
+        this.max.takeMax(v);
+    }
+    def +=(b:BoundingBox):Unit = {
+        this += b.min
+        this += b.max
+    }
+    def +(b:BoundingBox):BoundingBox = {
+        var t = this.clone;
+        t += b.min;
+        t += b.max;
+        t;
+    }
+    
+    override def clone:BoundingBox = new BoundingBox(min.clone,max.clone);
+}
+
+class Branch(var parent:Branch) extends Properties {
     import scala.collection.mutable.ListBuffer;
     
     var diffVec:Vec3 = new Vec3;
     var rootVec:Vec3 = new Vec3;
     def destVec:Vec3 = rootVec + diffVec;
 
-    var properties = new SettingMap[String];
     var depth = 1;
     var children = new ListBuffer[Branch];
+    var visible = true;///
 
     setParent(parent);
 
@@ -188,37 +225,13 @@ class Branch (var parent:Branch) {
         c.setParent(this);
     }
     
-    var boxes:List[Vec3] = null
-    def getBoxes():List[Vec3] = {
-        if(boxes==null)
-            generateBoxes();
-        else
-            boxes;
-    }
-    
-    // can be done on the fly.
-    def generateBoxes():List[Vec3] = {
-        var max = new Vec3;
-        var min = new Vec3;
-        
-        max.takeMax(rootVec)
-        max.takeMax(destVec)
-        min.takeMin(rootVec)
-        min.takeMin(destVec)
-        
-        for(child <- children) {
-            var maxmin = child.getBoxes();
-            max.takeMax(maxmin(0));
-            min.takeMin(maxmin(1));
-        }
-        
-        boxes = List(max, min);
-        boxes;
-    }
-        
-    def doTo(f:Branch=>Unit):Unit = {
+    def doAll(f:Branch=>Unit):Unit = {
         f(this);
-        children.foreach(_.doTo(f));
+        children.foreach(_.doAll(f));
+    }
+    def doWhile(w:Branch=>Boolean, f:Branch=>Unit):Unit = {
+        f(this);
+        if(w(this)) children.foreach(_.doWhile(w, f));
     }
 
     def print():Unit = {

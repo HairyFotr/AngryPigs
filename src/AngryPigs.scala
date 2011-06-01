@@ -100,7 +100,7 @@ object Game {
             frameCounter += 1;
 
             if(now-FPStimer > second*FPSseconds) {
-                val FPS = frameCounter/FPSseconds;
+                val FPS = frameCounter/FPSseconds.toFloat;
                 println("FPS: "+FPS);
 
                 // increase or decrease graphics detail
@@ -126,7 +126,7 @@ object Game {
     
     //models
     val cam = new Camera;
-    var terrain:GeneratorModel=null;
+    var terrain:GeneratorModel with Properties=null;
     var skybox:DisplayModel=null;
     var coordsys:DisplayModel=null;
     var pig:GeneratorModel=null;
@@ -171,10 +171,11 @@ object Game {
             ();
         }
         
-        terrain = new GeneratorModel(genTerrain, drawTerrain);
+        terrain = new GeneratorModel(genTerrain, drawTerrain) with Properties;
         terrain.setPosition(-worldSize,-worldSize,-worldSize);
         terrain.setScale(worldSize*2, 5, worldSize*2);
         terrain.compile();
+        terrain.properties += "visible"->true;
         
         // coordinate system
         coordsys = new DisplayModel(()=>{
@@ -245,7 +246,7 @@ object Game {
         def genPig:()=>Object = ()=>{
             var pigData = new SettingMap[String];
             pigData += "Moustache.has" -> (rand.nextFloat > 0.2)
-            pigData += "Moustache.no" -> (rand.nextInt(2))
+            pigData += "Moustache.which" -> (rand.nextInt(2))
             pigData += "Glasses.has" -> (rand.nextFloat > 0.2)
         }
         
@@ -288,7 +289,7 @@ object Game {
             if(pigData.get[Boolean]("Moustache.has")) {
                 glScalef(2,1,1);
                 glColor3f(0.7f,0.2f,0f);
-                pigData.get[Int]("Moustache.no") match {
+                pigData.get[Int]("Moustache.which") match {
                     case 0 =>                
                         glTranslatef(0,-0.7f,-0.2f)
                         gluQuadrics.disk.draw(0,0.5f, (graphics*9f).toInt,1);
@@ -433,8 +434,28 @@ object Game {
                 }
             }
             
-            val tree = traverse(asArray(genTree/("give-me-tree", 0f, 2f, 0f, 5f)));
-            tree.generateBoxes();
+            var data:Object = null;
+            while(data==null) try {
+                data = genTree/("give-me-tree", 0f, 2f, 0f, 5f);
+            } catch {
+                case e:RuntimeException => {
+                    println("give-me-tree threw exception");                    
+                    data = null;
+                }
+            }
+            
+            val tree = traverse(asArray(data));
+            
+            def generateBoxes(branch:Branch):BoundingBox = {
+                var box = new BoundingBox(List(branch.rootVec, branch.destVec));
+                
+                for(child <- branch.children)
+                    box += generateBoxes(child);
+                
+                branch.properties += "box" -> box;
+                box;
+            }
+            generateBoxes(tree);
             tree;
             //seal here:P
         };
@@ -444,8 +465,8 @@ object Game {
             import Global._
 
             val tree = data.asInstanceOf[Branch];
-            tree.doTo(
-                (branch:Branch) => {
+            tree.doAll(
+                (branch:Branch) => if(branch.visible){                    
                     if(settings.get[Boolean]("fattrees")) {
                         val vecA = branch.rootVec;
                         val vecB = branch.destVec;
@@ -459,7 +480,6 @@ object Game {
                         glTranslatef(vecB.x,vecB.y,vecB.z);
                         glRotatef(angle,cross.x,cross.y,cross.z);
                         glColor3f(0.7f,0.2f,0f);
-                        //branch.depth = 5
                         gluQuadrics.cylinder.draw(0.2f/branch.depth,0.4f/branch.depth, branch.diffVec.length, (settings.get[Float]("graphics")*4f).toInt,1);
                         if(branch.properties.get[Boolean]("hasLeaf")) {
                             glScalef(1,1.6f,1)
@@ -467,73 +487,33 @@ object Game {
                             glColor3f(0.2f,0.8f,0.1f)
                             gluQuadrics.disk.draw(0,0.175f, (settings.get[Float]("graphics")*4f).toInt,1)
                         }
-                        glPopMatrix
+                        glPopMatrix;
+                        /*{
+                            val box = branch.properties.get[BoundingBox]("box");
+                            glColor3f(1f,1f,1f);
+                            glBegin(GL_LINES)
+                            glVertex3f(box.min.x,
+                                       box.min.y,
+                                       box.min.z);
+                            glVertex3f(box.max.x,
+                                       box.max.y,
+                                       box.max.z);                            
+                            glEnd
+                        }*/
                     } else {
                         glColor3f(0.7f,0.2f,0f);
                         glBegin(GL_LINES)
                         glVertex3f(branch.rootVec.x,
                                    branch.rootVec.y,
                                    branch.rootVec.z);                        
-
+                        
                         glVertex3f(branch.destVec.x,
                                    branch.destVec.y,
                                    branch.destVec.z)
-                        glEnd
-                    }                    
+                        glEnd;
+                    }
                 }
             );
-            
-            
-            /*
-            traverseTree(data, 
-                (vector:Array[Float], vec:Array[Float], depth:Int) => {
-                    if(settings.get[Boolean]("fattrees")) {
-                        val vecA = new Vec3(vec(0)*vec(3),
-                                             vec(1)*vec(3),
-                                             vec(2)*vec(3))
-                                            
-                        val vecB = new Vec3(vec(0)*vec(3) + vector(0)*vector(3),
-                                             vec(1)*vec(3) + vector(1)*vector(3),
-                                             vec(2)*vec(3) + vector(2)*vector(3))
-                                            
-                        val z = new Vec3(0,0,1)
-                        val p = vecA - vecB
-                        val cross = z X p
-                        val angle = z angle p
-
-                        glPushMatrix
-                        glTranslatef(vecB.x,vecB.y,vecB.z);
-                        glRotatef(angle,cross.x,cross.y,cross.z);
-                        glColor3f(0.7f,0.2f,0f);
-
-                        if(depth==1)
-                            gluQuadrics.cylinder.draw(0.2f/depth,0.4f/depth,  vector(1)*vector(3), (settings.get[Float]("graphics")*4f).toInt,1);
-                        else
-                            gluQuadrics.cylinder.draw(0.2f/(depth-1),0.4f/(depth-1),  vector(3), (settings.get[Float]("graphics")*4f).toInt,1);
-
-                        if(rand.nextFloat < 0.075 * depth) {
-                            glScalef(1,1.6f,1)
-                            glTranslatef(0,-0.2f,0)
-                            glColor3f(0.2f,0.8f,0.1f);
-                            gluQuadrics.disk.draw(0,0.175f, (settings.get[Float]("graphics")*4f).toInt,1);
-                        }
-                        glPopMatrix
-                    } else {
-                        glColor3f(0.7f,0.2f,0f);
-                        glBegin(GL_LINES)
-                        glVertex3f(vec(0)*vec(3),
-                                   vec(1)*vec(3),
-                                   vec(2)*vec(3));                        
-
-                        glVertex3f(vec(0)*vec(3) + vector(0)*vector(3),
-                                   vec(1)*vec(3) + vector(1)*vector(3),
-                                   vec(2)*vec(3) + vector(2)*vector(3))
-                        glEnd
-                    }
-
-                    ((for(i <- 0 to 3) yield if(i==3) 1f else vec(i)*vec(3) + vector(i)*vector(3)).toArray[Float]);
-                }
-            )*/
         }
         
         var tree = new GeneratorModel(giveMeTree, renderTree);
@@ -550,7 +530,17 @@ object Game {
         tree.setPosition(-17,-worldSize+2.5f,-worldSize/2+30);
         tree.compile();
         trees += tree
+        /*
+        tree = new GeneratorModel(giveMeTree, renderTree);
+        tree.setPosition(-34,-worldSize+2.5f,-worldSize/2+30);
+        tree.compile();
+        trees += tree
 
+        tree = new GeneratorModel(giveMeTree, renderTree);
+        tree.setPosition(34,-worldSize+2.5f,-worldSize/2+30);
+        tree.compile();
+        trees += tree
+        */
         models = models ++ List(pig, catapult, terrain) ++ trees;
         generatedModels = models.filter(_.isInstanceOf[GeneratorModel]).map(_.asInstanceOf[GeneratorModel]);
     }
@@ -635,13 +625,41 @@ object Game {
             
             pigcatapultLink.applyLink;
             campigLink.applyLink;
+            
+            // collision detection
+            for(tree <- trees) if(tree.visible) {
+                var done = false;
+                var collision = false;
+                var branch = tree.data.asInstanceOf[Branch];
+                branch.doWhile((branch)=>{!done}, 
+                    (branch)=>{
+                        val box = new BoundingBox(List(branch.rootVec, branch.destVec));
+                        val globalBox = branch.properties.get[BoundingBox]("box");
+                        if(branch.depth==1) {
+                            if(globalBox.pointCollide(pig.pos, tree.pos)) {
+                                println("collision2");
+                            } else {
+                                done = true;// no collision
+                            }
+                        } else {
+                            if(!branch.parent.visible) branch.visible = false;
+                            if(box.pointCollide(pig.pos, tree.pos) || globalBox.pointCollide(pig.pos, tree.pos)) {
+                                branch.visible = false;
+                                collision = true;
+                                println("collision");
+                            }
+                        }
+                    }
+                );
+                if(collision) tree.compile;
+            }
         }
                 
         //look at this pig... look!
         cam.lookAt(moveObj)
         cam.render
 
-        for(model <- models) {
+        for(model <- models) if(model.visible) {
             glPushMatrix;
             model.doTransforms
             model.render
@@ -702,6 +720,13 @@ object Game {
             println("unpaused")
         }
         if(pause) return;
+
+        if(isKeyDown(KEY_Z) && !timeLock.isLocked){
+            terrain.visible = !terrain.visible
+            //terrain.properties += "visible"->terrain.properties.get[Boolean]("visible");
+                
+            timeLock.lockIt(100);            
+        }
 
         if(isKeyDown(KEY_LEFT))  moveObj.rot.y+=keymove*3f;
         if(isKeyDown(KEY_RIGHT)) moveObj.rot.y-=keymove*3f;
