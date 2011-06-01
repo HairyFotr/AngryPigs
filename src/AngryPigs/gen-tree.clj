@@ -30,9 +30,6 @@
                                          (replicate 7 14))))
                 (rand-nth (list -1 1 -1 1 -1 1)))))
 
-(defn gravity-angle [depth]
-  (- (/ Math/PI 12)))
-
 (defn weighed-random-choice [choices weight]
   (defn indexes []
     (flatten (map #(replicate (weight %1) %1)
@@ -49,13 +46,8 @@
 
   (* baselen (weighed-random-choice lengths #(weight %1 depth))))
 
-;(println (random-length 5 0))
-
-(defn give-me-tree
-  ([a b c d] (give-me-tree (make-node [a b c] d)
-                           d
-                           0))
-  ([node baselen depth]
+(defn giev-subtree
+  ([node baselen depth gravity]
      (if (> depth max-depth) node
 
 	 (let [first-branch (perpendicular-vector (butlast node))]
@@ -72,26 +64,35 @@
 			    (dec n))))))
 
 	   (defn curve-up [branches]
-	     (map #(rotate %1
-			   (cross-product %1
-					  (normalize (butlast node)))
-			   (random-up-angle depth))
-		  branches))
-
-	   (defn gravity [branches]
 	     (map #(normalize (rotate %1
 				      (cross-product %1
 						     (normalize (butlast node)))
-				      (gravity-angle depth)))
+				      (random-up-angle depth)))
 		  branches))
 
-	   (concat [node]
-		   [(map #(give-me-tree
-			   (make-node %1
-				      (random-length baselen depth))
-			   baselen
-			   (inc depth))
-			 (gravity (curve-up (make-branches))))])))))
+	   (defn +gravity [branch]
+	     (make-node (let [endpoint (map #(* %1 (last branch))
+					    (butlast branch))
+			      gravity (map #(* %1 0.5) gravity)]
+			  (normalize (map #(+ (nth endpoint %1)
+					      (nth gravity %1))
+					  (take (count gravity) (iterate inc 0)))))
+			(last branch)))
 
-;(println (give-me-tree 0 2 0 5))
+	   (concat [node]
+		   [(map #(giev-subtree
+			   (+gravity (make-node %1
+						(random-length baselen depth)))
+			   baselen
+			   (inc depth)
+			   gravity)
+			 (curve-up (make-branches)))])))))
+
+(defn give-me-tree
+  ([a b c d] (giev-subtree (make-node [a b c] d)
+                           d
+                           0
+			   (normalize (map - [a b c])))))
+
+(println (give-me-tree 0 2 0 5))
 
