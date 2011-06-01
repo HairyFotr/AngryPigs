@@ -5,7 +5,7 @@
 
 (def primes [2 3 5 7 11 13 17 23 29])
 (def lengths [0.8 0.7 0.5 0.3 0.099 0.097 0.093 0.088 0.081])
-(def max-depth 4)
+(def max-depth 3)
 
 
 (defn make-node [v l]
@@ -31,7 +31,7 @@
                 (rand-nth (list -1 1 -1 1 -1 1)))))
 
 (defn gravity-angle [depth]
-  (/ Math/PI 5))
+  (- (/ Math/PI 12)))
 
 (defn weighed-random-choice [choices weight]
   (defn indexes []
@@ -72,17 +72,17 @@
 			    (dec n))))))
 
 	   (defn curve-up [branches]
-	     (map #(normalize (rotate %1
-				      (cross-product %1
-						     (normalize (butlast node)))
-				      (random-up-angle depth)))
+	     (map #(rotate %1
+			   (cross-product %1
+					  (normalize (butlast node)))
+			   (random-up-angle depth))
 		  branches))
 
 	   (defn gravity [branches]
 	     (map #(normalize (rotate %1
 				      (cross-product %1
 						     (normalize (butlast node)))
-				      1))
+				      (gravity-angle depth)))
 		  branches))
 
 	   (concat [node]
@@ -93,5 +93,5 @@
 			   (inc depth))
 			 (gravity (curve-up (make-branches))))])))))
 
-(println (give-me-tree 0 2 0 5))
+;(println (give-me-tree 0 2 0 5))
 
