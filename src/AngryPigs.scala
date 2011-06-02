@@ -576,13 +576,15 @@ object Game {
             moveObj.pos.clamp(worldSize-2.5f);
             if(moveObj.pos.y==mY && settings.get[Boolean]("air")) {
                 settings += "air"->false;println("pig is on ground");
-                /*val trailcount = 3///
+                val trailcount = 3///
                 if(trails.length >= trailcount) 
-                    trails = trails.drop(1);*/
+                    trails = trails.drop(1);
+            } else {
+                cam.vector -= cam.vector*renderTime*0.05f;
             }
             
             if(settings.get[Boolean]("air")) {
-                (trails(0)) += moveObj.pos;
+                trails.last += moveObj.pos;
                 println(trails.last.data.asInstanceOf[List[Vec3]].length);
             }
             /*if(trails.length == 0) 
@@ -636,7 +638,7 @@ object Game {
             }
             // drop branches
             for(branch <- dropBranches) {
-                branch.vector += gravity/3*renderTime;
+                branch.vector += gravity/6*renderTime;
                 branch.vector -= branch.vector*renderTime*0.05f;
                 branch.pos += branch.vector*renderTime;
                 if(branch.pos.y < -worldSize-50) {
@@ -648,6 +650,7 @@ object Game {
                 
         //look at this pig... look!
         cam.lookAt(moveObj)
+        cam.pos += cam.vector*renderTime;
         cam.render
 
         for(model <- models ++ dropBranches ++ trails) if(model.visible) {
@@ -735,11 +738,11 @@ object Game {
                 pig.vector.y=3f;
                 pig.vector.z=4f;
             }
+            
+            cam.vector = pig.vector / 3;
+            
             settings += "air" -> true;println("pig is in air");
-            if(trails.length==0) 
-                trails += new TrailModel(List(pig.pos))
-            else
-                trails(0) = new TrailModel(List(pig.pos));  
+            trails += new TrailModel(List(pig.pos))
         }
         if(isKeyDown(KEY_LCONTROL) && !pigcatapultLink.isLinked) {
             pigcatapultLink.forgeLink;

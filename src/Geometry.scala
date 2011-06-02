@@ -161,7 +161,7 @@ class GeneratorModel(generator:()=>Object, draw:Object=>Unit) extends DisplayMod
 }
 
 class TrailModel(var points:List[Vec3]) 
-    extends GeneratorModel(()=>{points}, 
+    extends GeneratorModel(()=>{points.map(_.clone)}, 
         (data:Object)=>{
             import org.lwjgl.opengl.GL11._
             import Global._
@@ -192,7 +192,7 @@ class TrailModel(var points:List[Vec3])
         }) {
         
     def +=(v:Vec3) = {
-        data = data.asInstanceOf[List[Vec3]] ++ List(v);
+        data = data.asInstanceOf[List[Vec3]] ++ List(v.clone);
         compile();
     }
 }
@@ -317,7 +317,7 @@ class Branch(var parent:Branch) extends Properties {
     }
 }
 
-class Camera extends BasicModel {
+class Camera extends BasicModel with Vector {
     // default projection 
     var perspective = false
     var (near,far) = (1f,30f) // near, far clipping plane
