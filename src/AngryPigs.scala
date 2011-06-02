@@ -579,18 +579,9 @@ object Game {
                 val trailcount = 3///
                 if(trails.length >= trailcount) 
                     trails = trails.drop(1);
-            } else {
-                cam.vector -= cam.vector*renderTime*0.05f;
             }
             
-            if(settings.get[Boolean]("air")) {
-                trails.last += moveObj.pos;
-                println(trails.last.data.asInstanceOf[List[Vec3]].length);
-            }
-            /*if(trails.length == 0) 
-                trails += new TrailModel(List(pig.pos));
-
-            (trails.last) += pig.pos;*/
+            if(settings.get[Boolean]("air")) trails.last += moveObj.pos;
 
             pigcatapultLink.applyLink;
             campigLink.applyLink;
@@ -603,33 +594,42 @@ object Game {
                 branch.doWhile((branch)=>{!done}, 
                     (branch)=>if(branch.visible) {
                         val box = branch.properties.get[BoundingBox]("box");
-                        if(branch.depth==1) {
-                            if(box.pointCollide(pig.pos, tree.pos)) {
-                                println("collision2");
-                            } else {
-                                done = true;// no collision
-                            }
-                        } else if(box.pointCollide(pig.pos, tree.pos)) {
+                        if(branch.depth==1 && !box.pointCollide(pig.pos, tree.pos)) {
+                            done = true;// no collision
+                        } else if(branch.depth>1 && box.pointCollide(pig.pos, tree.pos)) {
                             //if (branch.depth > 2) branch.visible = false;
                             collision = true;
-                            branch.detach;
                             
-                            var drop = new GeneratorModel(()=>{branch}, (data:Object)=>data.asInstanceOf[Branch].doAll(_.render));
-                            val rootV = branch.rootVec;
-                            branch.doAll((_.rootVec -= rootV));
-                            drop.pos = tree.pos + rootV;
-                            drop.vector = new Vec3(
-                                math.sin(pig.rot.y/(180f/math.Pi)).toFloat*pig.vector.z,
-                                pig.vector.y,
-                                math.cos(pig.rot.y/(180f/math.Pi)).toFloat*pig.vector.z
-                            )
-                            println("dsfdsf");
-                            println(drop.pos);
-                            println(worldSize);
-                            drop.compile();
-                            dropBranches += drop
+                            def dropBranch(b:Branch):Unit = {
+                                b.detach;
+                                val rootV = b.rootVec.clone;
+                                b.doAll((_.rootVec -= rootV));
+                                
+                                //if(rand.nextFloat > 0.3) {
+                                    branch.children.foreach((bc)=>{
+                                        //if(rand.nextFloat > 0.3) 
+                                            dropBranch(bc);
+                                    })
+                                //}
+                                
+                                var drop = new GeneratorModel(()=>{b}, (data:Object)=>data.asInstanceOf[Branch].doAll(_.render));
+                                drop.pos = tree.pos + rootV;
+                                drop.vector = new Vec3(
+                                    math.sin(pig.rot.y/(180f/math.Pi)).toFloat*pig.vector.z + rand.nextFloat/3 - rand.nextFloat/3,
+                                    pig.vector.y/2 + rand.nextFloat/5 - rand.nextFloat/5, 
+                                    math.cos(pig.rot.y/(180f/math.Pi)).toFloat*pig.vector.z + rand.nextFloat/3 - rand.nextFloat/3
+                                )
+                                pig.vector.y /= 2;
+                                drop.compile();
+                                dropBranches += drop
+                            }
                             
-                            //branch.doAll((b)=>b.visible=false)
+                            if(rand.nextFloat > 0.5) {
+                                branch.children.foreach(dropBranch);
+                            } else {
+                                dropBranch(branch);
+                            }
+                            
                             println("collision");
                         }
                     }
@@ -638,18 +638,19 @@ object Game {
             }
             // drop branches
             for(branch <- dropBranches) {
-                branch.vector += gravity/6*renderTime;
-                branch.vector -= branch.vector*renderTime*0.05f;
+                branch.vector += gravity/(5 + rand.nextFloat/3 - rand.nextFloat/3)*renderTime;
+                //branch.vector -= branch.vector*renderTime*0.05f;
                 branch.pos += branch.vector*renderTime;
                 if(branch.pos.y < -worldSize-50) {
                     dropBranches -= branch;
-                    println("dropped branch");
+                    println("removed dropped branch");
                 }
             }
         }
                 
         //look at this pig... look!
         cam.lookAt(moveObj)
+        cam.vector -= cam.vector*renderTime*0.05f;
         cam.pos += cam.vector*renderTime;
         cam.render
 

@@ -181,14 +181,13 @@ class TrailModel(var points:List[Vec3])
                 glPushMatrix
                 glTranslatef(vecB.x,vecB.y,vecB.z);
                 glRotatef(angle,cross.x,cross.y,cross.z);
-                gluQuadrics.cylinder.draw(0.2f,0.2f, p.length, 5,1);
+                gluQuadrics.cylinder.draw(0.1f,0.1f, p.length, 5,1);
                 glPopMatrix
             }
 
             glBegin(GL_LINES)
             for(p <- points) glVertex3f(p.x, p.y, p.z);
             glEnd;
-            println("lolololo");
         }) {
         
     def +=(v:Vec3) = {
@@ -258,8 +257,10 @@ class Branch(var parent:Branch) extends Properties {
         c.setParent(this);
     }
     def detach(){
-        parent.children -= this;
-        this.setParent(null);
+        if(parent!=null) {
+            parent.children -= this;
+            this.setParent(null);
+        }
     }
     
     def doAll(f:Branch=>Unit):Unit = {
