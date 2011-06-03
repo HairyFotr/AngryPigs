@@ -62,6 +62,7 @@ if [ $# -gt 0 ]; then
         case "$i" in #dont take the strings seriously - they're used as booleans ;)
             "-f") Force="m*a";shift;;
             "-r") Run="yes please";shift;;
+            "-o") Optimise="-optimise";shift;;
             "-R") Run="yes please";Unforce="<- means don't ever compile";shift;;
             "--cygwin") pathprocess="cygpath -wp";shift;;
         esac
@@ -87,7 +88,7 @@ else
     echo "Compiling:"$files
     #fast scala compile (loads compile deamon)
 
-    compileErr=$( { fsc -cp "`$pathprocess ../lib/clojure.jar`" -d ../class -extdirs ../lib/lwjgl-2.7.1/jar/ $files ; } 2>&1 )
+    compileErr=$( { fsc $Optimise -cp "`$pathprocess ../lib/clojure.jar`" -d ../class -extdirs ../lib/lwjgl-2.7.1/jar/ $files ; } 2>&1 )
     builderror=$?
     if [ "$compileErr" != "" ]; then
         echo "$compileErr"
@@ -114,5 +115,5 @@ echo "Done("$builderror") in ${elapsedtime}s."
 #run it
 if [ "$builderror" == "0" -a "$Run" != "" ]; then
     cd ..
-    scala -cp "`$pathprocess src/AngryPigs:class:class/AngryPigs:lib/lwjgl-2.7.1/jar/lwjgl.jar:lib/lwjgl-2.7.1/jar/lwjgl_util.jar:lib/clojure.jar`" -Djava.library.path="`$pathprocess lib/lwjgl-2.7.1/native/linux/:lib/lwjgl-2.7.1/native/macosx/:lib/lwjgl-2.7.1/native/windows/`" AngryPigs.Game
+    scala $Optimise -cp "`$pathprocess src/AngryPigs:class:class/AngryPigs:lib/lwjgl-2.7.1/jar/lwjgl.jar:lib/lwjgl-2.7.1/jar/lwjgl_util.jar:lib/clojure.jar`" -Djava.library.path="`$pathprocess lib/lwjgl-2.7.1/native/linux/:lib/lwjgl-2.7.1/native/macosx/:lib/lwjgl-2.7.1/native/windows/`" AngryPigs.Game
 fi
