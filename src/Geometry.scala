@@ -121,17 +121,13 @@ class DisplayModel(var renderfunc:()=>Unit) extends BasicModel with Vector with 
     
     def compile() {
         import Global._
-        if(settings.get[Boolean]("fatlines") != properties.get[Boolean]("fatlines"))
-        //||settings.get[Int]("graphics") != properties.get[Int]("graphics") 
-        {
-            displayList = GL11.glGenLists(1);
-            GL11.glNewList(displayList,GL11.GL_COMPILE);
-            renderfunc();
-            GL11.glEndList;
-            compiled = true;
-            properties += "graphics" -> settings.get[Int]("graphics");
-            properties += "fatlines" -> settings.get[Boolean]("fatlines");
-        }
+        displayList = GL11.glGenLists(1);
+        GL11.glNewList(displayList,GL11.GL_COMPILE);
+        renderfunc();
+        GL11.glEndList;
+        compiled = true;
+        properties += "graphics" -> settings.get[Int]("graphics");
+        properties += "fatlines" -> settings.get[Boolean]("fatlines");
     }
     
     override def clone:DisplayModel = {

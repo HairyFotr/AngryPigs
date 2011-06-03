@@ -692,12 +692,15 @@ object Game {
         }
         
         if(settings.get[Boolean]("fatlines") && (settings.get[Int]("graphics")==1))
-        for(tree <- trees) if(math.abs((tree.pos-pig.pos).length) > 100) {
-            settings += "fatlines" -> false;
-            tree.compile();
-            settings += "fatlines" -> true;
-        } else {
-            tree.compile();
+        for(tree <- trees) {
+            if(math.abs((tree.pos-pig.pos).length) > 80) {
+                settings += "fatlines" -> false;
+                if(settings.get[Boolean]("fatlines") != tree.properties.get[Boolean]("fatlines"))
+                tree.compile();
+                settings += "fatlines" -> true;
+            } else if(settings.get[Boolean]("fatlines") != tree.properties.get[Boolean]("fatlines")) {
+                tree.compile();
+            }
         }
 
         for(model <- models() ++ dropBranches ++ trails) if(model.visible) {
