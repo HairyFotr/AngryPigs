@@ -7,6 +7,14 @@
 (def lengths [0.8 0.7 0.5 0.3 0.099 0.097 0.093 0.088 0.081])
 (def max-depth 4)
 
+(def children
+     (memoize (fn [depth]
+		(apply * (cons 1 (map #(nth primes %1)
+				      (take (- max-depth depth)
+					    (drop (inc depth)
+						  (iterate inc 0)))))))))
+
+(def max-children (children 0))
 
 (defn make-node [v l]
   (apply list (concat v [(float l)])))
@@ -71,9 +79,12 @@
 		  branches))
 
 	   (defn +gravity [branch]
+	     (defn weight []
+	       (/ 0.5 (inc (- max-children (children depth)))))
+
 	     (make-node (let [endpoint (map #(* %1 (last branch))
 					    (butlast branch))
-			      gravity (map #(* %1 0.5) gravity)]
+			      gravity (map #(* %1 (weight)) gravity)]
 			  (normalize (move-point endpoint gravity)))
 			(last branch)))
 
