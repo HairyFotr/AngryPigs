@@ -182,7 +182,7 @@ class TrailModel(var points:List[Vec3])
                 glPushMatrix
                 glTranslatef(vecB.x,vecB.y,vecB.z);
                 glRotatef(angle,cross.x,cross.y,cross.z);
-                gluQuadrics.cylinder.draw(0.1f,0.1f, p.length, 5,1);
+                gluQuadrics.cylinder.draw(0.075f,0.075f, p.length, 4,1);
                 glPopMatrix
             }
 

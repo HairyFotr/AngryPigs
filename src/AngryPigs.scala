@@ -569,10 +569,10 @@ object Game {
             )
 
             moveObj.pos.clamp(worldSize-2.5f);
-            val mY = moveObj.pos.y;
+            val mY = pig.pos.y;
             moveObj.pos += moveVector*renderTime;
             moveObj.pos.clamp(worldSize-2.5f);
-            if(moveObj.pos.y==mY && settings.get[Boolean]("air")) {
+            if(pig.pos.y==mY && settings.get[Boolean]("air")) {
                 settings += "air"->false;println("pig is on ground");
                 val trailcount = 3///
                 if(trails.length >= trailcount) 
