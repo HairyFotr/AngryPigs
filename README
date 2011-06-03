@@ -1,4 +1,4 @@
-AngryPigs is a game in which you catapult a pig into a tree in order to break the branches.
+AngryPigs is a game in which you catapult a pig into a tree in order to break its branches.
 It's written in Scala and Clojure, and uses the LWJGL library for graphics.
 
 Run:
