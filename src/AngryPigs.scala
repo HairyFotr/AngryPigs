@@ -5,6 +5,8 @@ import org.lwjgl.input.Keyboard
 import scala.collection.mutable.ListBuffer
 import java.util.{List => JavaList}
 import java.nio._
+import scala.actors.Futures._
+import scala.actors.Future
 
 // TODO:
 // search for @ <task>
@@ -104,15 +106,15 @@ object Game {
                 println("FPS: "+FPS);
 
                 // increase or decrease graphics detail
-                if(FPS < 15 && settings.get[Float]("graphics") > 1f) {
-                    settings += "graphics" -> (settings.get[Float]("graphics")-1f);
-                    println("decreased graphic detail");
-                    models.foreach(_.compile);
+                if(FPS < 16 && settings.get[Int]("graphics") > 1) {
+                    settings += "graphics" -> (settings.get[Int]("graphics")-1);
+                    println("decreased graphic detail to "+settings.get[Int]("graphics"));
+                    models().foreach(_.compile);
                 }
-                if(FPS > 50 && settings.get[Float]("graphics") < 10f) {
-                    settings += "graphics" -> (settings.get[Float]("graphics")+1f);
-                    println("inreased graphic detail");
-                    models.foreach(_.compile);
+                if(FPS > 45 && settings.get[Int]("graphics") < 5) {
+                    settings += "graphics" -> (settings.get[Int]("graphics")+1);
+                    println("inreased graphic detail to "+settings.get[Int]("graphics"));
+                    models().foreach(_.compile);
                 }
 
                 frameCounter = 0;
@@ -134,10 +136,11 @@ object Game {
     var trees = new ListBuffer[GeneratorModel];
     var pigcatapultLink:ModelLink=null;
     var campigLink:ModelLink=null;
-    var models = new ListBuffer[DisplayModel];
+    var models:()=>ListBuffer[DisplayModel] = ()=>ListBuffer();
     var generatedModels = new ListBuffer[GeneratorModel];
     var dropBranches = new ListBuffer[GeneratorModel];
     var trails = new ListBuffer[TrailModel];
+    var futureTrees = new ListBuffer[Future[GeneratorModel]];
     
     //size of world
     val worldSize = 400;
@@ -254,7 +257,7 @@ object Game {
         
         def drawPig(data:Object):Unit = {
             var pigData = data.asInstanceOf[SettingMap[String]];
-            val graphics = settings.get[Float]("graphics");
+            val graphics = settings.get[Int]("graphics");
             //body
             glColor3f(0.3f,0.8f,0.3f);
             glPushMatrix;
@@ -381,7 +384,7 @@ object Game {
 
             def drawWheel = {
                 glRotatef(90, 0,1,0)
-                gluQuadrics.cylinder.draw(1f,1f, scale.x*2+2, (settings.get[Float]("graphics")*10f).toInt,1);
+                gluQuadrics.cylinder.draw(1f,1f, scale.x*2+2, settings.get[Int]("graphics")*10,1);
                 gluQuadrics.disk.draw(0,1,20,1);
                 glTranslatef(0,0,scale.x*2+2);
                 gluQuadrics.disk.draw(0,1,20,1);
@@ -440,9 +443,9 @@ object Game {
             while(data==null) try {
                 data = genTree/("give-me-tree", 0f, 2f, 0f, 5f);
             } catch {
-                case e:RuntimeException => {
+                case _ => {
+                    //e.printStackTrace;
                     println("give-me-tree threw exception");                    
-                    e.printStackTrace;
                     data = null;
                 }
             }
@@ -464,12 +467,28 @@ object Game {
         };
 
         def renderTree:Object=>Unit = (data:Object)=>data.asInstanceOf[Branch].doAll(_.render);
+        println("the present: "+System.nanoTime()/1000000L);
+        def futureTree:Future[GeneratorModel] = future {
+            //println("the future is now: "+System.nanoTime()/1000000L)
+            var tree = new GeneratorModel(giveMeTree, renderTree);
+            //tree.setPosition(17,-worldSize+2.5f,-worldSize/2+30);
+            tree.setPosition(
+                (17+rand.nextFloat()*3-rand.nextFloat()*3)*rand.nextInt(7) - (17+rand.nextFloat()*3-rand.nextFloat()*3)*rand.nextInt(7),
+                -worldSize,
+                -worldSize/2+30 + (17+rand.nextFloat()*3-rand.nextFloat()*3)*rand.nextInt(10) - (17+rand.nextFloat()*3-rand.nextFloat()*3)*rand.nextInt(5));
+            //tree.compile();
+            println("the future is here: "+System.nanoTime()/1000000L); 
+            tree
+        }
         
-        var tree = new GeneratorModel(giveMeTree, renderTree);
-        tree.setPosition(0,-worldSize+2.5f,-worldSize/2+30);
-        tree.compile();
-        trees += tree
+        for(i <- 1 to 20) futureTrees += futureTree;
         
+        //println("still the present: "+System.nanoTime()/1000000L);
+        Thread.sleep(3000);
+        //println("still the present: "+System.nanoTime()/1000000L);
+        
+        
+        /*     
         tree = new GeneratorModel(giveMeTree, renderTree);
         tree.setPosition(17,-worldSize+2.5f,-worldSize/2+30);
         tree.compile();
@@ -478,7 +497,7 @@ object Game {
         tree = new GeneratorModel(giveMeTree, renderTree);
         tree.setPosition(-17,-worldSize+2.5f,-worldSize/2+30);
         tree.compile();
-        trees += tree
+        trees += tree*/
         /*
         tree = new GeneratorModel(giveMeTree, renderTree);
         tree.setPosition(-34,-worldSize+2.5f,-worldSize/2+30);
@@ -490,8 +509,8 @@ object Game {
         tree.compile();
         trees += tree
         */
-        models = models ++ List(pig, catapult, terrain) ++ trees;
-        generatedModels = models.filter(_.isInstanceOf[GeneratorModel]).map(_.asInstanceOf[GeneratorModel]);
+        models = () => {trees ++ List(pig, catapult, terrain)}
+        generatedModels = models().filter(_.isInstanceOf[GeneratorModel]).map(_.asInstanceOf[GeneratorModel]);
     }
     
     //@ Y is this not in some LWJGL lib, if it's really needed?
@@ -579,18 +598,13 @@ object Game {
                     trails = trails.drop(1);
             }
             
-            def unrot(f:Float, lim:Float=360f):Float = {
-                var out = f;
-                if(out>0) while(out > +lim) out -= lim; else
-                if(out<0) while(out < -lim) out += lim;
-                out;
-            }
+            def unrot(f:Float, lim:Int=360):Float = f - ((math.floor(f).toInt / lim)*lim)
             
             pig.rot.x = unrot(pig.rot.x);
             
             pig.vector2 -= pig.vector2*renderTime*0.02f;
             if(settings.get[Boolean]("air")) {
-                trails.last += moveObj.pos; 
+                trails.last += moveObj.pos;
             } else if(math.abs(pig.rot.x) > 5f) {//pri malo fps bo naredil več prevalov kot sicer, lol
                 pig.vector2 -= pig.vector2*renderTime*0.01f;//trenje, lol
             } else {
@@ -622,12 +636,9 @@ object Game {
                                 val rootV = b.rootVec.clone;
                                 b.doAll((_.rootVec -= rootV));
                                 
-                                //if(rand.nextFloat > 0.3) {
-                                    branch.children.foreach((bc)=>{
-                                        //if(rand.nextFloat > 0.3) 
-                                            dropBranch(bc);
-                                    })
-                                //}
+                                branch.children.foreach((bc)=>{
+                                    dropBranch(bc);
+                                })
                                 
                                 var drop = new GeneratorModel(()=>{b}, (data:Object)=>data.asInstanceOf[Branch].doAll(_.render));
                                 drop.pos = tree.pos + rootV;
@@ -671,8 +682,25 @@ object Game {
         cam.vector -= cam.vector*renderTime*0.05f;
         cam.pos += cam.vector*renderTime;
         cam.render
+        
+        for(futureTree <- futureTrees) if(futureTree.isSet) { 
+            val presentTree = futureTree.apply();
+            trees += presentTree;
+            presentTree.compile();
+            futureTrees -= futureTree;
+            println("the future is applied: "+System.nanoTime()/1000000L)
+        }
+        
+        if(settings.get[Boolean]("fatlines") && (settings.get[Int]("graphics")==1))
+        for(tree <- trees) if(math.abs((tree.pos-pig.pos).length) > 100) {
+            settings += "fatlines" -> false;
+            tree.compile();
+            settings += "fatlines" -> true;
+        } else {
+            tree.compile();
+        }
 
-        for(model <- models ++ dropBranches ++ trails) if(model.visible) {
+        for(model <- models() ++ dropBranches ++ trails) if(model.visible) {
             glPushMatrix;
             model.doTransforms
             model.render
@@ -696,12 +724,12 @@ object Game {
         if(isKeyDown(KEY_2)) { settings += "fatlines" -> true; trees.foreach(_.compile()) } else
         if(isKeyDown(KEY_3)) { trees.foreach(_.regenerate()) } else
         if(isKeyDown(KEY_5)) { 
-            settings += "graphics" -> (settings.get[Float]("graphics")+1f);
-            models.foreach(_.compile()) 
+            settings += "graphics" -> (settings.get[Int]("graphics")+1);
+            models().foreach(_.compile()) 
         } else
-        if(isKeyDown(KEY_6) && settings.get[Float]("graphics") > 1) { 
-            settings += "graphics" -> (settings.get[Float]("graphics")-1f);
-            models.foreach(_.compile()) 
+        if(isKeyDown(KEY_6) && settings.get[Int]("graphics") > 1) { 
+            settings += "graphics" -> (settings.get[Int]("graphics")-1);
+            models().foreach(_.compile()) 
         } else
         if(isKeyDown(KEY_8) && !timeLock.isLocked) { pig.regenerate(); timeLock.lockIt(200); } else
         if(isKeyDown(KEY_9) && !timeLock.isLocked) { pig.compile(); timeLock.lockIt(200); }

@@ -89,9 +89,9 @@ abstract class BasicModel {
         GL11.glTranslatef(pos.x, pos.y, pos.z);
     }
     def doRotate {
-        if(rot.x!=0) GL11.glRotatef(rot.x, 1, 0, 0);        
-        if(rot.y!=0) GL11.glRotatef(rot.y, 0, 1, 0);
         if(rot.z!=0) GL11.glRotatef(rot.z, 0, 0, 1);
+        if(rot.y!=0) GL11.glRotatef(rot.y, 0, 1, 0);
+        if(rot.x!=0) GL11.glRotatef(rot.x, 1, 0, 0);        
     }
     def doScaling {
         GL11.glScalef(scale.x, scale.y, scale.z);
@@ -109,19 +109,31 @@ abstract class BasicModel {
 }
 
 // doesn't care about points and stuff
-class DisplayModel(var renderfunc:()=>Unit) extends BasicModel with Vector with Vector2 {
+class DisplayModel(var renderfunc:()=>Unit) extends BasicModel with Vector with Vector2 with Properties {
     def this() = this(()=>null)
     var compiled = false;
     
     var displayList:Int = -1;
     
+    // foo values
+    properties += "graphics" -> -1;
+    properties += "fatlines" -> true;
+    
     def compile() {
-        displayList = GL11.glGenLists(1);
-        GL11.glNewList(displayList,GL11.GL_COMPILE);
-        renderfunc();
-        GL11.glEndList;
-        compiled = true;
+        import Global._
+        if(settings.get[Boolean]("fatlines") != properties.get[Boolean]("fatlines"))
+        //||settings.get[Int]("graphics") != properties.get[Int]("graphics") 
+        {
+            displayList = GL11.glGenLists(1);
+            GL11.glNewList(displayList,GL11.GL_COMPILE);
+            renderfunc();
+            GL11.glEndList;
+            compiled = true;
+            properties += "graphics" -> settings.get[Int]("graphics");
+            properties += "fatlines" -> settings.get[Boolean]("fatlines");
+        }
     }
+    
     override def clone:DisplayModel = {
         val res = new DisplayModel(this.renderfunc)
         res.pos = this.pos.clone
@@ -134,7 +146,7 @@ class DisplayModel(var renderfunc:()=>Unit) extends BasicModel with Vector with 
         GL11.glPushMatrix;
         
         if(displayList == -1)
-            renderfunc;
+            renderfunc();
         else
             GL11.glCallList(displayList);
         
@@ -170,7 +182,7 @@ class TrailModel(var points:List[Vec3])
             val points = data.asInstanceOf[List[Vec3]];
             glColor3f(1f,1f,1f);
 
-            for(i <- 1 until points.length) {
+            for(i <- 1 until points.length) if(i%2==1) {
                 val vecA = points(i-1);
                 val vecB = points(i);
                 
@@ -279,7 +291,6 @@ class Branch(var parent:Branch) extends Properties {
     }
     
     def render() = if(visible) {
-        //import org.lwjgl.opengl._
         import org.lwjgl.opengl.GL11._
         import Global._
         val branch = this // I'm lazy :P
@@ -296,12 +307,12 @@ class Branch(var parent:Branch) extends Properties {
             glTranslatef(vecB.x,vecB.y,vecB.z);
             glRotatef(angle,cross.x,cross.y,cross.z);
             glColor3f(0.7f,0.2f,0f);
-            gluQuadrics.cylinder.draw(0.2f/branch.depth,0.4f/branch.depth, branch.diffVec.length, (settings.get[Float]("graphics")*4f).toInt,1);
+            gluQuadrics.cylinder.draw(0.2f/branch.depth,0.4f/branch.depth, branch.diffVec.length, settings.get[Int]("graphics")*3,1);
             if(branch.properties.get[Boolean]("hasLeaf")) {
                 glScalef(1,1.6f,1)
                 glTranslatef(0,-0.2f,0)
                 glColor3f(0.2f,0.8f,0.1f)
-                gluQuadrics.disk.draw(0,0.175f, (settings.get[Float]("graphics")*4f).toInt,1)
+                gluQuadrics.disk.draw(0,0.175f, settings.get[Int]("graphics")*4,1)
             }
             glPopMatrix;
         } else {

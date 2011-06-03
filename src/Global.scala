@@ -7,7 +7,7 @@ import org.lwjgl.util.glu.{Sphere,Cylinder,Disk,PartialDisk}
 // ... it's made of fail and state
 object Global {
     var settings = new SettingMap[String];
-    settings += "graphics" -> 2f; // polygon multiplier for generatives.
+    settings += "graphics" -> 2; // polygon multiplier for generatives.
     settings += "fatlines" -> true; // tree rendering
     settings += "air" -> false; // lol, pig fly
 
