@@ -547,7 +547,7 @@ object Game {
         glLoadIdentity;
     }
   
-    var frameIndepRatio = (30000000f);
+    var frameIndepRatio = (48000000f);
     var treeView = false;
     var pause = false
 
@@ -561,8 +561,6 @@ object Game {
             // move pig or catapult
             moveObj.vector.z -= 0.05f*moveObj.vector.z*renderTime;
             moveObj.vector.clamp(0,0,8);
-
-            pig.vector += gravity*renderTime
 
             val moveVector = new Vec3(
                 math.sin(moveObj.rot.y/(180f/math.Pi)).toFloat*moveObj.vector.z,
@@ -581,7 +579,26 @@ object Game {
                     trails = trails.drop(1);
             }
             
-            if(settings.get[Boolean]("air")) trails.last += moveObj.pos;
+            def unrot(f:Float, lim:Float=360f):Float = {
+                var out = f;
+                if(out>0) while(out > +lim) out -= lim; else
+                if(out<0) while(out < -lim) out += lim;
+                out;
+            }
+            
+            pig.rot.x = unrot(pig.rot.x);
+            
+            pig.vector2 -= pig.vector2*renderTime*0.02f;
+            if(settings.get[Boolean]("air")) {
+                trails.last += moveObj.pos; 
+            } else if(math.abs(pig.rot.x) > 5f) {//pri malo fps bo naredil več prevalov kot sicer, lol
+                pig.vector2 -= pig.vector2*renderTime*0.01f;//trenje, lol
+            } else {
+                pig.vector2 = new Vec3;
+            }
+            
+            pig.vector += gravity*renderTime            
+            pig.rot += pig.vector2*renderTime
 
             pigcatapultLink.applyLink;
             campigLink.applyLink;
@@ -615,17 +632,18 @@ object Game {
                                 var drop = new GeneratorModel(()=>{b}, (data:Object)=>data.asInstanceOf[Branch].doAll(_.render));
                                 drop.pos = tree.pos + rootV;
                                 drop.vector = new Vec3(
-                                    math.sin(pig.rot.y/(180f/math.Pi)).toFloat*pig.vector.z + rand.nextFloat/3 - rand.nextFloat/3,
-                                    pig.vector.y/2 + rand.nextFloat/5 - rand.nextFloat/5, 
-                                    math.cos(pig.rot.y/(180f/math.Pi)).toFloat*pig.vector.z + rand.nextFloat/3 - rand.nextFloat/3
+                                    math.sin(pig.rot.y/(180f/math.Pi)).toFloat*pig.vector.z/2 + rand.nextFloat/2 - rand.nextFloat/2,
+                                    pig.vector.y/(5 + rand.nextFloat/3 - rand.nextFloat/3), 
+                                    math.cos(pig.rot.y/(180f/math.Pi)).toFloat*pig.vector.z/2 + rand.nextFloat/2 - rand.nextFloat/2
                                 )
-                                pig.vector.y /= 2;
                                 drop.compile();
                                 dropBranches += drop
                             }
                             
-                            if(rand.nextFloat > 0.5) {
-                                branch.children.foreach(dropBranch);
+                            pig.vector.y /= 2;
+                            
+                            if(rand.nextFloat > 0.4) {
+                                branch.children.foreach((bc)=>{if(rand.nextFloat > 0.2) dropBranch(bc)});
                             } else {
                                 dropBranch(branch);
                             }
@@ -688,7 +706,7 @@ object Game {
         if(isKeyDown(KEY_8) && !timeLock.isLocked) { pig.regenerate(); timeLock.lockIt(200); } else
         if(isKeyDown(KEY_9) && !timeLock.isLocked) { pig.compile(); timeLock.lockIt(200); }
         
-        val keymove = 0.7f*renderTime;
+        val keymove = 1.5f*renderTime;
         
         if(campigLink.isLinked) {
             if(isKeyDown(KEY_W)) campigLink.vector.x+=keymove;
@@ -733,14 +751,15 @@ object Game {
                 println("pig-catapult Link Broken")
                 campigLink.breakLink
                 println("cam-pig Link Broken")
-                pig.vector.y=5f;
-                pig.vector.z=8f;
+                pig.vector.y=4.5f;
+                pig.vector.z=7f;
+                cam.vector = pig.vector / 3;
+                pig.vector2 = new Vec3(0.5f+rand.nextFloat/3,0,0) * 50f;
             } else {
                 pig.vector.y=3f;
                 pig.vector.z=4f;
             }
             
-            cam.vector = pig.vector / 3;
             
             settings += "air" -> true;println("pig is in air");
             trails += new TrailModel(List(pig.pos))
@@ -755,6 +774,7 @@ object Game {
         if(isKeyDown(KEY_O)) {
             println("Cam: "+cam.toString);
             println("Pig: "+pig.toString);
+            println("Pig-rot: "+pig.rot.toString);
         }
         if(isKeyDown(KEY_8) && campigLink.isLinked) {
             campigLink.breakLink
