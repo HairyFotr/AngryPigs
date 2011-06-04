@@ -825,9 +825,7 @@ object Game {
             println("cam-pig Link Forged")
         }
         if(isKeyDown(KEY_0)) {
-            cam.setPosition(0,worldSize-5,-worldSize+5);
-            cam.setRotation(0,180,0);
-            println("cam Reset")
+            trees.foreach(_.reset());
         }
     }
 }

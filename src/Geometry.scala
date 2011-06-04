@@ -202,7 +202,20 @@ class GeneratorModel(generator:()=>Object, draw:Object=>Unit, idfunc:(GeneratorM
         }
     }*/
     
-    //def reset ... when branch breaks all renders are foo - also, free the displaylists
+    def reset() = {
+        var cache = properties.get[HashMap[Int, Int]]("compileCache");
+        if(cache != null) {
+            var count = 0;
+            cache.foreach {
+                case (_,listid) =>
+                    count += 1;
+                    GL11.glDeleteLists(listid, 1);
+            }
+            println("deleted lists: "+count);
+        }
+                
+        properties += "compileCache" -> new HashMap[Int,Int];
+    }
     
     // make a data constructor, so clone has same data. (eliminate generator in static constructor)
     override def clone:GeneratorModel = {
