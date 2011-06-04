@@ -53,28 +53,6 @@ class Vec3(var x:Float, var y:Float, var z:Float) {
 
     override def toString = "%.2f, %.2f, %.2f".format(x,y,z);
 }
-// @ a lot of these classes could be traits i think... google mixin scala
-// also, is this nice in any way? :) (SomeModel with Vector seems nice)
-// also traits vs abstract classes vs java interfaces
-// also i'm on a train with no internets
-// also there seems to be no way to add traits inline as i had hoped... bummer.
-trait Vector {
-    var vector = new Vec3;
-    def setVector(x:Float,y:Float,z:Float) = { vector = new Vec3(x,y,z); }
-}
-trait Vector2 {
-    var vector2 = new Vec3;
-    def setVector2(x:Float,y:Float,z:Float) = { vector2 = new Vec3(x,y,z); }
-}
-trait Points {
-    var points:Array[Vec3]=null;
-}
-class Quad(var p1:Vec3, var p2:Vec3, var p3:Vec3, var p4:Vec3) {
-    def getPoints = List(p1,p2,p3,p4);
-    
-    def foreach(f:Vec3=>Unit) = getPoints.foreach(f);
-    def map(f:Vec3=>Unit) = foreach(f);
-}
 
 abstract class BasicModel {
     var (pos,rot,scale) = (new Vec3, new Vec3, new Vec3(1f,1f,1f));
@@ -111,17 +89,20 @@ abstract class BasicModel {
 }
 
 // doesn't care about points and stuff
-class DisplayModel(var renderfunc:()=>Unit) extends BasicModel with Vector with Vector2 with Properties {
+class DisplayModel(var renderfunc:()=>Unit, var idfunc:(DisplayModel,SettingMap[String])=>Int = null) extends BasicModel with Properties {
     def this() = this(()=>null)
     var compiled = false;
     
-    var displayList:Int = -1;
+    var vector = new Vec3;
+    var vector2 = new Vec3;
+
+    var displayList:Int = -1;    
     
     // foo values
     properties += "graphics" -> -1;
     properties += "fatlines" -> true;
     
-    def compile() {
+    def forceCompile() {
         import Global._
         displayList = GL11.glGenLists(1);
         GL11.glNewList(displayList,GL11.GL_COMPILE);
@@ -132,6 +113,45 @@ class DisplayModel(var renderfunc:()=>Unit) extends BasicModel with Vector with 
         properties += "fatlines" -> settings.get[Boolean]("fatlines");
     }
     
+    def id(props:SettingMap[String]=this.properties):Int = 
+        if(idfunc!=null) 
+            idfunc(this,props);
+        else 
+            Predef.Integer2int(null); //ya, rly :P
+    
+    var compileCache = new HashMap[Int,Int];
+    
+    // adds compile cache to compile()
+    def compile() {
+        try {
+            var cid = id(Global.settings);
+            
+            displayList = compileCache.getOrElseUpdate(cid, {
+                forceCompile()
+                displayList
+            })
+            properties += "graphics" -> Global.settings.get[Int]("graphics");
+            properties += "fatlines" -> Global.settings.get[Boolean]("fatlines");
+        } catch {
+            case e:NullPointerException => forceCompile()
+        }
+    }
+    
+    def reset() = {
+        if(compileCache.size>1) {
+            var count = 0;
+            val tasks = Global.settings.get[ListBuffer[()=>Unit]]("tasks");
+            compileCache.foreach {
+                case (_,listid) => if(listid != displayList) {
+                    count += 1;
+                    tasks += (()=>{GL11.glDeleteLists(listid, 1)})
+                }
+            }
+            println("added delete tasks: "+count);
+            compileCache.clear();
+        }
+    }
+
     override def clone:DisplayModel = {
         val res = new DisplayModel(this.renderfunc)
         res.pos = this.pos.clone
@@ -141,80 +161,30 @@ class DisplayModel(var renderfunc:()=>Unit) extends BasicModel with Vector with 
     }
     
     override def render() {
+        if(!visible) return;
+        
         GL11.glPushMatrix;
-        
-        if(displayList == -1)
+        doTransforms
+
+        if(displayList == -1 || !GL11.glIsList(displayList)) {
             renderfunc();
-        else
+            displayList = -1;
+        } else {
             GL11.glCallList(displayList);
-        
+        }
+            
         GL11.glPopMatrix;
     }    
 }
 
-class GeneratorModel(generator:()=>Object, draw:Object=>Unit, idfunc:(GeneratorModel,SettingMap[String])=>Int = null) extends DisplayModel {
+class GeneratorModel(generator:()=>Object, draw:Object=>Unit, _idfunc:(DisplayModel,SettingMap[String])=>Int = null) extends DisplayModel {
     var data:Object = generator();
     renderfunc = ()=>{draw(data);()}
+    idfunc = _idfunc;
     
     def regenerate() = {
         data = generator();
         compile();
-    }
-    
-    def id(props:SettingMap[String]=this.properties):Int = 
-        if(idfunc!=null) 
-            idfunc(this,props);
-        else 
-            Predef.Integer2int(null); //ya, rly :P
-    
-    // adds compile cache to compile()
-    override def compile() {
-        try {
-            var cid = id(Global.settings);
-            var cache = properties.get[HashMap[Int, Int]]("compileCache");
-            if(cache == null) {
-                cache = new HashMap[Int,Int];
-                properties += "compileCache" -> cache;
-            }
-            
-            displayList = cache.getOrElseUpdate(cid, {
-                super.compile()
-                println("didn't have this id already: "+cid);
-                displayList
-            })
-            properties += "graphics" -> Global.settings.get[Int]("graphics");
-            properties += "fatlines" -> Global.settings.get[Boolean]("fatlines");
-            
-            if(id() != cid) println("so much for a id");
-        } catch {
-            case e:NullPointerException => super.compile()
-        }
-    }
-    
-    /*override def render() {
-        try {
-            var cid = id(Global.settings);//throws
-            compile();
-        } catch {
-            case _ => //see me care
-        } finally {
-            super.render()
-        }
-    }*/
-    
-    def reset() = {
-        var cache = properties.get[HashMap[Int, Int]]("compileCache");
-        if(cache != null) {
-            var count = 0;
-            cache.foreach {
-                case (_,listid) =>
-                    count += 1;
-                    GL11.glDeleteLists(listid, 1);
-            }
-            println("deleted lists: "+count);
-        }
-                
-        properties += "compileCache" -> new HashMap[Int,Int];
     }
     
     // make a data constructor, so clone has same data. (eliminate generator in static constructor)
@@ -251,10 +221,10 @@ class TrailModel(var points:List[Vec3])
                 gluQuadrics.cylinder.draw(0.075f,0.075f, p.length, 4,1);
                 glPopMatrix
             }
-
+/*
             glBegin(GL_LINES)
             for(p <- points) glVertex3f(p.x, p.y, p.z);
-            glEnd;
+            glEnd;*/
         }) {
         
     def +=(v:Vec3) = {
@@ -263,22 +233,28 @@ class TrailModel(var points:List[Vec3])
     }
 }
 
-class BoundingBox(var min:Vec3, var max:Vec3) {
+class BoundingBox(var min:Vec3) {
+    min = min.clone;
+    var max = min.clone;
+    def this(v1:Vec3, v2:Vec3) = {
+        this(v1.clone);
+        this += v2;
+    }
     def this(points:List[Vec3]) = {
-        this(points(0).clone, points(0).clone);
+        this(points(0).clone);
         for(i <- 1 until points.length)
             this += points(i);        
     }
     
     def boxCollide(b:BoundingBox, offset:Vec3=new Vec3):Boolean = {///tolerance
-        ((min.x+offset.x < b.max.x) && (max.x+offset.x > b.min.x) && 
-         (min.y+offset.y < b.max.y) && (max.y+offset.y > b.min.y) &&
-         (min.z+offset.z < b.max.z) && (max.z+offset.z > b.min.z))
+        ((min.x+offset.x <= b.max.x) && (max.x+offset.x >= b.min.x) && 
+         (min.y+offset.y <= b.max.y) && (max.y+offset.y >= b.min.y) &&
+         (min.z+offset.z <= b.max.z) && (max.z+offset.z >= b.min.z))
     }
     def pointCollide(v:Vec3, offset:Vec3=new Vec3):Boolean = {
-        ((min.x+offset.x < v.x) && (max.x+offset.x > v.x) && 
-         (min.y+offset.y < v.y) && (max.y+offset.y > v.y) &&
-         (min.z+offset.z < v.z) && (max.z+offset.z > v.z))
+        ((min.x+offset.x <= v.x) && (max.x+offset.x >= v.x) && 
+         (min.y+offset.y <= v.y) && (max.y+offset.y >= v.y) &&
+         (min.z+offset.z <= v.z) && (max.z+offset.z >= v.z))
     }
     
     def +=(v:Vec3):Unit = {
@@ -289,10 +265,16 @@ class BoundingBox(var min:Vec3, var max:Vec3) {
         this += b.min
         this += b.max
     }
-    def +(b:BoundingBox):BoundingBox = {
+    def ++(b:BoundingBox):BoundingBox = {// merge boxes
         var t = this.clone;
         t += b.min;
         t += b.max;
+        t;
+    }
+    def offsetBy(v:Vec3):BoundingBox = {// offset box
+        var t = this.clone;
+        t.min += v;
+        t.max += v;
         t;
     }
     
@@ -324,7 +306,7 @@ class Branch(var parent:Branch) extends Properties {
     def detach(){
         if(parent!=null) {
             parent.children -= this;
-            this.setParent(null);
+            this.setParent(null);            
         }
     }
     
@@ -359,12 +341,42 @@ class Branch(var parent:Branch) extends Properties {
             glTranslatef(vecB.x,vecB.y,vecB.z);
             glRotatef(angle,cross.x,cross.y,cross.z);
             glColor3f(0.7f,0.2f,0f);
-            gluQuadrics.cylinder.draw(0.2f/branch.depth,0.4f/branch.depth, branch.diffVec.length, settings.get[Int]("graphics")*3,1);
+            val fatness = branch.properties.get[Float]("fatness");
+            gluQuadrics.cylinder.draw(fatness/branch.depth,(fatness*2)/branch.depth, branch.diffVec.length, settings.get[Int]("graphics")*5,1);
             if(branch.properties.get[Boolean]("hasLeaf")) {
+                /*if(settings.get[Int]("graphics")==1){
+                    glRotatef(180+45, 0,0,1)
+                    glTranslatef(0,-0.2f+0.8f*0.25f,0)
+                    glScalef(1*0.25f,1.6f*0.25f,1*0.25f)
+                    glColor3f(0.9f,0.9f,0.4f)
+                    glBegin(GL_QUADS)
+                    glVertex3f(0,0,0);
+                    glVertex3f(0,1,0);
+                    glVertex3f(1,1,0);
+                    glVertex3f(1,0,0);
+                    glEnd;
+                }*/
                 glScalef(1,1.6f,1)
-                glTranslatef(0,-0.2f,0)
                 glColor3f(0.2f,0.8f,0.1f)
-                gluQuadrics.disk.draw(0,0.175f, settings.get[Int]("graphics")*4,1)
+                branch.properties.get[Int]("treekind") match {
+                    case 0 => 
+                        glTranslatef(0,-0.17f,0)
+                        glRotatef(rand.nextFloat()*12-rand.nextFloat()*12, 0,0,1)
+                        gluQuadrics.disk.draw(0,0.175f, settings.get[Int]("graphics")*6,1)
+                    case 1 => 
+                        glTranslatef(0,-0.17f,0)
+                        gluQuadrics.disk.draw(0,0.175f, 6+rand.nextInt(5),1)
+                    case 2 => 
+                        glColor3f(0.15f,0.75f,0.075f)
+                        glTranslatef(0,-0.13f,0)
+                        glRotatef(180+rand.nextFloat()*6-rand.nextFloat()*6, 0,0,1)
+                        gluQuadrics.disk.draw(0,0.175f, 5,1)
+                    case _ => 
+                        gluQuadrics.disk.draw(0,0.175f, 5,1)
+                        glRotatef(45, 0,0,1);
+                        glTranslatef(0,-0.1f,0)
+                        gluQuadrics.disk.draw(0,0.175f, 4,1)
+                }
             }
             glPopMatrix;
         } else {
@@ -382,12 +394,15 @@ class Branch(var parent:Branch) extends Properties {
     }
 }
 
-class Camera extends BasicModel with Vector {
+class Camera extends BasicModel {
     // default projection 
     var perspective = false
     var (near,far) = (1f,30f) // near, far clipping plane
     var (fov,aspectRatio) = (45f,4/3f) // perspective stuff
     var (minX,minY,maxX,maxY) = (-1f,-1f, 1f, 1f) // ortho stuff
+    var projectionChanged = true; // do we need to remake projection matrix
+    var vector = new Vec3;
+    var vector2 = new Vec3;
 
     // set a perspective projection
     def setPerspective(fv:Float, ar:Float, n:Float, f:Float) {
@@ -396,6 +411,7 @@ class Camera extends BasicModel with Vector {
         aspectRatio=ar
         near=n
         far=f
+        projectionChanged = true
     }
   
     // set an ortographic projection
@@ -407,22 +423,26 @@ class Camera extends BasicModel with Vector {
         maxY=My
         near=n
         far=f
+        projectionChanged = true
     }
     
     private var lookAtV = new Vec3
     def lookAt(v:Vec3) = lookAtV = v.clone;
     def lookAt(m:BasicModel) = lookAtV = m.pos.clone;
-    
+        
     override def render {
         // setup projection matrix stack
-        GL11.glMatrixMode(GL11.GL_PROJECTION);
-        GL11.glLoadIdentity();
-        if(perspective) {
-            // perspective projection
-            GLU.gluPerspective(fov,aspectRatio, near,far);
-        } else {
-            // orthographic projection 
-            GL11.glOrtho(minX,maxX, minY,maxY, near,far);
+        if(projectionChanged) {
+            projectionChanged = false;
+            GL11.glMatrixMode(GL11.GL_PROJECTION);
+            GL11.glLoadIdentity();
+            if(perspective) {
+                // perspective projection
+                GLU.gluPerspective(fov,aspectRatio, near,far);
+            } else {
+                // orthographic projection 
+                GL11.glOrtho(minX,maxX, minY,maxY, near,far);
+            }
         }
 
         // model view stack 
@@ -435,14 +455,17 @@ class Camera extends BasicModel with Vector {
     }
 }
 
-class ModelLink(var m1:BasicModel, var m2:BasicModel) extends Vector with Vector2 {
-    def this(m1:BasicModel,m2:BasicModel,vector:Vec3, vector2:Vec3) {
+class ModelLink(var m1:BasicModel, var m2:BasicModel) {
+    var vector = new Vec3;
+    var vector2 = new Vec3;
+    
+    def this(m1:BasicModel,m2:BasicModel,v:Vec3, v2:Vec3) {
         this(m1,m2)
-        this.vector = vector;
-        this.vector2 = vector2;
+        vector = v;
+        vector2 = v2;
     }
-    def this(m1:BasicModel,m2:BasicModel,vector:Vec3) {
-        this(m1,m2, vector,new Vec3)
+    def this(m1:BasicModel,m2:BasicModel,v:Vec3) {
+        this(m1,m2, v,new Vec3)
     }
     
     private var linked = true;

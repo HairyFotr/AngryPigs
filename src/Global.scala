@@ -2,7 +2,7 @@ package AngryPigs
 
 import scala.util.Random
 import org.lwjgl.util.glu.{Sphere,Cylinder,Disk,PartialDisk}
-
+import scala.collection.mutable.{ListBuffer,HashMap}
 // stuff that is used in all the (wrong) places :P
 // ... it's made of fail and state
 object Global {
@@ -10,6 +10,8 @@ object Global {
     settings += "graphics" -> 2; // polygon multiplier for generatives.
     settings += "fatlines" -> true; // tree rendering
     settings += "air" -> false; // lol, pig fly
+    settings += "tasks" -> new ListBuffer[()=>Unit];
+    def tasks() = (settings.get[ListBuffer[()=>Unit]]("tasks"));
 
     val rand = new Random;
     
@@ -23,7 +25,7 @@ object Global {
     val genTree = new ClojureWrap("AngryPigs", "gen-tree");
 
     // measures the running time of the provided func    
-    def time(name:String = "")(f: =>Unit):Long = {
+    def time(f: =>Unit):Long = {
         val startTime = System.nanoTime();
         
         f;
