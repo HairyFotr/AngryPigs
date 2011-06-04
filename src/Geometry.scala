@@ -2,6 +2,8 @@ package AngryPigs
 
 import org.lwjgl.opengl.GL11
 import org.lwjgl.util.glu.GLU
+import scala.collection.mutable.{ListBuffer,HashMap};
+
 
 class Vec3(var x:Float, var y:Float, var z:Float) {
     def this() = this(0f,0f,0f);
@@ -150,7 +152,7 @@ class DisplayModel(var renderfunc:()=>Unit) extends BasicModel with Vector with 
     }    
 }
 
-class GeneratorModel(generator:()=>Object, draw:Object=>Unit) extends DisplayModel {
+class GeneratorModel(generator:()=>Object, draw:Object=>Unit, idfunc:(GeneratorModel,SettingMap[String])=>Int = null) extends DisplayModel {
     var data:Object = generator();
     renderfunc = ()=>{draw(data);()}
     
@@ -158,7 +160,50 @@ class GeneratorModel(generator:()=>Object, draw:Object=>Unit) extends DisplayMod
         data = generator();
         compile();
     }
-
+    
+    def id(props:SettingMap[String]=this.properties):Int = 
+        if(idfunc!=null) 
+            idfunc(this,props);
+        else 
+            Predef.Integer2int(null); //ya, rly :P
+    
+    // adds compile cache to compile()
+    override def compile() {
+        try {
+            var cid = id(Global.settings);
+            var cache = properties.get[HashMap[Int, Int]]("compileCache");
+            if(cache == null) {
+                cache = new HashMap[Int,Int];
+                properties += "compileCache" -> cache;
+            }
+            
+            displayList = cache.getOrElseUpdate(cid, {
+                super.compile()
+                println("didn't have this id already: "+cid);
+                displayList
+            })
+            properties += "graphics" -> Global.settings.get[Int]("graphics");
+            properties += "fatlines" -> Global.settings.get[Boolean]("fatlines");
+            
+            if(id() != cid) println("so much for a id");
+        } catch {
+            case e:NullPointerException => super.compile()
+        }
+    }
+    
+    /*override def render() {
+        try {
+            var cid = id(Global.settings);//throws
+            compile();
+        } catch {
+            case _ => //see me care
+        } finally {
+            super.render()
+        }
+    }*/
+    
+    //def reset ... when branch breaks all renders are foo - also, free the displaylists
+    
     // make a data constructor, so clone has same data. (eliminate generator in static constructor)
     override def clone:GeneratorModel = {
         val res = new GeneratorModel(generator, draw)
@@ -242,8 +287,6 @@ class BoundingBox(var min:Vec3, var max:Vec3) {
 }
 
 class Branch(var parent:Branch) extends Properties {
-    import scala.collection.mutable.ListBuffer;
-    
     var diffVec:Vec3 = new Vec3;
     var rootVec:Vec3 = new Vec3;
     def destVec:Vec3 = rootVec + diffVec;

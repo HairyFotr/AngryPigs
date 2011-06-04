@@ -467,10 +467,19 @@ object Game {
         };
 
         def renderTree:Object=>Unit = (data:Object)=>data.asInstanceOf[Branch].doAll(_.render);
+        def treeId:(GeneratorModel,SettingMap[String])=>Int = (model,properties)=>{
+            var mid = 0;///to properties on fly
+            // takes into account branch count, graphic detail and fatline setting
+            model.data.asInstanceOf[Branch].doAll((branch)=>{ mid += 1 })
+            mid += mid * properties.get[Int]("graphics");
+            if(properties.get[Boolean]("fatlines")) mid = -mid;
+            mid;
+        };
+        
         println("the present: "+System.nanoTime()/1000000L);
         def futureTree:Future[GeneratorModel] = future {
             //println("the future is now: "+System.nanoTime()/1000000L)
-            var tree = new GeneratorModel(giveMeTree, renderTree);
+            var tree = new GeneratorModel(giveMeTree, renderTree, treeId);
             //tree.setPosition(17,-worldSize+2.5f,-worldSize/2+30);
             tree.setPosition(
                 (17+rand.nextFloat()*3-rand.nextFloat()*3)*rand.nextInt(7) - (17+rand.nextFloat()*3-rand.nextFloat()*3)*rand.nextInt(7),
@@ -695,14 +704,14 @@ object Game {
         for(tree <- trees) {
             if(math.abs((tree.pos-pig.pos).length) > 80) {
                 settings += "fatlines" -> false;
-                if(settings.get[Boolean]("fatlines") != tree.properties.get[Boolean]("fatlines"))
+                //if(settings.get[Boolean]("fatlines") != tree.properties.get[Boolean]("fatlines"))
                 tree.compile();
                 settings += "fatlines" -> true;
-            } else if(settings.get[Boolean]("fatlines") != tree.properties.get[Boolean]("fatlines")) {
+            } else {//if(settings.get[Boolean]("fatlines") != tree.properties.get[Boolean]("fatlines")) {
                 tree.compile();
             }
         }
-
+        
         for(model <- models() ++ dropBranches ++ trails) if(model.visible) {
             glPushMatrix;
             model.doTransforms
