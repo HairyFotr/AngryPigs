@@ -3,34 +3,18 @@
 (require 'geometry)
 
 
-; the aim of this thing is to generate a tree
-; main program expects a list of point,vector tuples that represent cyllindres making up the tree
-
-; operative keyword: fractals
-
-; data structure:sort of
-; node: (x y z d)  (vector with distance)
-; tree: (node
-;        (node
-; 	(node
-; 	 (node) (node) (node) (node) (node))
-; 	(node
-; 	 (node) (node) (node) (node) (node))
-; 	(node
-; 	 (node) (node) (node) (node) (node)))
-;        (node
-; 	(node
-; 	 (node) (node) (node) (node) (node))
-; 	(node
-; 	 (node) (node) (node) (node) (node))
-; 	(node
-; 	 (node) (node) (node) (node) (node))))
-
-
 (def primes [2 3 5 7 11 13 17 23 29])
 (def lengths [0.8 0.7 0.5 0.3 0.099 0.097 0.093 0.088 0.081])
-(def max-depth 3)
+(def max-depth 4)
 
+(def children
+     (memoize (fn [depth]
+		(apply * (cons 1 (map #(nth primes %1)
+				      (take (- max-depth depth)
+					    (drop (inc depth)
+						  (iterate inc 0)))))))))
+
+(def max-children (children 0))
 
 (defn make-node [v l]
   (apply list (concat v [(float l)])))
@@ -65,25 +49,13 @@
 
 (defn random-length [baselen depth]
   (defn weight [x pivot]
-    (if (or (< x pivot)
-            (< 2 (- x pivot))) 0
-  ; cos(x + sin(x)*0.9)*0.5+0.5
-        (let [x (* x (/ Math/PI (count lengths)))
-              pivot (* pivot (/ Math/PI (count lengths)))]
-          (int (Math/floor (* 10
-                              (+ 0.5 (* 0.5
-                                        (Math/cos (+ (- x pivot)
-                                                     (* 0.9 (Math/sin (- x pivot)))))))))))))
+    (if (< x pivot) 0
+	(int (Math/floor (/ 9 (inc (* 3 (- x pivot))))))))
 
   (* baselen (weighed-random-choice lengths #(weight %1 depth))))
 
-;(println (random-length 5 0))
-
-(defn give-me-tree
-  ([a b c d] (give-me-tree (make-node [a b c] d)
-                           d
-                           0))
-  ([node baselen depth]
+(defn giev-subtree
+  ([node baselen depth gravity]
      (if (> depth max-depth) node
 
 	 (let [first-branch (perpendicular-vector (butlast node))]
@@ -106,15 +78,30 @@
 				      (random-up-angle depth)))
 		  branches))
 
+	   (defn +gravity [branch]
+	     (defn weight []
+	       (/ 0.5 (inc (- max-children (children depth)))))
 
+	     (make-node (let [endpoint (map #(* %1 (last branch))
+					    (butlast branch))
+			      gravity (map #(* %1 (weight)) gravity)]
+			  (normalize (move-point endpoint gravity)))
+			(last branch)))
 
 	   (concat [node]
-		   [(map #(give-me-tree
-			   (make-node %1
-				      (random-length baselen depth))
+		   [(map #(giev-subtree
+			   (+gravity (make-node %1
+						(random-length baselen depth)))
 			   baselen
-			   (inc depth))
+			   (inc depth)
+			   gravity)
 			 (curve-up (make-branches)))])))))
+
+(defn give-me-tree
+  ([a b c d] (giev-subtree (make-node [a b c] d)
+                           d
+                           0
+			   (normalize (map - [a b c])))))
 
 ;(println (give-me-tree 0 2 0 5))
 
