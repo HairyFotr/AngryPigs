@@ -240,7 +240,11 @@ class TrailModel(var points:List[Vec3])
             glBegin(GL_LINES)
             for(p <- points) glVertex3f(p.x, p.y, p.z);
             glEnd;*/
-        }) {
+        }, 
+        (model:DisplayModel,props:SettingMap[String])=>{
+            model.asInstanceOf[GeneratorModel].data.asInstanceOf[List[Vec3]].length;
+        }
+        ) {
         
     def +=(v:Vec3) = {
         data = data.asInstanceOf[List[Vec3]] ++ List(v.clone);

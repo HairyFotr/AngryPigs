@@ -82,7 +82,7 @@ object Game {
     
     
     def decreaseDetail() = {
-        if(settings.get[Int]("maxdepth")>4) settings += "maxdepth" -> 4;
+        if(settings.get[Int]("maxdepth")>5) settings += "maxdepth" -> 5;
         settings += "graphics" -> (settings.get[Int]("graphics")-1);
         println("decreased graphic detail to "+settings.get[Int]("graphics"));
         models().foreach((model)=> {                        
@@ -254,6 +254,7 @@ object Game {
             // takes into account branch count, graphic detail and fatline setting
             model.data.asInstanceOf[Branch].doAll((branch)=>{ mid += 1 })
             mid += mid * properties.get[Int]("graphics");
+            mid += mid + 101*properties.get[Int]("maxdepth");
             if(properties.get[Boolean]("fatlines")) mid = -mid;
             mid;
         };
@@ -548,6 +549,7 @@ object Game {
         //campigLink = new ModelLink(pig, cam, new Vec3(0f,7,-50), new Vec3(0,0,0));
         
         futureTrees += Tree.futureTree;
+        Thread.sleep(1000);
                 
         //generatedModels = models().filter(_.isInstanceOf[GeneratorModel]).map(_.asInstanceOf[GeneratorModel]);
     }
@@ -621,16 +623,18 @@ object Game {
     * Renders current frame
     */
     def renderFrame = fullTimes += time {
-        workerTimes += time {
-            // execute max one non-time-critical task per frame
-            if(tasks().length>0 && 0.05f+tasks().length/75f > rand.nextFloat) {//if 
-            //if((tasks().length>10) || (tasks().length>0 && rand.nextFloat>0.9)) {
+        workerTimes += time {///write tasks object
+            def doTask() = {
                 val task = tasks().head;
                 task();
                 tasks() -= task;
                 if(tasks().length==0) println("all tasks done");
             }
-        }
+            // execute max one non-time-critical task per frame
+            if(tasks().length>0 && 0.05f+tasks().length/70f > rand.nextFloat) doTask();
+            // or maybe a few, if it's getting bad...
+            if(tasks().length>200) for(i <- 1 to tasks().length%200) doTask();
+       }
     
         if(!pause) {
             physicsTimes += time {
@@ -675,6 +679,7 @@ object Game {
             
             if(settings.get[Boolean]("air")) {
                 trails.last += moveObj.pos;
+                trails.last.compile();
             } else if(!settings.get[Boolean]("air") && (postpigrotx < rotTreshold || postpigrotx > 360f-rotTreshold)) {
                 pig.vector2.x = 0;
                 pig.rot.x = 0;
@@ -768,7 +773,7 @@ object Game {
                     tree.reset;
 
                     var depthSum = 0;
-                    val sumLim = 3;
+                    val sumLim = 2;//&whiletrue
                     branch.doWhile((b)=>{true},(b)=>{ depthSum += 1 });
                     if(depthSum <= sumLim) {// tree is dead
                         println("td:"+depthSum);
@@ -814,7 +819,20 @@ object Game {
         } else for(futureTree <- futureTrees.clone) if(futureTree.isSet) { 
             val presentTree = futureTree.apply();
             trees += presentTree;
-            presentTree.compile();
+            
+            def growTree(lvl:Int, tree:GeneratorModel):Unit = {
+                if(lvl <= settings.get[Int]("maxdepth")) {///move setting to tree!
+                    val ex = settings.get[Int]("maxdepth");
+                    settings += "maxdepth" -> lvl;
+                    tree.compile();
+                    settings += "maxdepth" -> ex;
+                }
+            }
+            
+            growTree(1, presentTree)
+            for(i <- 2 to 6)
+                tasks() += (()=>{ growTree(i, presentTree) })
+            
             futureTrees -= futureTree;
             println("the future is applied: "+System.nanoTime()/1000000L)
         }
@@ -920,8 +938,7 @@ object Game {
                     pig.vector.z = -pig.vector.z;
                     pig.vector2 = -new Vec3(0.5f+rand.nextFloat/3,0,0) * (80f*2.7f/3.7f);
                 }
-            }
-            
+            }           
             
             settings += "air" -> true;println("pig is in air");
             trails += new TrailModel(List(pig.pos))
