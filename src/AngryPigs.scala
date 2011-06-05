@@ -80,6 +80,26 @@ object Game {
     // used for frame independant movement
     var frameTime = now;
     
+    
+    def decreaseDetail() = {
+        if(settings.get[Int]("maxdepth")>4) settings += "maxdepth" -> 4;
+        settings += "graphics" -> (settings.get[Int]("graphics")-1);
+        println("decreased graphic detail to "+settings.get[Int]("graphics"));
+        models().foreach((model)=> {                        
+            tasks() += (()=>model.compile());
+            if(model.compileCache.size > 5 && model.compileCache.size <= 7) tasks() += (()=>model.reset);
+        })
+    }
+    def increaseDetail() = {
+        if(settings.get[Int]("maxdepth")<6) settings += "maxdepth" -> (settings.get[Int]("maxdepth")+1);
+        settings += "graphics" -> (settings.get[Int]("graphics")+1);
+        println("increased graphic detail to "+settings.get[Int]("graphics"));
+        models().foreach((model)=> {
+            tasks() += (()=>model.compile());
+            if(model.compileCache.size > 3 && model.compileCache.size <= 7) tasks() += (()=>model.reset);
+        })
+    }
+    
     /**
      * Main loop: renders and processes input events
      */
@@ -90,7 +110,7 @@ object Game {
         // FPS counter
         var frameCounter = 0
         val second = 1000000000L
-        val FPSseconds = 5 
+        val FPSseconds = 3
         var FPStimer = now
         frameTime = now
         while(isRunning) {
@@ -106,26 +126,14 @@ object Game {
                 val FPS = frameCounter/FPSseconds.toFloat;
                 
                 // increase or decrease graphics detail
-                if(FPS < 16 && settings.get[Int]("graphics") > 1) {
-                    settings += "graphics" -> (settings.get[Int]("graphics")-1);
-                    println("decreased graphic detail to "+settings.get[Int]("graphics"));
-                    models().foreach((model)=> {                        
-                        tasks() += (()=>model.compile());
-                        if(model.compileCache.size > 5 && model.compileCache.size <= 7) tasks() += (()=>model.reset);
-                    })
-                }
-                if(FPS > 45 && settings.get[Int]("graphics") < 5) {
-                    settings += "graphics" -> (settings.get[Int]("graphics")+1);
-                    println("increased graphic detail to "+settings.get[Int]("graphics"));
+                if(FPS < 16 && settings.get[Int]("graphics") > 1) decreaseDetail();
+                if(FPS > 45 && settings.get[Int]("graphics") < 7) increaseDetail();
+            
+                if(tasks().length < 10) {
                     models().foreach((model)=> {
-                        tasks() += (()=>model.compile());
-                        if(model.compileCache.size > 3 && model.compileCache.size <= 7) tasks() += (()=>model.reset);
+                        if(model.compileCache.size > 7) tasks() += (()=>model.reset);
                     })
                 }
-
-                models().foreach((model)=> {
-                    if(model.compileCache.size > 7) tasks() += (()=>model.reset);
-                })
                 
                 println("FPS: "+FPS);
                 println("Tasks: "+tasks.length);
@@ -846,15 +854,11 @@ object Game {
         if(isKeyDown(KEY_2)) { settings += "fatlines" -> true; trees.foreach(_.compile()) } else
         if(isKeyDown(KEY_3)) { trees.foreach(_.regenerate()) } else
         if(isKeyDown(KEY_5) && !timeLock.isLocked) { 
-            settings += "graphics" -> (settings.get[Int]("graphics")+1);
-            println("increased graphic detail to "+settings.get[Int]("graphics"));
-            tasks() += (()=>{models().foreach(_.compile())})
+            increaseDetail();
             timeLock.lockIt(300);
         } else
         if(isKeyDown(KEY_6) && !timeLock.isLocked && settings.get[Int]("graphics") > 1) { 
-            settings += "graphics" -> (settings.get[Int]("graphics")-1);            
-            println("decreased graphic detail to "+settings.get[Int]("graphics"));
-            tasks() += (()=>{models().foreach(_.compile())})
+            decreaseDetail();
             timeLock.lockIt(300);
         } else
         if(isKeyDown(KEY_8) && !timeLock.isLocked) { pig.regenerate(); timeLock.lockIt(200); } else

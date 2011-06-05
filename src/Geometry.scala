@@ -342,69 +342,71 @@ class Branch(var parent:Branch) extends Properties {
         import org.lwjgl.opengl.GL11._
         import Global._
         val branch = this // I'm lazy :P
-        if(settings.get[Boolean]("fatlines")) {
-            val vecA = branch.rootVec;
-            val vecB = branch.destVec;
-            
-            val z = new Vec3(0,0,1)
-            val p = vecA - vecB
-            val cross = z X p
-            val angle = z angle p
-            
-            glPushMatrix
-            glTranslatef(vecB.x,vecB.y,vecB.z);
-            glRotatef(angle,cross.x,cross.y,cross.z);
-            glColor3f(0.7f,0.2f,0f);
-            val fatness = branch.properties.get[Float]("fatness");
-            gluQuadrics.cylinder.draw(fatness/branch.depth,(fatness*2)/branch.depth, branch.diffVec.length, settings.get[Int]("graphics")*5,1);
-            if(branch.properties.get[Boolean]("hasLeaf")) {
-                /*if(settings.get[Int]("graphics")==1){
-                    glRotatef(180+45, 0,0,1)
-                    glTranslatef(0,-0.2f+0.8f*0.25f,0)
-                    glScalef(1*0.25f,1.6f*0.25f,1*0.25f)
-                    glColor3f(0.9f,0.9f,0.4f)
-                    glBegin(GL_QUADS)
-                    glVertex3f(0,0,0);
-                    glVertex3f(0,1,0);
-                    glVertex3f(1,1,0);
-                    glVertex3f(1,0,0);
-                    glEnd;
-                }*/
-                glScalef(1,1.6f,1)
-                glColor3f(0.2f,0.8f,0.1f)
-                branch.properties.get[Int]("treekind") match {
-                    case 0 => 
-                        glTranslatef(0,-0.17f,0)
-                        glRotatef(rand.nextFloat()*12-rand.nextFloat()*12, 0,0,1)
-                        gluQuadrics.disk.draw(0,0.175f, settings.get[Int]("graphics")*6,1)
-                    case 1 => 
-                        glTranslatef(0,-0.17f,0)
-                        gluQuadrics.disk.draw(0,0.175f, 6+rand.nextInt(5),1)
-                    case 2 => 
-                        glColor3f(0.15f,0.75f,0.075f)
-                        glTranslatef(0,-0.13f,0)
-                        glRotatef(180+rand.nextFloat()*6-rand.nextFloat()*6, 0,0,1)
-                        gluQuadrics.disk.draw(0,0.175f, 5,1)
-                    case _ => 
-                        gluQuadrics.disk.draw(0,0.175f, 5,1)
-                        glRotatef(45, 0,0,1);
-                        glTranslatef(0,-0.1f,0)
-                        gluQuadrics.disk.draw(0,0.175f, 4,1)
+        if(branch.depth <= settings.get[Int]("maxdepth")) {
+            if(settings.get[Boolean]("fatlines")) {
+                val vecA = branch.rootVec;
+                val vecB = branch.destVec;
+                
+                val z = new Vec3(0,0,1)
+                val p = vecA - vecB
+                val cross = z X p
+                val angle = z angle p
+                
+                glPushMatrix
+                glTranslatef(vecB.x,vecB.y,vecB.z);
+                glRotatef(angle,cross.x,cross.y,cross.z);
+                glColor3f(0.7f,0.2f,0f);
+                val fatness = branch.properties.get[Float]("fatness");
+                gluQuadrics.cylinder.draw(fatness/branch.depth,(fatness*2)/branch.depth, branch.diffVec.length, settings.get[Int]("graphics")*5,1);
+                if(branch.properties.get[Boolean]("hasLeaf")) {
+                    /*if(settings.get[Int]("graphics")==1){
+                        glRotatef(180+45, 0,0,1)
+                        glTranslatef(0,-0.2f+0.8f*0.25f,0)
+                        glScalef(1*0.25f,1.6f*0.25f,1*0.25f)
+                        glColor3f(0.9f,0.9f,0.4f)
+                        glBegin(GL_QUADS)
+                        glVertex3f(0,0,0);
+                        glVertex3f(0,1,0);
+                        glVertex3f(1,1,0);
+                        glVertex3f(1,0,0);
+                        glEnd;
+                    }*/
+                    glScalef(1,1.6f,1)
+                    glColor3f(0.2f,0.8f,0.1f)
+                    branch.properties.get[Int]("treekind") match {
+                        case 0 => 
+                            glTranslatef(0,-0.17f,0)
+                            glRotatef(rand.nextFloat()*12-rand.nextFloat()*12, 0,0,1)
+                            gluQuadrics.disk.draw(0,0.175f, settings.get[Int]("graphics")*6,1)
+                        case 1 => 
+                            glTranslatef(0,-0.17f,0)
+                            gluQuadrics.disk.draw(0,0.175f, 6+rand.nextInt(5),1)
+                        case 2 => 
+                            glColor3f(0.15f,0.75f,0.075f)
+                            glTranslatef(0,-0.13f,0)
+                            glRotatef(180+rand.nextFloat()*6-rand.nextFloat()*6, 0,0,1)
+                            gluQuadrics.disk.draw(0,0.175f, 5,1)
+                        case _ => 
+                            gluQuadrics.disk.draw(0,0.175f, 5,1)
+                            glRotatef(45, 0,0,1);
+                            glTranslatef(0,-0.1f,0)
+                            gluQuadrics.disk.draw(0,0.175f, 4,1)
+                    }
                 }
+                glPopMatrix;
+            } else {
+                glColor3f(0.7f,0.2f,0f);
+                glBegin(GL_LINES)
+                glVertex3f(branch.rootVec.x,
+                           branch.rootVec.y,
+                           branch.rootVec.z);                        
+                
+                glVertex3f(branch.destVec.x,
+                           branch.destVec.y,
+                           branch.destVec.z)
+                glEnd;
             }
-            glPopMatrix;
-        } else {
-            glColor3f(0.7f,0.2f,0f);
-            glBegin(GL_LINES)
-            glVertex3f(branch.rootVec.x,
-                       branch.rootVec.y,
-                       branch.rootVec.z);                        
-            
-            glVertex3f(branch.destVec.x,
-                       branch.destVec.y,
-                       branch.destVec.z)
-            glEnd;
-        }    
+        }
     }
 }
 
