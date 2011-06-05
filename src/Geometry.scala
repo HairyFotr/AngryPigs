@@ -152,6 +152,7 @@ class DisplayModel(var renderfunc:()=>Unit, var idfunc:(DisplayModel,SettingMap[
         }
     }
     
+    /*
     def reset() = {
         if(compileCache.size>1) {
             var count = 0;
@@ -162,10 +163,27 @@ class DisplayModel(var renderfunc:()=>Unit, var idfunc:(DisplayModel,SettingMap[
                     tasks += (()=>{GL11.glDeleteLists(listid, 1)})
                 }
             }
-            println("added delete tasks: "+count);
+            println("(reset) added delete tasks: "+count);
             compileCache.clear();
         }
+    }*/
+
+    def reset(limit:Int=1, preserveCurrent:Boolean=true) = {
+        if(compileCache.size>limit) {
+            var count = 0;
+            val tasks = Global.settings.get[ListBuffer[()=>Unit]]("tasks");
+            compileCache.clone.foreach {
+                case (id,listid) => 
+                    if(listid!=displayList || !preserveCurrent) {
+                        count += 1;
+                        tasks += (()=>{GL11.glDeleteLists(listid, 1)})
+                        compileCache = compileCache - id
+                    }
+            }
+            //println("(free) added delete tasks: "+count);
+        }
     }
+    def free() = reset(0,false);
 
     override def clone:DisplayModel = {
         val res = new DisplayModel(this.renderfunc)

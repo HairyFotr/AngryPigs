@@ -82,21 +82,25 @@ object Game {
     
     
     def decreaseDetail() = {
-        if(settings.get[Int]("maxdepth")>5) settings += "maxdepth" -> 5;
         settings += "graphics" -> (settings.get[Int]("graphics")-1);
+        if(settings.get[Int]("graphics")==1 && settings.get[Int]("maxdepth")>5) settings += "maxdepth" -> 5;
         println("decreased graphic detail to "+settings.get[Int]("graphics"));
         models().foreach((model)=> {                        
-            tasks() += (()=>model.compile());
-            if(model.compileCache.size > 5 && model.compileCache.size <= 7) tasks() += (()=>model.reset);
+            tasks() += (()=> {
+                model.compile();
+                if(model.compileCache.size > 4) model.reset();
+            });
         })
     }
     def increaseDetail() = {
-        if(settings.get[Int]("maxdepth")<6) settings += "maxdepth" -> (settings.get[Int]("maxdepth")+1);
         settings += "graphics" -> (settings.get[Int]("graphics")+1);
+        settings += "maxdepth" -> (settings.get[Int]("maxdepth")+1);
         println("increased graphic detail to "+settings.get[Int]("graphics"));
-        models().foreach((model)=> {
-            tasks() += (()=>model.compile());
-            if(model.compileCache.size > 3 && model.compileCache.size <= 7) tasks() += (()=>model.reset);
+        models().foreach((model)=> {                        
+            tasks() += (()=>{
+                model.compile();
+                if(model.compileCache.size > 4) model.reset();
+            });
         })
     }
     
@@ -110,7 +114,7 @@ object Game {
         // FPS counter
         var frameCounter = 0
         val second = 1000000000L
-        val FPSseconds = 3
+        val FPSseconds = 5
         var FPStimer = now
         frameTime = now
         while(isRunning) {
@@ -126,21 +130,20 @@ object Game {
                 val FPS = frameCounter/FPSseconds.toFloat;
                 
                 // increase or decrease graphics detail
-                if(FPS < 16 && settings.get[Int]("graphics") > 1) decreaseDetail();
-                if(FPS > 45 && settings.get[Int]("graphics") < 7) increaseDetail();
+                if(FPS < 16 && settings.get[Int]("graphics") > 1 && tasks().length < 77) decreaseDetail();
+                if(FPS > 45 && settings.get[Int]("graphics") < 7 && tasks().length < 77) increaseDetail();
             
-                if(tasks().length < 10) {
-                    models().foreach((model)=> {
-                        if(model.compileCache.size > 7) tasks() += (()=>model.reset);
-                    })
-                }
+                models().foreach((model)=>{
+                    if(model.compileCache.size > 5) model.reset();
+                })
                 
+                println("-------------------");
                 println("FPS: "+FPS);
                 println("Tasks: "+tasks.length);
-                print("render: "+renderTimes)
-                print(" -- physics: "+physicsTimes)
-                print(" -- worker: "+workerTimes)
-                println(" -- full: "+fullTimes)
+                println("Render: "+(renderTimes/fullTimes.toDouble).toFloat)
+                println("Physics: "+(physicsTimes/fullTimes.toDouble).toFloat)
+                println("Worker: "+(workerTimes/fullTimes.toDouble).toFloat)
+                println("-------------------");
 
                 frameCounter = 0;
                 FPStimer = now;
@@ -747,7 +750,6 @@ object Game {
                                         moveObj.pos += moveVec*renderTime;
                                     }
                                     moveObj.vector.z = moveObj.vector.z/2;
-                                    println("bounce");
                                 }
                             } else {
                                 done = true;
@@ -770,16 +772,16 @@ object Game {
                 );
                 if(collision) {
                     tree.compile;
-                    tree.reset;
+                    tree.reset();
 
                     var depthSum = 0;
                     val sumLim = 2;//&whiletrue
                     branch.doWhile((b)=>{true},(b)=>{ depthSum += 1 });
                     if(depthSum <= sumLim) {// tree is dead
-                        println("td:"+depthSum);
                         val drop = dropBranch(branch);
                         drop.vector.y = 2;
                         trees -= tree;
+                        tree.free();
                     }
                 }
             }
@@ -791,6 +793,7 @@ object Game {
                 branch.pos += branch.vector*renderTime;
                 if(branch.pos.y < -worldSize-50) {
                     dropBranches -= branch;
+                    branch.free();
                     if(dropBranches.length==0) println("all broken branches removed");
                 }
             }
