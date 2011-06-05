@@ -110,21 +110,21 @@ object Game {
                     settings += "graphics" -> (settings.get[Int]("graphics")-1);
                     println("decreased graphic detail to "+settings.get[Int]("graphics"));
                     models().foreach((model)=> {                        
-                        if(model.compileCache.size > 5) model.reset;
                         tasks() += (()=>model.compile());
+                        if(model.compileCache.size > 5 && model.compileCache.size <= 7) tasks() += (()=>model.reset);
                     })
                 }
                 if(FPS > 45 && settings.get[Int]("graphics") < 5) {
                     settings += "graphics" -> (settings.get[Int]("graphics")+1);
                     println("increased graphic detail to "+settings.get[Int]("graphics"));
                     models().foreach((model)=> {
-                        if(model.compileCache.size > 3) model.reset;
                         tasks() += (()=>model.compile());
+                        if(model.compileCache.size > 3 && model.compileCache.size <= 7) tasks() += (()=>model.reset);
                     })
                 }
 
                 models().foreach((model)=> {
-                    if(model.compileCache.size > 7) model.reset;
+                    if(model.compileCache.size > 7) tasks() += (()=>model.reset);
                 })
                 
                 println("FPS: "+FPS);
@@ -152,7 +152,7 @@ object Game {
     var catapult:DisplayModel=null;
     var trees = new ListBuffer[GeneratorModel];
     var pigcatapultLink:ModelLink=null;
-    var campigLink:ModelLink=null;
+    //var campigLink:ModelLink=null;
     var dropBranches = new ListBuffer[GeneratorModel];
     var trails = new ListBuffer[TrailModel];
     var futureTrees = new ListBuffer[Future[GeneratorModel]];
@@ -281,8 +281,8 @@ object Game {
             for(i <- 0 until points.length-width-1; if((i+1)%width != 0))
                 List(points(i), points(i+1), points(i+width+1), points(i+width)).foreach(
                     (p:Vec3) => {
-                        //glColor3f(p.y/3, p.y*5, p.y/3);
-                        glColor3f(0.2f, 0.7f+p.y/2, 0.2f);
+                        //glColor3f(0.2f, 0.7f+p.y/2, 0.2f);
+                        glColor3f(0.2+p.y/4, 0.65f+p.y/1.5, 0.2+p.y/4);
                         glNormal3f(p.y, p.y, p.y);
                         glVertex3f(p.x, p.y, p.z);
                     }
@@ -295,8 +295,7 @@ object Game {
         terrain.setPosition(-worldSize,-worldSize,-worldSize);
         terrain.setScale(worldSize*2, 5, worldSize*2);
         terrain.compile();
-        terrain.properties += "visible"->true;
-        
+                
         // coordinate system
         coordsys = new DisplayModel(()=>{
             glBegin(GL_LINES);
@@ -368,6 +367,7 @@ object Game {
             pigData += "Moustache.has" -> (rand.nextFloat > 0.2)
             pigData += "Moustache.which" -> (rand.nextInt(2))
             pigData += "Glasses.has" -> (rand.nextFloat > 0.2)
+            pigData += "Glasses.which" -> (rand.nextInt(3))
         }
         
         def drawPig(data:Object):Unit = {
@@ -378,7 +378,7 @@ object Game {
             glPushMatrix;
             {
                 glScalef(0.95f,1,1.05f);
-                gluQuadrics.sphere.draw(2,(graphics*16f).toInt,(graphics*16f).toInt);
+                gluQuadrics.sphere.draw(2,graphics*16,graphics*16);
             }
             glPopMatrix
             //ears
@@ -388,9 +388,9 @@ object Game {
                 val x = 0.9f;
                 glRotatef(180,0,1,0)
                 glTranslatef(x,1.7f,-0.7f);
-                gluQuadrics.disk.draw(0,0.35f, (graphics*8f).toInt,1);
+                gluQuadrics.disk.draw(0,0.35f, graphics*8,1);
                 glTranslatef(-2*x,0,0);
-                gluQuadrics.disk.draw(0,0.35f, (graphics*8f).toInt,1);
+                gluQuadrics.disk.draw(0,0.35f, graphics*8,1);
             }
             glPopMatrix
             //nose            
@@ -401,9 +401,9 @@ object Game {
                 //glRotatef(90, 0,1,0)
                 glTranslatef(0,0.4f,1.4f);
                 val size=0.7f
-                gluQuadrics.cylinder.draw(size,size, 1, (graphics*12f).toInt,1);
+                gluQuadrics.cylinder.draw(size,size, 1, graphics*12,1);
                 glTranslatef(0,0,1);
-                gluQuadrics.disk.draw(0,size, (graphics*12f).toInt,1);
+                gluQuadrics.disk.draw(0,size, graphics*12,1);
             }
             //moustache
             if(pigData.get[Boolean]("Moustache.has")) {
@@ -412,13 +412,13 @@ object Game {
                 pigData.get[Int]("Moustache.which") match {
                     case 0 =>                
                         glTranslatef(0,-0.7f,-0.2f)
-                        gluQuadrics.disk.draw(0,0.5f, (graphics*9f).toInt,1);
+                        gluQuadrics.disk.draw(0,0.5f, graphics*9,1);
                     case 1 =>
                         glTranslatef(0,-0.8f,-0.3f)
-                        gluQuadrics.partialdisk.draw(0,0.5f, (graphics*9f).toInt,1, 270, 180);
+                        gluQuadrics.partialdisk.draw(0,0.5f, graphics*9,1, 270, 180);
                     case _ =>
                         glTranslatef(0,-0.8f,-0.3f)
-                        gluQuadrics.partialdisk.draw(0,0.5f, (graphics*9f).toInt,1, 270, 180);
+                        gluQuadrics.partialdisk.draw(0,0.5f, graphics*9,1, 270, 180);
                 }
             }
             glPopMatrix
@@ -426,24 +426,37 @@ object Game {
             glPushMatrix;
             {
                 val x = 1.2f;
-                def drawEye = {
+                def drawEye(leftEye:Boolean) = {
                     glPushMatrix;
                     glColor3f(0.8f,0.8f,0.8f);
-                    gluQuadrics.sphere.draw(0.5f,(graphics*8f).toInt,(graphics*8f).toInt);
+                    gluQuadrics.sphere.draw(0.5f,graphics*8,graphics*8);
                     val z = 0.35f;
                     glTranslatef(0,0,z);
                     glColor3f(0.1f,0.1f,0.1f);
-                    gluQuadrics.sphere.draw(0.25f,(graphics*8f).toInt,(graphics*8f).toInt);
+                    gluQuadrics.sphere.draw(0.25f,graphics*8,graphics*8);
+                    glTranslatef(0,0,0.1f);
                     if(pigData.get[Boolean]("Glasses.has")) {
-                        glTranslatef(0,0,0.1f);
-                        gluQuadrics.disk.draw(0.67f,0.77f, (graphics*10f).toInt,1);
+                        pigData.get[Int]("Glasses.which") match {
+                            case 0 => // ray-bans
+                                glTranslatef(0,0.2f,0.16f);
+                                gluQuadrics.disk.draw(0.60f,0.70f, graphics*10,1);
+                                glColor3f(0.20f,0.15f,0.15f);
+                                gluQuadrics.disk.draw(0,0.60f, graphics*10,1);
+                            case 1 => // monocle
+                                if(leftEye){
+                                    glColor3f(0.95f,0.8f,0.1f);
+                                    gluQuadrics.disk.draw(0.62f,0.70f, graphics*10,1);
+                                }
+                            case _ => // harry-potter
+                                gluQuadrics.disk.draw(0.67f,0.77f, graphics*10,1);
+                        }
                     }
                     glPopMatrix
                 }
                 glTranslatef(x,0.6f,1.2f);
-                drawEye;
+                drawEye(true);
                 glTranslatef(-2*x,0,0);
-                drawEye;
+                drawEye(false);
             }
             glPopMatrix
         }
@@ -518,17 +531,13 @@ object Game {
         catapult.compile();
         {
         var bbox = new BoundingBox(new Vec3);
-        bbox.min.x -= scale.x
-        bbox.min.y -= scale.y
-        bbox.min.z -= scale.z
-        bbox.max.x += scale.x
-        bbox.max.y += scale.y
-        bbox.max.z += scale.z
+        bbox.min -= scale
+        bbox.max += scale
         catapult.properties += "box" -> bbox;
         }
         
         pigcatapultLink = new ModelLink(catapult, pig, new Vec3(0f,2.5f,0f));
-        campigLink = new ModelLink(pig, cam, new Vec3(0f,7,-50), new Vec3(0,0,0));
+        //campigLink = new ModelLink(pig, cam, new Vec3(0f,7,-50), new Vec3(0,0,0));
         
         futureTrees += Tree.futureTree;
                 
@@ -573,6 +582,7 @@ object Game {
         //glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
         cam.setPerspective(50, winWidth/winHeight.toFloat, 1f, 600f);
         cam.setPosition(0,worldSize-5,-worldSize+5);
+        cam.pos = pig.pos;
         cam.setRotation(0,0,0);
     }
   
@@ -603,18 +613,29 @@ object Game {
     * Renders current frame
     */
     def renderFrame = fullTimes += time {
-        // execute one background task per frame
-        workerTimes += time {        
-        if(tasks().length>0) {
-            val task = tasks().head;
-            task();            
-            tasks() -= task;
-            if(tasks().length==0) println("all tasks done");
-        }
+        workerTimes += time {
+            // execute max one non-time-critical task per frame
+            if(tasks().length>0 && 0.05f+tasks().length/75f > rand.nextFloat) {//if 
+            //if((tasks().length>10) || (tasks().length>0 && rand.nextFloat>0.9)) {
+                val task = tasks().head;
+                task();
+                tasks() -= task;
+                if(tasks().length==0) println("all tasks done");
+            }
         }
     
         if(!pause) {
             physicsTimes += time {
+            // pig-catapult collision - hop on catapult :)
+            if(!pigcatapultLink.isLinked && !settings.get[Boolean]("air")) {
+                var catapultBox = catapult.properties.get[BoundingBox]("box").clone;
+                catapultBox.max.x += 2f;
+                catapultBox.max.z += 2f;
+                catapultBox.min.x -= 2f;
+                catapultBox.min.z -= 2f;
+                if(catapultBox.pointCollide(pig.pos, catapult.pos)) pigcatapultLink.forgeLink();
+            }
+            
             // move pig or catapult
             moveObj.vector.z -= 0.05f*moveObj.vector.z*renderTime;
             moveObj.vector.clamp(0,0,8);
@@ -626,6 +647,7 @@ object Game {
             )
 
             moveObj.pos.clamp(worldSize-2.5f);
+            
             val mY = pig.pos.y;
             moveObj.pos += moveVector*renderTime;
             moveObj.pos.clamp(worldSize-2.5f);
@@ -635,25 +657,22 @@ object Game {
                 if(trails.length >= trailcount) 
                     trails = trails.drop(1);
             }
-            
-            def unrot(f:Float, lim:Int=360):Float = f - ((math.floor(f).toInt / lim)*lim)
-            
-            pig.rot.x = unrot(pig.rot.x);
+            def unrot(angle:Float, lim:Int=360):Float = { angle - ((math.floor(angle).toInt / lim)*lim) }
+            pig.vector += gravity*renderTime
             pig.vector2 -= pig.vector2*renderTime*0.0175f;
+            pig.rot += pig.vector2*renderTime
+            pig.rot.x = unrot(pig.rot.x);
+            var postpigrotx = unrot(pig.rot.x);
+            val rotTreshold = 6f;
             
             if(settings.get[Boolean]("air")) {
                 trails.last += moveObj.pos;
-            } else if(math.abs(pig.rot.x) > 5f) {//pri malo fps bo naredil več prevalov kot sicer, lol
-                pig.vector2 -= pig.vector2*renderTime*0.01f;//trenje, lol
-            }
-            
-            pig.vector += gravity*renderTime
-
-            pig.rot += pig.vector2*renderTime
-            var postpigrotx = unrot(pig.rot.x);
-            if(!settings.get[Boolean]("air") && (postpigrotx < 5f || postpigrotx > 355)){
+            } else if(!settings.get[Boolean]("air") && (postpigrotx < rotTreshold || postpigrotx > 360f-rotTreshold)) {
                 pig.vector2.x = 0;
                 pig.rot.x = 0;
+            } else {
+                pig.vector2 -= pig.vector2*renderTime*0.01f;//trenje, lol
+                if(pig.vector.x < 0.1) pig.vector.x = 0.1;
             }
 
             // collision detection
@@ -681,29 +700,32 @@ object Game {
                     dropBranches += drop
                     drop;
                 }
+                
+                def getBox(m:DisplayModel):BoundingBox = {
+                    var out = m.properties.get[BoundingBox]("box");
+                    if(out==null) out = new BoundingBox(new Vec3);
+                    out;
+                }
+                val moveBoxy = getBox(moveObj)
+                moveObj.properties += "box" -> moveBoxy;
+                def moveBox = moveBoxy offsetBy moveObj.pos
 
                 branch.doWhile((b)=>{!done}, 
-                    (b)=>if(b.visible) {
+                    (b)=>{
                         val box = b.properties.get[BoundingBox]("box");
-                        if(b.depth==1 && !box.pointCollide(pig.pos, tree.pos)) {
-                            done = true;// no collision
-                        } else if(box.pointCollide(pig.pos, tree.pos)) {
-                            if(b.depth==1) {
+                        val canCollide = box.pointCollide(pig.pos, tree.pos);
+                        if(b.depth==1) {
+                            if(canCollide) {
                                 val basebox = (new BoundingBox(b.rootVec, b.destVec) offsetBy tree.pos)
-                                basebox.min.x -= 2f;
-                                basebox.min.y -= 2f;
-                                basebox.min.z -= 2f;
+                                basebox.min -= 2f;
                                 basebox.max.x += 2f;
                                 basebox.max.y -= 2f;
                                 basebox.max.z += 2f;
-                                var mbox = moveObj.properties.get[BoundingBox]("box");
-                                if(mbox==null) mbox = new BoundingBox(new Vec3);
-                                def bbox = mbox offsetBy moveObj.pos;
-                                if(basebox.boxCollide(bbox)) {
+                                if(basebox.boxCollide(moveBox)) {
                                     moveObj.vector.z = -moveObj.vector.z;
                                     if(math.abs(moveObj.vector.z) < 0.01f) moveObj.vector.z = 0.01f*math.abs(moveObj.vector.z)/moveObj.vector.z;
-                                    var limit = 1000;
-                                    while(basebox.boxCollide(bbox) && ({limit -= 1; limit} > 0)) {
+                                    var limit = 500;
+                                    while(basebox.boxCollide(moveBox) && ({limit -= 1; limit} > 0)) {
                                         val moveVec = new Vec3(
                                             math.sin(moveObj.rot.y/(180f/math.Pi)).toFloat*moveObj.vector.z,
                                             0,
@@ -712,22 +734,24 @@ object Game {
                                         moveObj.pos += moveVec*renderTime;
                                     }
                                     moveObj.vector.z = moveObj.vector.z/2;
+                                    println("bounce");
                                 }
-                                println("bounce");
                             } else {
-                                collision = true;
-                                
-                                pig.vector.y /= 2;
-                                
-                                if(rand.nextFloat > 0.4) {
-                                    b.children.foreach((bc)=>{if(rand.nextFloat > 0.2) dropBranch(bc)});
-                                } else {
-                                    dropBranch(b);
-                                }
-                                
-                                println("collision");
                                 done = true;
                             }
+                        } else if(box.pointCollide(pig.pos, tree.pos)) {
+                            collision = true;
+                            
+                            pig.vector.y /= 2;
+                            
+                            if(rand.nextFloat > 0.5) {
+                                b.children.foreach((bc)=>{if(rand.nextFloat > 0.2) dropBranch(bc)});
+                            } else {
+                                dropBranch(b);
+                            }
+                            
+                            println("collision");
+                            done = true;
                         }
                     }
                 );
@@ -759,14 +783,22 @@ object Game {
             }
 
             pigcatapultLink.applyLink;
-            campigLink.applyLink;
+            //campigLink.applyLink;
             }
         }
         
         //look at this pig... look!
         cam.lookAt(moveObj)
+        val moveVec = new Vec3(
+            math.sin(moveObj.rot.y/(180f/math.Pi)).toFloat*moveObj.vector.z,
+            0,
+            math.cos(moveObj.rot.y/(180f/math.Pi)).toFloat*moveObj.vector.z
+        )
+        if(moveObj eq pig) cam.angle = new Vec3(0,-1,50); else cam.angle = new Vec3(0,-7,60);
+        val camMulti = 10f;
+        //cam.pos = ((cam.pos*camMulti) + ((moveObj.pos - new Vec3(0f,0f,-50f))*renderTime))/(camMulti+renderTime);
+        cam.pos = ((cam.pos*camMulti) + ((moveObj.pos - cam.angle)*renderTime))/(camMulti+renderTime);
         cam.vector -= cam.vector*renderTime*0.05f;
-        cam.pos += cam.vector*renderTime;
         cam.render
         
         if(futureTrees.length==0) {
@@ -830,7 +862,13 @@ object Game {
         
         val keymove = 1.5f*renderTime;
         
-        if(campigLink.isLinked) {
+        if(isKeyDown(KEY_W)) cam.pos.x+=keymove;
+        if(isKeyDown(KEY_R)) cam.pos.x-=keymove;
+        if(isKeyDown(KEY_S)) cam.pos.y+=keymove;
+        if(isKeyDown(KEY_F)) cam.pos.y-=keymove;
+        if(isKeyDown(KEY_X)) cam.pos.z+=keymove;
+        if(isKeyDown(KEY_V)) cam.pos.z-=keymove;
+/*        if(campigLink.isLinked) {
             if(isKeyDown(KEY_W)) campigLink.vector.x+=keymove;
             if(isKeyDown(KEY_R)) campigLink.vector.x-=keymove;
             if(isKeyDown(KEY_S)) campigLink.vector.y+=keymove;
@@ -838,13 +876,7 @@ object Game {
             if(isKeyDown(KEY_X)) campigLink.vector.z+=keymove;
             if(isKeyDown(KEY_V)) campigLink.vector.z-=keymove;
         } else {
-            if(isKeyDown(KEY_W)) cam.pos.x+=keymove;
-            if(isKeyDown(KEY_R)) cam.pos.x-=keymove;
-            if(isKeyDown(KEY_S)) cam.pos.y+=keymove;
-            if(isKeyDown(KEY_F)) cam.pos.y-=keymove;
-            if(isKeyDown(KEY_X)) cam.pos.z+=keymove;
-            if(isKeyDown(KEY_V)) cam.pos.z-=keymove;
-        }
+        }*/
 
         if(isKeyDown(KEY_P)) {
             pause = true;
@@ -871,28 +903,28 @@ object Game {
             if(pigcatapultLink.isLinked) {
                 pigcatapultLink.breakLink;
                 println("pig-catapult Link Broken")
-                campigLink.breakLink
-                println("cam-pig Link Broken")
+//                campigLink.breakLink
+//                println("cam-pig Link Broken")
                 pig.vector.y=3.7f;
                 pig.vector.z=7.2f;
-                cam.vector = pig.vector / 3;
+                //cam.vector = pig.vector / 3;
                 pig.vector2 = new Vec3(0.5f+rand.nextFloat/3,0,0) * 50f;
             } else {
                 pig.vector.y=2.7f;
                 pig.vector.z=4f;
-                if(isKeyDown(KEY_DOWN))
+                if(isKeyDown(KEY_DOWN)) {
                     pig.vector.z = -pig.vector.z;
+                    pig.vector2 = -new Vec3(0.5f+rand.nextFloat/3,0,0) * (80f*2.7f/3.7f);
+                }
             }
             
             
             settings += "air" -> true;println("pig is in air");
             trails += new TrailModel(List(pig.pos))
         }
-        if(isKeyDown(KEY_LCONTROL) && !pigcatapultLink.isLinked) {
+        if((isKeyDown(KEY_LCONTROL) || isKeyDown(KEY_RCONTROL))
+        && !settings.get[Boolean]("air") && !pigcatapultLink.isLinked) {
             pigcatapultLink.forgeLink;
-            println("pig-catapult Link Forged")
-            campigLink.forgeLink
-            println("cam-pig Link Forged")
         }
         
         if(isKeyDown(KEY_O)) {
@@ -900,16 +932,8 @@ object Game {
             println("Pig: "+pig.toString);
             println("Pig-rot: "+pig.rot.toString);
         }
-        if(isKeyDown(KEY_8) && campigLink.isLinked) {
-            campigLink.breakLink
-            println("cam-pig Link Broken")
-        }
-        if(isKeyDown(KEY_7) && !campigLink.isLinked) {
-            campigLink.forgeLink
-            println("cam-pig Link Forged")
-        }
         if(isKeyDown(KEY_0)) {
-            trees.foreach(_.reset());
+            models().foreach(_.reset());
         }
     }
 }

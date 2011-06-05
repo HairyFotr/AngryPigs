@@ -12,6 +12,7 @@ object Global {
     settings += "air" -> false; // lol, pig fly
     settings += "tasks" -> new ListBuffer[()=>Unit];
     def tasks() = (settings.get[ListBuffer[()=>Unit]]("tasks"));
+    implicit def double2float(d:Double):Float = d.toFloat;
 
     val rand = new Random;
     

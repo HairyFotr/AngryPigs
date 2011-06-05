@@ -17,10 +17,14 @@ class Vec3(var x:Float, var y:Float, var z:Float) {
     def map(f:Float=>Float):Vec3 = { setPoints(getPoints.map(f)); this }
     def applyVector(v:Vec3, multi:Float=1):Vec3 = setPoints(this+(v*multi))
     
+    def unary_- :Vec3 = new Vec3(-x, -y, -z)
     def +(v:Vec3):Vec3 = new Vec3(x+v.x, y+v.y, z+v.z)
     def -(v:Vec3):Vec3 = new Vec3(x-v.x, y-v.y, z-v.z)
     def +=(v:Vec3) = applyVector(v, +1)
+    def +=(f:Float) = this.map(_ + f)
     def -=(v:Vec3) = applyVector(v, -1)
+    def -=(f:Float) = this.map(_ - f)
+    def *(v:Vec3):Vec3 = new Vec3(x*v.x, y*v.y, z*v.z)
     def *(f:Float):Vec3 = this.clone.map(_ * f)
     def *=(f:Float):Vec3 = this.map(_ * f)
     def /(f:Float):Vec3 = this.clone.map(_ / f)
@@ -111,6 +115,12 @@ class DisplayModel(var renderfunc:()=>Unit, var idfunc:(DisplayModel,SettingMap[
         compiled = true;
         properties += "graphics" -> settings.get[Int]("graphics");
         properties += "fatlines" -> settings.get[Boolean]("fatlines");
+        
+        try { id() } catch {
+            case e:NullPointerException =>
+                compileCache += rand.nextInt() -> displayList
+                //reset();
+        }
     }
     
     def id(props:SettingMap[String]=this.properties):Int = 
@@ -133,7 +143,8 @@ class DisplayModel(var renderfunc:()=>Unit, var idfunc:(DisplayModel,SettingMap[
             properties += "graphics" -> Global.settings.get[Int]("graphics");
             properties += "fatlines" -> Global.settings.get[Boolean]("fatlines");
         } catch {
-            case e:NullPointerException => forceCompile()
+            case e:NullPointerException => 
+                forceCompile();
         }
     }
     
@@ -288,7 +299,6 @@ class Branch(var parent:Branch) extends Properties {
 
     var depth = 1;
     var children = new ListBuffer[Branch];
-    var visible = true;///
 
     setParent(parent);
 
@@ -324,7 +334,7 @@ class Branch(var parent:Branch) extends Properties {
         children.foreach(_.print())
     }
     
-    def render() = if(visible) {
+    def render() = {
         import org.lwjgl.opengl.GL11._
         import Global._
         val branch = this // I'm lazy :P
@@ -402,7 +412,7 @@ class Camera extends BasicModel {
     var (minX,minY,maxX,maxY) = (-1f,-1f, 1f, 1f) // ortho stuff
     var projectionChanged = true; // do we need to remake projection matrix
     var vector = new Vec3;
-    var vector2 = new Vec3;
+    var angle = new Vec3;
 
     // set a perspective projection
     def setPerspective(fv:Float, ar:Float, n:Float, f:Float) {
@@ -448,7 +458,6 @@ class Camera extends BasicModel {
         // model view stack 
         GL11.glMatrixMode(GL11.GL_MODELVIEW);
         GL11.glLoadIdentity();
-        
         GLU.gluLookAt(pos.x,pos.y,pos.z,             // camera position
                       lookAtV.x,lookAtV.y,lookAtV.z, // look-at vector
                       0,1,0)                         // up vector 
@@ -470,8 +479,8 @@ class ModelLink(var m1:BasicModel, var m2:BasicModel) {
     
     private var linked = true;
     def isLinked = linked;
-    def breakLink { linked = false }
-    def forgeLink { linked = true }
+    def breakLink() { linked = false }
+    def forgeLink() { linked = true }
     
     def applyLink {
         if(linked) {
