@@ -123,11 +123,15 @@ class DisplayModel(var renderfunc:()=>Unit, var idfunc:(DisplayModel,SettingMap[
         }
     }
     
+    
+    // copied from scala 2.9 src/library/Predef.scala for scala 2.8 compatibility
+    // ... then edited :P
+    implicit def Integer2int(x: java.lang.Integer):Int = x.asInstanceOf[Int];
     def id(props:SettingMap[String]=this.properties):Int = 
         if(idfunc!=null) 
             idfunc(this,props);
         else 
-            Predef.Integer2int(null); //ya, rly :P
+            Integer2int(null); //ya, rly :P
     
     var compileCache = new HashMap[Int,Int];
     
