@@ -7,8 +7,8 @@ import scala.collection.mutable.{ListBuffer,HashMap}
 // ... it's made of fail and state
 object Global {
     var settings = new SettingMap[String];
-    settings += "graphics" -> 2; // polygon multiplier for generatives.
-    settings += "maxdepth" -> 5; // polygon multiplier for generatives.
+    settings += "graphics" -> 1; // polygon multiplier for generatives.
+    settings += "maxdepth" -> 4; // polygon multiplier for generatives.
     settings += "fatlines" -> true; // tree rendering
     settings += "air" -> false; // lol, pig fly
     settings += "tasks" -> new ListBuffer[()=>Unit];

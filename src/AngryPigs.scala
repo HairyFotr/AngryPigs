@@ -130,8 +130,8 @@ object Game {
                 val FPS = frameCounter/FPSseconds.toFloat;
                 
                 // increase or decrease graphics detail
-                if(FPS < 16 && settings.get[Int]("graphics") > 1 && tasks().length < 77) decreaseDetail();
-                if(FPS > 45 && settings.get[Int]("graphics") < 7 && tasks().length < 77) increaseDetail();
+                if(FPS < 20 && settings.get[Int]("graphics") > 1 && tasks().length < 100) decreaseDetail();
+                if(FPS > 50 && settings.get[Int]("graphics") < 7 && tasks().length < 15) increaseDetail();
             
                 models().foreach((model)=>{
                     if(model.compileCache.size > 5) model.reset();
@@ -552,7 +552,7 @@ object Game {
         //campigLink = new ModelLink(pig, cam, new Vec3(0f,7,-50), new Vec3(0,0,0));
         
         futureTrees += Tree.futureTree;
-        Thread.sleep(1000);
+        Thread.sleep(2500);
                 
         //generatedModels = models().filter(_.isInstanceOf[GeneratorModel]).map(_.asInstanceOf[GeneratorModel]);
     }
@@ -818,7 +818,7 @@ object Game {
         cam.render
         
         if(futureTrees.length==0) {
-            if(trees.length+futureTrees.length < 5) futureTrees += Tree.futureTree;        
+            if(trees.length+futureTrees.length < 8) futureTrees += Tree.futureTree;        
         } else for(futureTree <- futureTrees.clone) if(futureTree.isSet) { 
             val presentTree = futureTree.apply();
             trees += presentTree;
