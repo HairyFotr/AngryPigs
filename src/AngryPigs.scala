@@ -3,7 +3,6 @@ package AngryPigs
 import org.lwjgl.opengl.{Display,PixelFormat,DisplayMode,Util}
 import org.lwjgl.input.Keyboard
 import scala.collection.mutable.ListBuffer
-import java.util.{List => JavaList}
 import java.nio._
 import scala.actors.Futures._
 import scala.actors.Future
@@ -16,13 +15,13 @@ import scala.actors.Future
 object Game {
     import Global._
     import org.lwjgl.opengl.GL11._
-
+    
     var isRunning = false; // is main loop running
     var (winWidth, winHeight)=(3000,3000); // window size
     var renderTime=0f;
     
     val timeLock = new TimeLock;
-    val pauseLock = new TimeLock;
+    var lastFPS = 0f; 
     
     /**
      * Initializes display and enters main loop
@@ -76,28 +75,26 @@ object Game {
         Display.setVSyncEnabled(true);
     }
 
-    def now = System.nanoTime();
     // used for frame independant movement
-    var frameTime = now;
-    
-    
+    var frameTime = currentTime;
+
     def decreaseDetail() = {
-        settings += "graphics" -> (settings.get[Int]("graphics")-1);
-        if(settings.get[Int]("graphics")==1 && settings.get[Int]("maxdepth")>5) settings += "maxdepth" -> 5;
-        println("decreased graphic detail to "+settings.get[Int]("graphics"));
+        Settings.graphics = (Settings.graphics-1);
+        if(Settings.graphics==1 && Settings.maxdepth>5) Settings.maxdepth = 5;
+        println("decreased graphic detail to "+Settings.graphics);
         models().foreach((model)=> {                        
-            tasks() += (()=> {
+            tasks += (()=> {
                 model.compile();
                 if(model.compileCache.size > 4) model.reset();
             });
         })
     }
     def increaseDetail() = {
-        settings += "graphics" -> (settings.get[Int]("graphics")+1);
-        settings += "maxdepth" -> (settings.get[Int]("maxdepth")+1);
-        println("increased graphic detail to "+settings.get[Int]("graphics"));
+        Settings.graphics = (Settings.graphics+1);
+        Settings.maxdepth = (Settings.maxdepth+1);
+        println("increased graphic detail to "+Settings.graphics);
         models().foreach((model)=> {                        
-            tasks() += (()=>{
+            tasks += (()=>{
                 model.compile();
                 if(model.compileCache.size > 4) model.reset();
             });
@@ -115,23 +112,21 @@ object Game {
         var frameCounter = 0
         val second = 1000000000L
         val FPSseconds = 5
-        var FPStimer = now
-        frameTime = now
+        var FPStimer = currentTime
+        frameTime = currentTime
         while(isRunning) {
             processInput // process keyboard input
-            if(pause) Thread.sleep(50)
             
             resetView;      // clear view and reset transformations
             renderFrame;    // draw stuff
             Display.update; // update window contents and process input messages
             frameCounter += 1;
 
-            if(now-FPStimer > second*FPSseconds) {
+            if(currentTime-FPStimer > second*FPSseconds) {
                 val FPS = frameCounter/FPSseconds.toFloat;
-                
                 // increase or decrease graphics detail
-                if(FPS < 20 && settings.get[Int]("graphics") > 1 && tasks().length < 100) decreaseDetail();
-                if(FPS > 50 && settings.get[Int]("graphics") < 7 && tasks().length < 15) increaseDetail();
+                if(lastFPS < 30 && FPS < 20 && Settings.graphics > 1 && tasks.length < 200) decreaseDetail();
+                if(lastFPS > 50 && FPS > 50 && Settings.graphics < 2 && tasks.length < 200) increaseDetail();
             
                 models().foreach((model)=>{
                     if(model.compileCache.size > 5) model.reset();
@@ -145,416 +140,46 @@ object Game {
                 println("Worker: "+(workerTimes/fullTimes.toDouble).toFloat)
                 println("-------------------");
 
+                lastFPS = FPS
                 frameCounter = 0;
-                FPStimer = now;
+                FPStimer = currentTime;
             }
 
-            renderTime = (now-frameTime)/frameIndepRatio;
-            frameTime = now;
+            renderTime = (currentTime-frameTime)/frameIndepRatio;
+            frameTime = currentTime;
         }
     }
     
     //models
     val cam = new Camera;
-    var terrain:GeneratorModel with Properties=null;
-    var skybox:DisplayModel=null;
-    var coordsys:DisplayModel=null;
-    var pig:GeneratorModel=null;
-    var catapult:DisplayModel=null;
+    var terrain = TerrainFactory();
+    var pig = PigFactory()
+    var catapult = CatapultFactory();
+    var pigcatapultLink = new ModelLink(pig,catapult,new Vec3(0f,2.5f,0f));
     var trees = new ListBuffer[GeneratorModel];
-    var pigcatapultLink:ModelLink=null;
-    //var campigLink:ModelLink=null;
+    var futureTrees = new ListBuffer[Future[GeneratorModel]];
     var dropBranches = new ListBuffer[GeneratorModel];
     var trails = new ListBuffer[TrailModel];
-    var futureTrees = new ListBuffer[Future[GeneratorModel]];
 
     def models():scala.collection.Traversable[DisplayModel] = {
         List(pig, catapult, terrain) ++ trees ++ dropBranches ++ trails
     }
     
-    //size of world
-    val worldSize = 400;
-    val gravity = new Vec3(0f,-0.5f,0f);
-       
-    object Tree {
-        def giveMeTree:()=>Object = ()=>{
-            // OH THE HUGE MANATEEE!
-            import java.util.{List=>JavaList}
-            
-            def isJavaList(a:Object):Boolean = a.isInstanceOf[JavaList[Object]]
-            def asArray(a:Object):Array[Object] = a.asInstanceOf[JavaList[Object]].toArray;
-            def asFloatArray(a:Array[Object]):Array[Float] = {a.toList.map((a)=>{
-                if(a.isInstanceOf[java.lang.Double])
-                    a.asInstanceOf[java.lang.Double].floatValue();
-                else
-                    a.asInstanceOf[Float]
-            }).toArray}
-
-            def traverse(data:Array[Object], parent:Branch=null):Branch = {
-                if(data.length==1) { // unpack thingy ... ((...))
-                    traverse(asArray(data(0)), parent)
-                } else if(data.length==4 && !isJavaList(data(0))) { // leaves ... (node)
-                    val vector = asFloatArray(data);
-                    var res = new Branch(parent);
-                    if(parent!=null) res.rootVec = parent.rootVec+parent.diffVec;
-                    res.diffVec = (new Vec3(vector(0), vector(1), vector(2))) * vector(3)
-                    res.properties += (if(rand.nextFloat < 0.085*res.depth) "hasLeaf" -> true else "hasLeaf" -> false);
-                    res;
-                } else if(!isJavaList(asArray(data(0)).apply(0)) && isJavaList(asArray(data(1)).apply(0))) { // parent & subbranches ((node) (...))
-                    var newparent = traverse(asArray(data(0)), parent);
-                    for(i <- 1 until data.length) traverse(asArray(data(i)), newparent);
-                    newparent;
-                } else { // branches ... ((...) (...) (...))
-                    for(i <- 0 until data.length) traverse(asArray(data(i)), parent);
-                    parent;
-                }
-            }
-            
-            var data:Object = null;
-            while(data==null) try {
-                data = genTree/("give-me-tree", 
-                    0f+rand.nextFloat()/10-rand.nextFloat()/10, 
-                    2f+rand.nextFloat()/2-rand.nextFloat()/3, 
-                    0f+rand.nextFloat()/10-rand.nextFloat()/10, 
-                    5f+rand.nextFloat()-rand.nextFloat()/2);
-            } catch {
-                case _ => {
-                    //e.printStackTrace;
-                    println("give-me-tree threw exception");                    
-                    data = null;
-                }
-            }
-            
-            val tree = traverse(asArray(data));
-            tree.properties += "treekind" -> 0;//rand.nextInt(3);
-            tree.properties += "fatness" -> (0.25f+rand.nextFloat()/25f-rand.nextFloat()/25f);
-            
-            def generateBoxes(branch:Branch):BoundingBox = {
-                var box = new BoundingBox(List(branch.rootVec, branch.destVec));
-                
-                for(child <- branch.children)
-                    box += generateBoxes(child);
-                
-                branch.properties += "box" -> box;
-                if(branch.children.length==0) {
-                    branch.properties += "fatness" -> (0.18f-rand.nextFloat()/30f);
-                } else {
-                    branch.properties += "fatness" -> (0.2f-rand.nextFloat()/30f);
-                }
-                    
-                branch.properties += "treekind" -> tree.properties.get[Int]("treekind");
-                box;
-            }
-            generateBoxes(tree);
-            
-            tree;
-            //seal here:P
-        };
-        def renderTree:Object=>Unit = (data:Object)=>data.asInstanceOf[Branch].doAll(_.render);
-        def treeId:(DisplayModel,SettingMap[String])=>Int = (dmodel,properties)=>{
-            val model = dmodel.asInstanceOf[GeneratorModel];
-            var mid = 0;///to properties on fly
-            // takes into account branch count, graphic detail and fatline setting
-            model.data.asInstanceOf[Branch].doAll((branch)=>{ mid += 1 })
-            mid += mid * properties.get[Int]("graphics");
-            mid += mid + 101*properties.get[Int]("maxdepth");
-            if(properties.get[Boolean]("fatlines")) mid = -mid;
-            mid;
-        };
-        def futureTree:Future[GeneratorModel] = future {
-            //println("the future is now: "+System.nanoTime()/1000000L)
-            var tree = new GeneratorModel(giveMeTree, renderTree, treeId);
-            //tree.setPosition(17,-worldSize+2.5f,-worldSize/2+30);
-            tree.setPosition(
-                (17+rand.nextFloat()*3-rand.nextFloat()*3)*rand.nextInt(7) - (17+rand.nextFloat()*3-rand.nextFloat()*3)*rand.nextInt(7),
-                -worldSize,
-                -worldSize/2+30 + (17+rand.nextFloat()*3-rand.nextFloat()*3)*rand.nextInt(10) - (17+rand.nextFloat()*3-rand.nextFloat()*3)*rand.nextInt(5));
-            //tree.compile();
-            println("the future is here: "+System.nanoTime()/1000000L); 
-            tree
-        }
-    }
-
     def makeModels {
-        // terrain
-        val detail=30;
-        val height=0.3f;
-        
-        def genTerrain:()=>Object = ()=>{
-            def getTerrainPoint(x:Int, y:Int):Vec3 = new Vec3(x/detail.toFloat,rand.nextFloat*height,y/detail.toFloat);
-            val p = (for(i <- 0 to detail; j <- 0 to detail) yield getTerrainPoint(i,j)).toArray;
-            p;
-        }
-        def drawTerrain = (data:Object)=>{
-            val points = data.asInstanceOf[Array[Vec3]];
-            glBegin(GL_QUADS);
-            // Draw in clockwise - (00,10,11,01); must skip last point of line
-            val width = math.sqrt(points.length).toInt;
-            for(i <- 0 until points.length-width-1; if((i+1)%width != 0))
-                List(points(i), points(i+1), points(i+width+1), points(i+width)).foreach(
-                    (p:Vec3) => {
-                        //glColor3f(0.2f, 0.7f+p.y/2, 0.2f);
-                        glColor3f(0.2+p.y/4, 0.65f+p.y/1.5, 0.2+p.y/4);
-                        glNormal3f(p.y, p.y, p.y);
-                        glVertex3f(p.x, p.y, p.z);
-                    }
-                )
-            glEnd;//*/
-            ();
-        }
-        
-        terrain = new GeneratorModel(genTerrain, drawTerrain) with Properties;
-        terrain.setPosition(-worldSize,-worldSize,-worldSize);
-        terrain.setScale(worldSize*2, 5, worldSize*2);
+        terrain.setPosition(-Settings.worldSize,-Settings.worldSize,-Settings.worldSize);
+        terrain.setScale(Settings.worldSize*2, 5, Settings.worldSize*2);
         terrain.compile();
                 
-        // coordinate system
-        coordsys = new DisplayModel(()=>{
-            glBegin(GL_LINES);
-                glColor3f(1,0,0);
-                glVertex3f(0,0,0);
-                glVertex3f(1,0,0);
-                
-                glColor3f(0,1,0);
-                glVertex3f(0,0,0);
-                glVertex3f(0,1,0);
-                
-                glColor3f(0,0,1);
-                glVertex3f(0,0,0);
-                glVertex3f(0,0,1);
-            glEnd;//*/
-        });
-        coordsys.setScale(worldSize,worldSize,worldSize);
-
-        // sky-box
-        skybox = new DisplayModel(()=>{
-            glBegin(GL_QUADS);
-                glColor3f(0.5f,0.5f,0.5f);
-                // top
-                //glColor3f(0f,1f,0f); // green
-                glVertex3f( 2f, 1f,-2f);
-                glVertex3f(-2f, 1f,-2f);
-                glVertex3f(-2f, 1f, 2f);
-                glVertex3f( 2f, 1f, 2f);
-                // bottom 
-                /*glColor3f(1f,0.5f,0f);    // orange
-                glVertex3f( 1f,-1f, 1f);
-                glVertex3f(-1f,-1f, 1f);
-                glVertex3f(-1f,-1f,-1f);
-                glVertex3f( 1f,-1f,-1f);*/
-                // front
-                //glColor3f(1f,0f,0f); // red 
-                glVertex3f( 2f, 1f, 2f);
-                glVertex3f(-2f, 1f, 2f); 
-                glVertex3f(-1f,-1f, 1f);
-                glVertex3f( 1f,-1f, 1f);
-                // back
-
-                //glColor3f(1f,1f,0f); // yellow
-                glVertex3f( 1f,-1f,-1f);
-                glVertex3f(-1f,-1f,-1f);
-                glVertex3f(-2f, 1f,-2f);
-                glVertex3f( 2f, 1f,-2f);
-                // left
-                //glColor3f(0f,0f,1f); // blue
-                glVertex3f(-2f, 1f, 2f);
-                glVertex3f(-2f, 1f,-2f);
-                glVertex3f(-1f,-1f,-1f);
-                glVertex3f(-1f,-1f, 1f);
-                // right
-                //glColor3f(1f,0f,1f); // violet
-                glVertex3f( 2f, 1f,-2f);
-                glVertex3f( 2f, 1f, 2f);
-                glVertex3f( 1f,-1f, 1f);
-                glVertex3f( 1f,-1f,-1f);
-            glEnd;
-        });
-        skybox.setPosition(0,0,0);
-        skybox.setScale(worldSize,worldSize,worldSize);//*/
-
-        // pig
-        
-        def genPig:()=>Object = ()=>{
-            var pigData = new SettingMap[String];
-            pigData += "Moustache.has" -> (rand.nextFloat > 0.2)
-            pigData += "Moustache.which" -> (rand.nextInt(2))
-            pigData += "Glasses.has" -> (rand.nextFloat > 0.2)
-            pigData += "Glasses.which" -> (rand.nextInt(3))
-        }
-        
-        def drawPig(data:Object):Unit = {
-            var pigData = data.asInstanceOf[SettingMap[String]];
-            val graphics = settings.get[Int]("graphics");
-            //body
-            glColor3f(0.3f,0.8f,0.3f);
-            glPushMatrix;
-            {
-                glScalef(0.95f,1,1.05f);
-                gluQuadrics.sphere.draw(2,graphics*16,graphics*16);
-            }
-            glPopMatrix
-            //ears
-            glColor3f(0.4f,0.9f,0.4f);
-            glPushMatrix;
-            {
-                val x = 0.9f;
-                glRotatef(180,0,1,0)
-                glTranslatef(x,1.7f,-0.7f);
-                gluQuadrics.disk.draw(0,0.35f, graphics*8,1);
-                glTranslatef(-2*x,0,0);
-                gluQuadrics.disk.draw(0,0.35f, graphics*8,1);
-            }
-            glPopMatrix
-            //nose            
-            glColor3f(0.4f,1f,0.4f);
-            glPushMatrix;
-            {
-                glScalef(1,1,1);
-                //glRotatef(90, 0,1,0)
-                glTranslatef(0,0.4f,1.4f);
-                val size=0.7f
-                gluQuadrics.cylinder.draw(size,size, 1, graphics*12,1);
-                glTranslatef(0,0,1);
-                gluQuadrics.disk.draw(0,size, graphics*12,1);
-            }
-            //moustache
-            if(pigData.get[Boolean]("Moustache.has")) {
-                glScalef(2,1,1);
-                glColor3f(0.7f,0.2f,0f);
-                pigData.get[Int]("Moustache.which") match {
-                    case 0 =>                
-                        glTranslatef(0,-0.7f,-0.2f)
-                        gluQuadrics.disk.draw(0,0.5f, graphics*9,1);
-                    case 1 =>
-                        glTranslatef(0,-0.8f,-0.3f)
-                        gluQuadrics.partialdisk.draw(0,0.5f, graphics*9,1, 270, 180);
-                    case _ =>
-                        glTranslatef(0,-0.8f,-0.3f)
-                        gluQuadrics.partialdisk.draw(0,0.5f, graphics*9,1, 270, 180);
-                }
-            }
-            glPopMatrix
-            //eyes
-            glPushMatrix;
-            {
-                val x = 1.2f;
-                def drawEye(leftEye:Boolean) = {
-                    glPushMatrix;
-                    glColor3f(0.8f,0.8f,0.8f);
-                    gluQuadrics.sphere.draw(0.5f,graphics*8,graphics*8);
-                    val z = 0.35f;
-                    glTranslatef(0,0,z);
-                    glColor3f(0.1f,0.1f,0.1f);
-                    gluQuadrics.sphere.draw(0.25f,graphics*8,graphics*8);
-                    glTranslatef(0,0,0.1f);
-                    if(pigData.get[Boolean]("Glasses.has")) {
-                        pigData.get[Int]("Glasses.which") match {
-                            case 0 => // ray-bans
-                                glTranslatef(0,0.2f,0.16f);
-                                gluQuadrics.disk.draw(0.60f,0.70f, graphics*10,1);
-                                glColor3f(0.20f,0.15f,0.15f);
-                                gluQuadrics.disk.draw(0,0.60f, graphics*10,1);
-                            case 1 => // monocle
-                                if(leftEye){
-                                    glColor3f(0.95f,0.8f,0.1f);
-                                    gluQuadrics.disk.draw(0.62f,0.70f, graphics*10,1);
-                                }
-                            case _ => // harry-potter
-                                gluQuadrics.disk.draw(0.67f,0.77f, graphics*10,1);
-                        }
-                    }
-                    glPopMatrix
-                }
-                glTranslatef(x,0.6f,1.2f);
-                drawEye(true);
-                glTranslatef(-2*x,0,0);
-                drawEye(false);
-            }
-            glPopMatrix
-        }
-        pig = new GeneratorModel(genPig, drawPig);
-        pig.setPosition(0,-worldSize+7f,-worldSize/2+25);
+        pig.setPosition(0,-Settings.worldSize+10f,-Settings.worldSize/2+25);
         pig.compile();
 
-        val scale = new Vec3(4f,1f,6.5f)
-        catapult = new DisplayModel(()=>{
-            glPushMatrix;
-            glScalef(scale.x,scale.y,scale.z);
-            glColor3f(0.8f,0.3f,0f);
-            glBegin(GL_QUADS);                
-                // top
-                glNormal3f( 0f, 1f, 0f);
-                glVertex3f( 1f, 1f,-1f);
-                glVertex3f(-1f, 1f,-1f);
-                glVertex3f(-1f, 1f, 1f);
-                glVertex3f( 1f, 1f, 1f);
-                // bottom 
-                glNormal3f( 0f,-1f, 1f);
-                glVertex3f( 1f,-1f, 1f);
-                glVertex3f(-1f,-1f, 1f);
-                glVertex3f(-1f,-1f,-1f);
-                glVertex3f( 1f,-1f,-1f);
-                // Front
-                glNormal3f( 0f, 0f, 1f);
-                glVertex3f( 1f, 1f, 1f);
-                glVertex3f(-1f, 1f, 1f); 
-                glVertex3f(-1f,-1f, 1f);
-                glVertex3f( 1f,-1f, 1f);
-                // back
-                glNormal3f( 0f, 0f,-1f);
-                glVertex3f( 1f,-1f,-1f);
-                glVertex3f(-1f,-1f,-1f);
-                glVertex3f(-1f, 1f,-1f);
-                glVertex3f( 1f, 1f,-1f);
-                // left
-                glNormal3f(-1f, 0f, 0f);
-                glVertex3f(-1f, 1f, 1f);
-                glVertex3f(-1f, 1f,-1f);
-                glVertex3f(-1f,-1f,-1f);
-                glVertex3f(-1f,-1f, 1f);
-                // right
-                glNormal3f( 1f, 0f, 0f);
-                glVertex3f( 1f, 1f,-1f);
-                glVertex3f( 1f, 1f, 1f);
-                glVertex3f( 1f,-1f, 1f);
-                glVertex3f( 1f,-1f,-1f);
-            glEnd;
-            glPopMatrix;
-
-            def drawWheel = {
-                glRotatef(90, 0,1,0)
-                gluQuadrics.cylinder.draw(1f,1f, scale.x*2+2, settings.get[Int]("graphics")*9,1);
-                gluQuadrics.disk.draw(0,1,20,1);
-                glTranslatef(0,0,scale.x*2+2);
-                gluQuadrics.disk.draw(0,1,20,1);
-            }
-            // Front wheel
-            glPushMatrix;
-            glTranslatef(-scale.x-1,-1,scale.z-2f)
-            drawWheel
-            glPopMatrix;
-            // Back wheel
-            glPushMatrix;
-            glTranslatef(-scale.x-1,-1,-scale.z+2f)
-            drawWheel
-            glPopMatrix;
-        });
-        catapult.setPosition(0,-worldSize+2.5f,-worldSize/2+25);
+        catapult.setPosition(0,-Settings.worldSize+2.5f,-Settings.worldSize/2+25);
         catapult.compile();
-        {
-        var bbox = new BoundingBox(new Vec3);
-        bbox.min -= scale
-        bbox.max += scale
-        catapult.properties += "box" -> bbox;
-        }
         
-        pigcatapultLink = new ModelLink(catapult, pig, new Vec3(0f,2.5f,0f));
-        //campigLink = new ModelLink(pig, cam, new Vec3(0f,7,-50), new Vec3(0,0,0));
+        pigcatapultLink.forgeLink();
         
-        futureTrees += Tree.futureTree;
-        Thread.sleep(2500);
-                
-        //generatedModels = models().filter(_.isInstanceOf[GeneratorModel]).map(_.asInstanceOf[GeneratorModel]);
+        futureTrees += future { TreeFactory() }
+        Thread.sleep(2000);//give the futureTree some tome
     }
     
     //@ Y is this not in some LWJGL lib, if it's really needed?
@@ -592,9 +217,8 @@ object Game {
         
         glViewport(0,0, winWidth,winHeight); // mapping from normalized to window coordinates
        
-        //glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
         cam.setPerspective(50, winWidth/winHeight.toFloat, 1f, 600f);
-        cam.setPosition(0,worldSize-5,-worldSize+5);
+        cam.setPosition(0,Settings.worldSize-5,-Settings.worldSize+5);
         cam.pos = pig.pos;
         cam.setRotation(0,0,0);
     }
@@ -628,21 +252,24 @@ object Game {
     def renderFrame = fullTimes += time {
         workerTimes += time {///write tasks object
             def doTask() = {
-                val task = tasks().head;
+                val task = tasks.head;
                 task();
-                tasks() -= task;
-                if(tasks().length==0) println("all tasks done");
+                tasks -= task;
+                if(tasks.length==0) println("all tasks done");
             }
-            // execute max one non-time-critical task per frame
-            if(tasks().length>0 && 0.05f+tasks().length/70f > rand.nextFloat) doTask();
-            // or maybe a few, if it's getting bad...
-            if(tasks().length>200) for(i <- 1 to tasks().length%200) doTask();
+            // execute non-time-critical tasks... spread them out
+            if(tasks.length>0 && !Settings.pigAir) {
+                var cutoff = 50;
+                if(pause) cutoff = 10;
+                for(i <- 0 to tasks.length/cutoff) if(0.05f+(tasks.length-cutoff*i)/(cutoff.toFloat) > rand.nextFloat) 
+                    doTask();
+            }
        }
     
         if(!pause) {
             physicsTimes += time {
             // pig-catapult collision - hop on catapult :)
-            if(!pigcatapultLink.isLinked && !settings.get[Boolean]("air")) {
+            if(!pigcatapultLink.isLinked && !Settings.pigAir) {
                 var catapultBox = catapult.properties.get[BoundingBox]("box").clone;
                 catapultBox.max.x += 2f;
                 catapultBox.max.z += 2f;
@@ -661,29 +288,30 @@ object Game {
                 math.cos(moveObj.rot.y/(180f/math.Pi)).toFloat*moveObj.vector.z
             )
 
-            moveObj.pos.clamp(worldSize-2.5f);
+            moveObj.pos.clamp(Settings.worldSize-2.5f);
             
             val mY = pig.pos.y;
             moveObj.pos += moveVector*renderTime;
-            moveObj.pos.clamp(worldSize-2.5f);
-            if(pig.pos.y==mY && settings.get[Boolean]("air")) {
-                settings += "air"->false;println("pig is on ground");
+            moveObj.pos.clamp(Settings.worldSize-2.5f);
+            if(pig.pos.y==mY && Settings.pigAir) {
+                Settings.pigAir = false;println("pig is on ground");
                 val trailcount = 3///
                 if(trails.length >= trailcount) 
                     trails = trails.drop(1);
             }
             def unrot(angle:Float, lim:Int=360):Float = { angle - ((math.floor(angle).toInt / lim)*lim) }
-            pig.vector += gravity*renderTime
+            pig.vector += Settings.gravity*renderTime
             pig.vector2 -= pig.vector2*renderTime*0.0175f;
             pig.rot += pig.vector2*renderTime
             pig.rot.x = unrot(pig.rot.x);
             var postpigrotx = unrot(pig.rot.x);
             val rotTreshold = 6f;
             
-            if(settings.get[Boolean]("air")) {
+            if(Settings.pigAir) {
+                if(trails.length==0) trails += new TrailModel(List(pig.pos));
                 trails.last += moveObj.pos;
                 trails.last.compile();
-            } else if(!settings.get[Boolean]("air") && (postpigrotx < rotTreshold || postpigrotx > 360f-rotTreshold)) {
+            } else if(!Settings.pigAir && (postpigrotx < rotTreshold || postpigrotx > 360f-rotTreshold)) {
                 pig.vector2.x = 0;
                 pig.rot.x = 0;
             } else {
@@ -703,6 +331,7 @@ object Game {
                     
                     b.children.foreach((bc)=>{
                         dropBranch(bc);
+                        bc.marked = true;
                     })
                     
                     var drop = new GeneratorModel(()=>{b}, (data:Object)=>data.asInstanceOf[Branch].doAll(_.render));
@@ -726,10 +355,10 @@ object Game {
                 moveObj.properties += "box" -> moveBoxy;
                 def moveBox = moveBoxy offsetBy moveObj.pos
 
-                branch.doWhile((b)=>{!done}, 
+                branch.doWhile((b)=>{!done && !b.marked && b.depth <= Settings.maxdepth},
                     (b)=>{
                         val box = b.properties.get[BoundingBox]("box");
-                        val canCollide = box.pointCollide(pig.pos, tree.pos);
+                        val canCollide:Boolean = box.pointCollide(pig.pos, tree.pos);
                         if(b.depth==1) {
                             if(canCollide) {
                                 val basebox = (new BoundingBox(b.rootVec, b.destVec) offsetBy tree.pos)
@@ -771,12 +400,12 @@ object Game {
                     }
                 );
                 if(collision) {
-                    tree.compile;
+                    tree.compile();
                     tree.reset();
 
                     var depthSum = 0;
-                    val sumLim = 2;//&whiletrue
-                    branch.doWhile((b)=>{true},(b)=>{ depthSum += 1 });
+                    val sumLim = 2;
+                    branch.doWhile((b)=>{depthSum <= sumLim},(b)=>{ depthSum += 1 });
                     if(depthSum <= sumLim) {// tree is dead
                         val drop = dropBranch(branch);
                         drop.vector.y = 2;
@@ -788,10 +417,10 @@ object Game {
 
             // drop branches
             for(branch <- dropBranches) {
-                branch.vector += gravity/(5 + rand.nextFloat/3 - rand.nextFloat/3)*renderTime;
+                branch.vector += Settings.gravity/(5 + rand.nextFloat/3 - rand.nextFloat/3)*renderTime;
                 //branch.vector -= branch.vector*renderTime*0.05f;
                 branch.pos += branch.vector*renderTime;
-                if(branch.pos.y < -worldSize-50) {
+                if(branch.pos.y < -Settings.worldSize-50) {
                     dropBranches -= branch;
                     branch.free();
                     if(dropBranches.length==0) println("all broken branches removed");
@@ -818,41 +447,27 @@ object Game {
         cam.render
         
         if(futureTrees.length==0) {
-            if(trees.length+futureTrees.length < 8) futureTrees += Tree.futureTree;        
+            if(trees.length+futureTrees.length < 5 && !Settings.pigAir && tasks.length < 500) futureTrees += future { TreeFactory(); }
         } else for(futureTree <- futureTrees.clone) if(futureTree.isSet) { 
             val presentTree = futureTree.apply();
             trees += presentTree;
             
             def growTree(lvl:Int, tree:GeneratorModel):Unit = {
-                if(lvl <= settings.get[Int]("maxdepth")) {///move setting to tree!
-                    val ex = settings.get[Int]("maxdepth");
-                    settings += "maxdepth" -> lvl;
+                if(lvl <= Settings.maxdepth) {///move setting to tree!
+                    val ex = Settings.maxdepth;
+                    Settings.maxdepth = lvl;
                     tree.compile();
-                    settings += "maxdepth" -> ex;
+                    Settings.maxdepth = ex;
                 }
             }
             
             growTree(1, presentTree)
             for(i <- 2 to 6)
-                tasks() += (()=>{ growTree(i, presentTree) })
+                tasks += (()=>{ growTree(i, presentTree) })
             
             futureTrees -= futureTree;
-            println("the future is applied: "+System.nanoTime()/1000000L)
+            println("new tree added")
         }
-    
-        // if slow graphics, make trees that are farther away from pig into lines
-        /*if(settings.get[Boolean]("fatlines") && (settings.get[Int]("graphics")==1)) for(tree <- trees) {
-            if(math.abs((tree.pos-pig.pos).length) > 100 && tree.properties.get[Boolean]("fatlines")) {
-                tasks() += (()=>{
-                    val ex = settings.get[Boolean]("fatlines");
-                    settings += "fatlines" -> false;
-                    tree.compile();
-                    settings += "fatlines" -> ex;
-                })
-            } else if(math.abs((tree.pos-pig.pos).length) < 77 && !tree.properties.get[Boolean]("fatlines")) {
-                tree.compile();
-            }
-        }*/
         
         renderTimes += time {
             models().foreach(_.render)
@@ -871,14 +486,12 @@ object Game {
             treeView = !treeView
             timeLock.lockIt(500);
         }
-        if(isKeyDown(KEY_1)) { settings += "fatlines" -> false; trees.foreach(_.compile()) } else 
-        if(isKeyDown(KEY_2)) { settings += "fatlines" -> true; trees.foreach(_.compile()) } else
         if(isKeyDown(KEY_3)) { trees.foreach(_.regenerate()) } else
         if(isKeyDown(KEY_5) && !timeLock.isLocked) { 
             increaseDetail();
             timeLock.lockIt(300);
         } else
-        if(isKeyDown(KEY_6) && !timeLock.isLocked && settings.get[Int]("graphics") > 1) { 
+        if(isKeyDown(KEY_6) && !timeLock.isLocked && Settings.graphics > 1) { 
             decreaseDetail();
             timeLock.lockIt(300);
         } else
@@ -924,7 +537,7 @@ object Game {
         if(isKeyDown(KEY_UP))    moveObj.vector.z+=keymove/5f;
         if(isKeyDown(KEY_DOWN))  moveObj.vector.z-=keymove/5f;
         
-        if(isKeyDown(KEY_SPACE) && (!settings.get[Boolean]("air"))) {
+        if(isKeyDown(KEY_SPACE) && (!Settings.pigAir)) {
             if(pigcatapultLink.isLinked) {
                 pigcatapultLink.breakLink;
                 println("pig-catapult Link Broken")
@@ -943,11 +556,11 @@ object Game {
                 }
             }           
             
-            settings += "air" -> true;println("pig is in air");
+            Settings.pigAir = true;println("pig is in air");
             trails += new TrailModel(List(pig.pos))
         }
         if((isKeyDown(KEY_LCONTROL) || isKeyDown(KEY_RCONTROL))
-        && !settings.get[Boolean]("air") && !pigcatapultLink.isLinked) {
+        && !Settings.pigAir && !pigcatapultLink.isLinked) {
             pigcatapultLink.forgeLink;
         }
         

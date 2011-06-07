@@ -6,16 +6,22 @@ import scala.collection.mutable.{ListBuffer,HashMap}
 // stuff that is used in all the (wrong) places :P
 // ... it's made of fail and state
 object Global {
-    var settings = new SettingMap[String];
-    settings += "graphics" -> 1; // polygon multiplier for generatives.
-    settings += "maxdepth" -> 4; // polygon multiplier for generatives.
-    settings += "fatlines" -> true; // tree rendering
-    settings += "air" -> false; // lol, pig fly
-    settings += "tasks" -> new ListBuffer[()=>Unit];
-    def tasks() = (settings.get[ListBuffer[()=>Unit]]("tasks"));
+    object Settings {
+        var graphics = 1; // polygon multiplier
+        var maxdepth = 5; // tree depth
+        var pigAir = false; // lol, pig fly ///wrong - model property, and collision related :P
+        var worldSize = 400;
+        var gravity = new Vec3(0f,-0.5f,0f);
+    }
+    def settings:SettingMap[String] = { // old settings - idfunc in models depends on this :/ ///could maybe do via reflection and implicits
+        val m = new SettingMap[String];
+        m += "graphics" -> Settings.graphics
+        m += "maxdepth" -> Settings.maxdepth
+        m;
+    }
+    lazy val tasks = new ListBuffer[()=>Unit];
+    lazy val rand = new Random;
     implicit def double2float(d:Double):Float = d.toFloat;
-
-    val rand = new Random;
     
     object gluQuadrics {
         val sphere = new Sphere;
@@ -24,15 +30,14 @@ object Global {
         val partialdisk = new PartialDisk;
     }
 
-    val genTree = new ClojureWrap("AngryPigs", "gen-tree");
+    lazy val genTree = new ClojureWrap("AngryPigs", "gen-tree");
 
+    def currentTime = System.nanoTime();
     // measures the running time of the provided func    
-    def time(f: =>Unit):Long = {
-        val startTime = System.nanoTime();
-        
-        f;
-        
-        (System.nanoTime()-startTime)
+    def time(func: =>Unit):Long = {
+        val startTime = currentTime;
+        func;
+        (currentTime-startTime)
     }
 }
 
