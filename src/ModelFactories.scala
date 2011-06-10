@@ -44,8 +44,6 @@ object PigFactory {
         var pigData = data.asInstanceOf[SettingMap[String]];
         val graphics = settings.get[Int]("graphics");
         //body
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
         glColor3f(0.3f,0.8f,0.3f);
         glPushMatrix;
         {
@@ -131,7 +129,6 @@ object PigFactory {
             drawEye(false);
         }
         glPopMatrix
-        glDisable(GL_CULL_FACE);        
     }
     
     def apply() = new GeneratorModel(genPig, drawPig);
