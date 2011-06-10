@@ -7,19 +7,17 @@ Windows: also install Cygwin, and run with ./bashbeans -r --cygwin
 
 Keys:
 Arrow keys ... move
-Space ... shoot
-LCTRL ... reload
-RCTRL ... stop
+Space ... launch pig
+CTRL ... reload pig
 P ... pause
 RShift .. unpause :P
-
-Debug keys:
 W,R ... rotate camera X
 S,F ... rotate camera Y
 X,V ... rotate camera Z
 
+Debug keys:
 T ... become a tree
-1,2 ... tree display mode
-5,6 ... increase/decrease details
 3 ... regenerate trees
+5 ... increase details
+6 ... decrease details
 8 ... regenerate pig
