@@ -255,11 +255,13 @@ class Branch(var parent:Branch) extends Properties {
             val fatness = properties.get[Float]("fatness");
             gluQuadrics.cylinder.draw(fatness/depth,(fatness*2)/depth, diffVec.length, Settings.graphics*5,1);
             if(properties.get[Boolean]("hasLeaf")) {
+                glDisable(GL_CULL_FACE);
                 glScalef(1,1.6f,1)
                 glColor3f(0.2f,0.8f,0.1f)
                 glTranslatef(0,-0.17f,0)
                 glRotatef(rand.nextFloat()*12-rand.nextFloat()*12, 0,0,1)
                 gluQuadrics.disk.draw(0,0.175f, Settings.graphics*6,1)
+                glEnable(GL_CULL_FACE);
             }
             glPopMatrix;
         }

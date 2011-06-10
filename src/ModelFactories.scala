@@ -44,6 +44,8 @@ object PigFactory {
         var pigData = data.asInstanceOf[SettingMap[String]];
         val graphics = settings.get[Int]("graphics");
         //body
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
         glColor3f(0.3f,0.8f,0.3f);
         glPushMatrix;
         {
@@ -129,6 +131,7 @@ object PigFactory {
             drawEye(false);
         }
         glPopMatrix
+        glDisable(GL_CULL_FACE);        
     }
     
     def apply() = new GeneratorModel(genPig, drawPig);
@@ -278,7 +281,12 @@ object TreeFactory {
         tree;
     };
     
-    private def renderTree:Object=>Unit = (data:Object)=>data.asInstanceOf[Branch].doAll(_.render);
+    private def renderTree:Object=>Unit = (data:Object)=>{
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        data.asInstanceOf[Branch].doAll(_.render);
+        glDisable(GL_CULL_FACE);
+    }
     private def treeId:(DisplayModel,SettingMap[String])=>Int = (dmodel,properties)=>{
         val model = dmodel.asInstanceOf[GeneratorModel];
         var mid = 0;///to properties on fly
