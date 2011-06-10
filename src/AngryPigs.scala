@@ -9,9 +9,12 @@ import scala.actors.Future
 
 // TODO:
 // search for @ <task>
+
 // longterm: 
+// search for /// <task>
 /// decouple physics and render
 /// infinite terrain patches and stuff
+
 object Game {
     import Global._
     import org.lwjgl.opengl.GL11._
@@ -179,7 +182,6 @@ object Game {
         pigcatapultLink.forgeLink();
         
         futureTrees += future { TreeFactory() }
-        Thread.sleep(2000);//give the futureTree some tome
     }
     
     //@ Y is this not in some LWJGL lib, if it's really needed?
@@ -324,23 +326,23 @@ object Game {
                 var done = false;
                 var collision = false;
                 val branch = tree.data.asInstanceOf[Branch];
-                def dropBranch(b:Branch):GeneratorModel = {
+                def dropBranch(b:Branch):GeneratorModel = {                    
                     b.detach;
-                    val rootV = b.rootVec.clone;
-                    b.doAll((_.rootVec -= rootV));
-                    
                     b.children.foreach((bc)=>{
-                        dropBranch(bc);
+                        if(bc.depth < Settings.maxdepth) dropBranch(bc);
                         bc.marked = true;
                     })
                     
+                    if(rand.nextFloat > 0.4) b.properties += "hasLeaf" -> false;
+                    
                     var drop = new GeneratorModel(()=>{b}, (data:Object)=>data.asInstanceOf[Branch].doAll(_.render));
-                    drop.pos = tree.pos + rootV;
+                    drop.pos = tree.pos.clone;
                     drop.vector = new Vec3(
-                        math.sin(pig.rot.y/(180f/math.Pi)).toFloat*pig.vector.z/2 + rand.nextFloat/2 - rand.nextFloat/2,
-                        pig.vector.y/(5 + rand.nextFloat/3 - rand.nextFloat/3), 
-                        math.cos(pig.rot.y/(180f/math.Pi)).toFloat*pig.vector.z/2 + rand.nextFloat/2 - rand.nextFloat/2
+                        (math.sin(pig.rot.y/(180f/math.Pi)).toFloat*pig.vector.z/2)*(1+rand.nextFloat/6-rand.nextFloat/12) +rand.nextFloat/17-rand.nextFloat/17,
+                        pig.vector.y/(5 + rand.nextFloat/4 - rand.nextFloat/4), 
+                        (math.cos(pig.rot.y/(180f/math.Pi)).toFloat*pig.vector.z/2)*(1+rand.nextFloat/6-rand.nextFloat/12) +rand.nextFloat/17-rand.nextFloat/17
                     )
+                    //drop.vector = new Vec3(0,0,0)
                     drop.compile();
                     dropBranches += drop
                     drop;
@@ -383,19 +385,27 @@ object Game {
                             } else {
                                 done = true;
                             }
-                        } else if(box.pointCollide(pig.pos, tree.pos)) {
+                        } else //if(box.pointCollide(pig.pos, tree.pos) && 
+                        if(Settings.pigAir && ((pig.pos-(box.min+tree.pos)).length < 4.25f || (pig.pos-(box.max+tree.pos)).length < 4.25f)) {
                             collision = true;
                             
                             pig.vector.y /= 2;
                             
-                            if(rand.nextFloat > 0.5) {
-                                b.children.foreach((bc)=>{if(rand.nextFloat > 0.2) dropBranch(bc)});
+                            var dropped = false;
+                            
+                            if(rand.nextFloat > 0.4) {
+                                b.children.foreach((bc)=>{if(rand.nextFloat > 0.25) {dropped = true; dropBranch(bc)} });
                             } else {
+                                dropped = true;
                                 dropBranch(b);
                             }
                             
-                            println("collision");
-                            done = true;
+                            if(dropped) {
+                                println("collision");
+                                done = true;
+                            } else {
+                                collision = false;
+                            }                            
                         }
                     }
                 );
@@ -417,7 +427,7 @@ object Game {
 
             // drop branches
             for(branch <- dropBranches) {
-                branch.vector += Settings.gravity/(5 + rand.nextFloat/3 - rand.nextFloat/3)*renderTime;
+                branch.vector += (Settings.gravity)*renderTime;
                 //branch.vector -= branch.vector*renderTime*0.05f;
                 branch.pos += branch.vector*renderTime;
                 if(branch.pos.y < -Settings.worldSize-50) {
