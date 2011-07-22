@@ -160,7 +160,7 @@ object Game {
     var catapult = CatapultFactory();
     var pigcatapultLink = new ModelLink(pig,catapult,new Vec3(0f,2.5f,0f));
     var trees = new ListBuffer[GeneratorModel];
-    var futureTrees = new ListBuffer[Future[GeneratorModel]];
+    var futureTree:Future[GeneratorModel] = null;
     var dropBranches = new ListBuffer[GeneratorModel];
     var trails = new ListBuffer[TrailModel];
 
@@ -181,7 +181,8 @@ object Game {
         
         pigcatapultLink.forgeLink();
         
-        futureTrees += future { TreeFactory() }
+        futureTree = future { TreeFactory() }
+        futureTree.apply()
     }
     
     //@ Y is this not in some LWJGL lib, if it's really needed?
@@ -456,9 +457,9 @@ object Game {
         cam.vector -= cam.vector*renderTime*0.05f;
         cam.render
         
-        if(futureTrees.length==0) {
-            if(trees.length+futureTrees.length < 5 && !Settings.pigAir && tasks.length < 500) futureTrees += future { TreeFactory(); }
-        } else for(futureTree <- futureTrees.clone) if(futureTree.isSet) { 
+        if(futureTree==null) {
+            if(trees.length < 5 && !Settings.pigAir && tasks.length < 500) futureTree = future { TreeFactory() }
+        } else if(futureTree.isSet) {
             val presentTree = futureTree.apply();
             trees += presentTree;
             
@@ -471,11 +472,11 @@ object Game {
                 }
             }
             
-            growTree(1, presentTree)
-            for(i <- 2 to 6)
+            growTree(2, presentTree)
+            for(i <- 3 to Settings.maxdepth)
                 tasks += (()=>{ growTree(i, presentTree) })
             
-            futureTrees -= futureTree;
+            futureTree = null;
             println("new tree added")
         }
         

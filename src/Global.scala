@@ -20,6 +20,7 @@ object Global {
         m;
     }
     lazy val tasks = new ListBuffer[()=>Unit];
+    lazy val urgentTasks = new ListBuffer[()=>Unit];
     lazy val rand = new Random;
     implicit def double2float(d:Double):Float = d.toFloat;
     
