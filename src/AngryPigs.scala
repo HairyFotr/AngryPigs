@@ -52,11 +52,10 @@ object Game {
         val modes:Array[DisplayMode] = Display.getAvailableDisplayModes;
         // Get best mode
         for(mode <- modes)
-            if((mode.getWidth <= winWidth && mode.getHeight <= winHeight && mode.getFrequency <= 100)
+            if((mode.getWidth <= winWidth && mode.getHeight <= winHeight)
                 &&(bestMode == null
                    ||(mode.getWidth >= bestMode.getWidth && mode.getHeight >= bestMode.getHeight
-                      && mode.getBitsPerPixel >= bestMode.getBitsPerPixel
-                      && mode.getFrequency >= bestMode.getFrequency)))
+                      && mode.getBitsPerPixel >= bestMode.getBitsPerPixel)))
                 bestMode = mode;
         
         Display.setDisplayMode(bestMode);
