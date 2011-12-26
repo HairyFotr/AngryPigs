@@ -36,7 +36,7 @@ object Game {
         } catch {
             case e:Exception => {
               print("Can't open display. "+e.getMessage);
-              exit(1);
+              sys.exit(1);
             }
         }
 

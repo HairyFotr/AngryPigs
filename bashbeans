@@ -79,6 +79,8 @@ fileshash="`$hashfunc ../$0 $files`" #must be compiled with same bashbeans scrip
 #echo "$fileshash"
 
 #build
+clojurejar="lib/clojure-1.3.0.jar"
+lwjglpath="lib/lwjgl-2.8.2"
 builderror="0"
 if [ "$Unforce" != "" ]; then
     echo "You told me not to recompile."
@@ -88,7 +90,7 @@ else
     echo "Compiling:"$files
     #fast scala compile (loads compile deamon)
 
-    compileErr=$( { fsc $Optimise -cp "`$pathprocess ../lib/clojure.jar`" -d ../class -extdirs ../lib/lwjgl-2.7.1/jar/ $files ; } 2>&1 )
+    compileErr=$( { fsc -deprecation -unchecked $Optimise -cp "`$pathprocess ../$clojurejar`" -d ../class -extdirs ../$lwjglpath/jar/ $files ; } 2>&1 )
     builderror=$?
     if [ "$compileErr" != "" ]; then
         echo "$compileErr"
@@ -115,5 +117,5 @@ echo "Done("$builderror") in ${elapsedtime}s."
 #run it
 if [ "$builderror" == "0" -a "$Run" != "" ]; then
     cd ..
-    scala $Optimise -cp "`$pathprocess src/AngryPigs:class:class/AngryPigs:lib/lwjgl-2.7.1/jar/lwjgl.jar:lib/lwjgl-2.7.1/jar/lwjgl_util.jar:lib/clojure.jar`" -Djava.library.path="`$pathprocess lib/lwjgl-2.7.1/native/linux/:lib/lwjgl-2.7.1/native/macosx/:lib/lwjgl-2.7.1/native/windows/`" AngryPigs.Game
+    scala $Optimise -cp "`$pathprocess src/AngryPigs:class:class/AngryPigs:$lwjglpath/jar/lwjgl.jar:$lwjglpath/jar/lwjgl_util.jar:$clojurejar`" -Djava.library.path="`$pathprocess $lwjglpath/native/linux/:$lwjglpath/native/macosx/:$lwjglpath/native/windows/`" AngryPigs.Game
 fi
