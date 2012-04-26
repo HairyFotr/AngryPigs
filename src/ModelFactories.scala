@@ -1,13 +1,14 @@
 package AngryPigs
 import Global._
 import org.lwjgl.opengl.GL11._
+import scala.util.Random.{nextInt, nextFloat}
 
 object TerrainFactory {
     // terrain
     val (detail,height)=(30,0.3f)
     
     private def genTerrain:()=>Object = () => {
-        def getTerrainPoint(x:Int, y:Int):Vec3 = new Vec3(x/detail.toFloat,rand.nextFloat*height,y/detail.toFloat)
+        def getTerrainPoint(x:Int, y:Int):Vec3 = new Vec3(x/detail.toFloat,nextFloat*height,y/detail.toFloat)
         (for(i <- 0 to detail; j <- 0 to detail) yield getTerrainPoint(i,j)).toArray
     }
     private def drawTerrain = (data:Object) => {
@@ -31,10 +32,10 @@ object TerrainFactory {
 object PigFactory {
     private def genPig:()=>Object = () => {
         val pigData = new SettingMap[String];
-        pigData += "Moustache.has" -> (rand.nextFloat > 0.2)
-        pigData += "Moustache.which" -> (rand.nextInt(2))
-        pigData += "Glasses.has" -> (rand.nextFloat > 0.2)
-        pigData += "Glasses.which" -> (rand.nextInt(3))
+        pigData += "Moustache.has" -> (nextFloat > 0.2)
+        pigData += "Moustache.which" -> (nextInt(2))
+        pigData += "Glasses.has" -> (nextFloat > 0.2)
+        pigData += "Glasses.which" -> (nextInt(3))
     }    
     private def drawPig(data:Object):Unit = {
         val pigData = data.asInstanceOf[SettingMap[String]]
@@ -202,10 +203,8 @@ object CatapultFactory {
 
 object TreeFactory {
     private def giveMeTree:()=>Object = () => {
-        import java.util.{List=>JavaList}
-        
-        def isJavaList(a:Object):Boolean = a.isInstanceOf[JavaList[Object]]
-        def asArray(a:Object):Array[Object] = a.asInstanceOf[JavaList[Object]].toArray
+        def isJavaList(a:Object):Boolean = a.isInstanceOf[java.util.List[_]]
+        def asArray(a:Object):Array[Object] = a.asInstanceOf[java.util.List[_]].toArray
         def asFloatArray(a:Array[Object]):Array[Float] = a.toList.map(a => {
             if(a.isInstanceOf[java.lang.Double])
                 a.asInstanceOf[java.lang.Double].floatValue()
@@ -221,7 +220,7 @@ object TreeFactory {
                 var res = new Branch(parent)
                 if(parent!=null) res.rootVec = parent.rootVec+parent.diffVec
                 res.diffVec = (new Vec3(vector(0), vector(1), vector(2))) * vector(3)
-                res.properties += "hasLeaf" -> (rand.nextFloat < 0.085*res.depth)
+                res.properties += "hasLeaf" -> (nextFloat < 0.085*res.depth)
                 res
             } else if(!isJavaList(asArray(data(0)).apply(0)) && isJavaList(asArray(data(1)).apply(0))) { // parent & subbranches ((node) (...))
                 var newparent = traverse(asArray(data(0)), parent)
@@ -236,10 +235,10 @@ object TreeFactory {
         var data:Object = null
         while(data==null) try {
                 data = genTree/("give-me-tree", 
-                    0f+rand.nextFloat()/10-rand.nextFloat()/10, 
-                    2f+rand.nextFloat()/2-rand.nextFloat()/3, 
-                    0f+rand.nextFloat()/10-rand.nextFloat()/10, 
-                    5f+rand.nextFloat()-rand.nextFloat()/2
+                    0f+nextFloat/10-nextFloat/10, 
+                    2f+nextFloat/2-nextFloat/3, 
+                    0f+nextFloat/10-nextFloat/10, 
+                    5f+nextFloat-nextFloat/2
                 )
         } catch {
             case _ => {
@@ -250,15 +249,15 @@ object TreeFactory {
         }
         
         val tree = traverse(asArray(data))
-        tree.properties += "treekind" -> 0//rand.nextInt(3);
-        tree.properties += "fatness" -> (0.25f+rand.nextFloat()/20f-rand.nextFloat()/20f)
+        tree.properties += "treekind" -> 0//nextInt(3);
+        tree.properties += "fatness" -> (0.25f+nextFloat/20f-nextFloat/20f)
         
         def generateBoxes(branch:Branch):BoundingBox = {
             var box = new BoundingBox(List(branch.rootVec, branch.destVec))
             for(child <- branch.children) box += generateBoxes(child)
             
             branch.properties += "box" -> box
-            branch.properties += "fatness" -> (if(branch.children.length==0) 0.18f-rand.nextFloat()/30f else 0.2f-rand.nextFloat()/30f)
+            branch.properties += "fatness" -> (if(branch.children.length==0) 0.18f-nextFloat/30f else 0.2f-nextFloat/30f)
 
             box
         }
@@ -286,7 +285,7 @@ object TreeFactory {
     def apply() = {
         import Global._
         var tree = new GeneratorModel(giveMeTree, renderTree, treeId)
-        def random(span:Float):Float = (17+rand.nextFloat()*3-rand.nextFloat()*3)*rand.nextFloat()*span
+        def random(span:Float):Float = (17+nextFloat*3-nextFloat*3)*nextFloat*span
         
         tree.setPosition(
             random(10) - random(10),

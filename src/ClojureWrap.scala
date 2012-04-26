@@ -1,7 +1,6 @@
 package AngryPigs
 
 import clojure.lang.{RT,Var}
-//import clojure.core._
 
 class ClojureWrap(ns:String,objName:String) {
     RT.loadResourceScript(objName+".clj")

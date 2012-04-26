@@ -7,6 +7,7 @@ import scala.collection.Traversable
 import java.nio._
 import scala.actors.Futures._
 import scala.actors.Future
+import scala.util.Random.nextFloat
 
 // TODO:
 // search for @ <task>
@@ -34,30 +35,29 @@ object Game {
         try {
             initDisplay()
         } catch {
-            case e:Exception => {
-              print("Can't open display. "+e.getMessage);
-              sys.exit(1);
-            }
+            case e:Exception =>
+              print("Can't open display. "+e.getMessage)
+              sys.exit(1)
         }
 
         // enter loop
-        isRunning = true;
-        mainLoop();
+        isRunning = true
+        mainLoop()
         
         // cleanup
-        Display.destroy();
+        Display.destroy()
     }
 
     def initDisplay() {
-        var bestMode:DisplayMode = null;
-        val modes:Array[DisplayMode] = Display.getAvailableDisplayModes;
+        val modes:Array[DisplayMode] = Display.getAvailableDisplayModes
+        var bestMode = modes.head
         // Get best mode
-        for(mode <- modes)
+        for(mode <- modes.tail)
             if((mode.getWidth <= winWidth && mode.getHeight <= winHeight)
                 &&(bestMode == null
                    ||(mode.getWidth >= bestMode.getWidth && mode.getHeight >= bestMode.getHeight
                       && mode.getBitsPerPixel >= bestMode.getBitsPerPixel)))
-                bestMode = mode;
+                bestMode = mode
         
         Display.setDisplayMode(bestMode)
         winWidth = bestMode.getWidth
@@ -90,7 +90,7 @@ object Game {
             tasks += (() => {
                 model.compile()
                 if(model.compileCache.size > 4) model.reset()
-            });
+            })
         })
     }
     def increaseDetail() = {
@@ -102,7 +102,7 @@ object Game {
             tasks += (() => {
                 model.compile()
                 if(model.compileCache.size > 4) model.reset()
-            });
+            })
         })
     }
     
@@ -130,9 +130,9 @@ object Game {
             if(currentTime-FPStimer > second*FPSseconds) {
                 val FPS = frameCounter/FPSseconds.toFloat
                 // increase or decrease graphics detail
-                if(lastFPS < 30 && FPS < 20 && Settings.graphics > 1 && tasks.length < 200) decreaseDetail()
-                if(lastFPS > 50 && FPS > 50 && Settings.graphics < 2 && tasks.length < 200) increaseDetail()
-            
+                if(lastFPS<30 && FPS<20 && Settings.graphics>1 && tasks.length<200) decreaseDetail()
+                if(lastFPS>50 && FPS>50 && Settings.graphics<2 && tasks.length<200) increaseDetail()
+                
                 models().foreach(model => if(model.compileCache.size > 5) model.reset())
                 
                 println("-------------------")
@@ -148,8 +148,8 @@ object Game {
                 FPStimer = currentTime
             }
 
-            renderTime = (currentTime-frameTime)/frameIndepRatio;
-            frameTime = currentTime;
+            renderTime = (currentTime-frameTime)/frameIndepRatio
+            frameTime = currentTime
         }
     }
     
@@ -167,17 +167,17 @@ object Game {
     def models():Traversable[DisplayModel] = (List(pig, catapult, terrain) ++ trees ++ dropBranches ++ trails)
     
     def makeModels() {
-        terrain.setPosition(-Settings.worldSize,-Settings.worldSize,-Settings.worldSize);
-        terrain.setScale(Settings.worldSize*2, 5, Settings.worldSize*2);
-        terrain.compile();
+        terrain.setPosition(-Settings.worldSize,-Settings.worldSize,-Settings.worldSize)
+        terrain.setScale(Settings.worldSize*2, 5, Settings.worldSize*2)
+        terrain.compile()
                 
-        pig.setPosition(0,-Settings.worldSize+10f,-Settings.worldSize/2+25);
-        pig.compile();
+        pig.setPosition(0,-Settings.worldSize+10f,-Settings.worldSize/2+25)
+        pig.compile()
 
-        catapult.setPosition(0,-Settings.worldSize+2.5f,-Settings.worldSize/2+25);
-        catapult.compile();
+        catapult.setPosition(0,-Settings.worldSize+2.5f,-Settings.worldSize/2+25)
+        catapult.compile()
         
-        pigCatapultLink.forgeLink();
+        pigCatapultLink.forgeLink()
         
         futureTree = future { TreeFactory() }
         futureTree.apply()
@@ -187,7 +187,7 @@ object Game {
     * Initial setup of projection of the scene onto screen, lights etc.
     */
     def setupView() {
-        glClearColor(0.3f,0.6f,0.8f,1f);
+        glClearColor(0.3f,0.6f,0.8f,1f)
 
         glEnable(GL_DEPTH_TEST) // enable depth buffer (off by default)
         //glEnable(GL_CULL_FACE)  // enable culling of back sides of polygons
@@ -260,7 +260,7 @@ object Game {
                 // execute non-time-critical tasks... spread them out
                 if(tasks.length>0 && !Settings.pigAir) {
                     val cutoff = if(pause) 10 else 50
-                    for(i <- 0 to tasks.length/cutoff; if(0.05f+(tasks.length-cutoff*i)/(cutoff.toFloat) > rand.nextFloat)) doTask()
+                    for(i <- 0 to tasks.length/cutoff; if(0.05f+(tasks.length-cutoff*i)/(cutoff.toFloat) > nextFloat)) doTask()
                 }
            }
         
@@ -286,15 +286,15 @@ object Game {
                     math.cos(moveObj.rot.y/(180f/math.Pi)).toFloat*moveObj.vector.z
                 )
 
-                moveObj.pos.clamp(Settings.worldSize-2.5f);
+                moveObj.pos.clamp(Settings.worldSize-2.5f)
                 
-                val mY = pig.pos.y;
-                moveObj.pos += moveVector*renderTime;
-                moveObj.pos.clamp(Settings.worldSize-2.5f);
+                val mY = pig.pos.y
+                moveObj.pos += moveVector*renderTime
+                moveObj.pos.clamp(Settings.worldSize-2.5f)
                 if(pig.pos.y==mY && Settings.pigAir) {
-                    Settings.pigAir = false; println("pig is on ground");
+                    Settings.pigAir = false; println("pig is on ground")
                     val trailcount = 3///
-                    if(trails.length >= trailcount) trails = trails.drop(1);
+                    if(trails.length >= trailcount) trails = trails.drop(1)
                 }
                 def unrot(angle:Float, lim:Int=360):Float = { angle - ((math.floor(angle).toInt / lim)*lim) }
                 pig.vector += Settings.gravity*renderTime
@@ -328,14 +328,14 @@ object Game {
                             child.marked = true
                         })
                         
-                        if(rand.nextFloat > 0.4) b.properties += "hasLeaf" -> false
+                        if(nextFloat > 0.4) b.properties += "hasLeaf" -> false
                         
                         val drop = new GeneratorModel(() => b, (data:Object) => data.asInstanceOf[Branch].doAll(_.render))
                         drop.pos = tree.pos.clone
                         drop.vector = new Vec3(
-                            (math.sin(pig.rot.y/(180f/math.Pi)).toFloat*pig.vector.z/2)*(1+rand.nextFloat/6-rand.nextFloat/12) +rand.nextFloat/17-rand.nextFloat/17,
-                            pig.vector.y/(5 + rand.nextFloat/4 - rand.nextFloat/4), 
-                            (math.cos(pig.rot.y/(180f/math.Pi)).toFloat*pig.vector.z/2)*(1+rand.nextFloat/6-rand.nextFloat/12) +rand.nextFloat/17-rand.nextFloat/17
+                            (math.sin(pig.rot.y/(180f/math.Pi)).toFloat*pig.vector.z/2)*(1+nextFloat/6-nextFloat/12) +nextFloat/17-nextFloat/17,
+                            pig.vector.y/(5 + nextFloat/4 - nextFloat/4), 
+                            (math.cos(pig.rot.y/(180f/math.Pi)).toFloat*pig.vector.z/2)*(1+nextFloat/6-nextFloat/12) +nextFloat/17-nextFloat/17
                         )
                         //drop.vector = new Vec3(0,0,0)
                         drop.compile()
@@ -367,7 +367,7 @@ object Game {
                                     if(basebox.boxCollide(moveBox)) {
                                         moveObj.vector.z = -moveObj.vector.z
                                         if(math.abs(moveObj.vector.z) < 0.01f) moveObj.vector.z = 0.01f*math.abs(moveObj.vector.z)/moveObj.vector.z
-                                        var limit = 500;
+                                        var limit = 500
                                         while(basebox.boxCollide(moveBox) && {limit -= 1; limit}>0) {
                                             val moveVec = new Vec3(
                                                 math.sin(moveObj.rot.y/(180f/math.Pi)).toFloat*moveObj.vector.z,
@@ -380,20 +380,20 @@ object Game {
                                     }
                                 }
                             } else if(Settings.pigAir && ((pig.pos-(box.min+tree.pos)).length < 4.25f || (pig.pos-(box.max+tree.pos)).length < 4.25f)) { // should be if(box.pointCollide(pig.pos, tree.pos) && 
-                                collision = true;
-                                var dropped = false;
+                                collision = true
+                                var dropped = false
                                 
-                                pig.vector.y /= 2;
+                                pig.vector.y /= 2
                                 
-                                if(rand.nextFloat > 0.4) {
-                                    b.children.foreach(child => if(rand.nextFloat > 0.25) { dropped = true; dropBranch(child) })
+                                if(nextFloat > 0.4) {
+                                    b.children.foreach(child => if(nextFloat > 0.25) { dropped = true; dropBranch(child) })
                                 } else {
                                     dropped = true
                                     dropBranch(b)
                                 }
                                 
                                 if(dropped) {
-                                    //println("collision");
+                                    //println("collision")
                                     done = true
                                 } else {
                                     collision = false
@@ -551,13 +551,13 @@ object Game {
                 pig.vector.y = 3.7f
                 pig.vector.z = 7.2f
                 //cam.vector = pig.vector / 3
-                pig.vector2 = new Vec3(0.5f+rand.nextFloat/3,0,0) * 50f
+                pig.vector2 = new Vec3(0.5f+nextFloat/3,0,0) * 50f
             } else {
                 pig.vector.y = 2.7f
                 pig.vector.z = 4f
                 if(isKeyDown(KEY_DOWN)) {
                     pig.vector.z = -pig.vector.z
-                    pig.vector2 = -new Vec3(0.5f+rand.nextFloat/3,0,0) * (80f*2.7f/3.7f)
+                    pig.vector2 = -new Vec3(0.5f+nextFloat/3,0,0) * (80f*2.7f/3.7f)
                 }
             }
             

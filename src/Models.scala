@@ -3,6 +3,7 @@ package AngryPigs
 import org.lwjgl.opengl.GL11
 import org.lwjgl.util.glu.GLU
 import scala.collection.mutable.{ListBuffer,HashMap};
+import scala.util.Random.{nextInt,nextFloat}
 
 abstract class BasicModel {
     var (pos,rot,scale) = (new Vec3, new Vec3, new Vec3(1f,1f,1f))
@@ -39,8 +40,7 @@ abstract class BasicModel {
 }
 
 // doesn't care about points and stuff
-class DisplayModel(var renderfunc:()=>Unit, var idfunc:(DisplayModel,SettingMap[String])=>Int = null) extends BasicModel with Properties {
-    def this() = this(()=>null)
+class DisplayModel(var renderfunc:()=>Unit = ()=>(), var idfunc:(DisplayModel,SettingMap[String])=>Int = null) extends BasicModel with Properties {
     var compiled = false
     
     var (vector,vector2) = (new Vec3, new Vec3)
@@ -60,7 +60,7 @@ class DisplayModel(var renderfunc:()=>Unit, var idfunc:(DisplayModel,SettingMap[
         
         try { id() } catch {
             case e:NullPointerException =>
-                compileCache += rand.nextInt() -> displayList
+                compileCache += nextInt -> displayList
                 //reset();
         }
     }
@@ -239,7 +239,7 @@ class Branch(var parent:Branch) extends Properties {
                 glScalef(1,1.6f,1)
                 glColor3f(0.2f,0.8f,0.1f)
                 glTranslatef(0,-0.17f,0)
-                glRotatef(rand.nextFloat()*12-rand.nextFloat()*12, 0,0,1)
+                glRotatef(nextFloat*12-nextFloat*12, 0,0,1)
                 gluQuadrics.disk.draw(0,0.175f, Settings.graphics*6,1)
                 glEnable(GL_CULL_FACE)
             }

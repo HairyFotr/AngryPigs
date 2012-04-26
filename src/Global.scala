@@ -1,6 +1,5 @@
 package AngryPigs
 
-import scala.util.Random
 import org.lwjgl.util.glu.{Sphere,Cylinder,Disk,PartialDisk}
 import scala.collection.mutable.{ListBuffer,HashMap}
 // stuff that is used in all the (wrong) places :P
@@ -21,7 +20,6 @@ object Global {
     }
     lazy val tasks = new ListBuffer[() => Unit]
     lazy val urgentTasks = new ListBuffer[() => Unit]
-    lazy val rand = new Random
     implicit def double2float(d:Double):Float = d.toFloat
     
     object gluQuadrics {
