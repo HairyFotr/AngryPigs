@@ -5,7 +5,7 @@
 
 (def primes [2 3 5 7 11 13 17 23 29])
 (def lengths [0.8 0.7 0.5 0.3 0.099 0.097 0.093 0.088 0.081])
-(def max-depth 3)
+(def max-depth 4)
 
 (def children
      (memoize (fn [depth]
