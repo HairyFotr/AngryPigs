@@ -79,8 +79,8 @@ fileshash="`$hashfunc ../$0 $files`" #must be compiled with same bashbeans scrip
 #echo "$fileshash"
 
 #build
-clojurejar="lib/clojure-1.3.0.jar"
-lwjglpath="lib/lwjgl-2.8.2"
+clojurejar="lib/clojure-1.4.0.jar"
+lwjglpath="lib/lwjgl-2.8.3"
 builderror="0"
 if [ "$Unforce" != "" ]; then
     echo "You told me not to recompile."
