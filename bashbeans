@@ -90,7 +90,7 @@ else
     echo "Compiling:"$files
     #fast scala compile (loads compile deamon)
 
-    compileErr=$( { fsc -deprecation -unchecked $Optimise -cp "`$pathprocess ../$clojurejar`" -d ../class -extdirs ../$lwjglpath/jar/ $files ; } 2>&1 )
+    compileErr=$( { fsc -deprecation -unchecked -feature $Optimise -cp "`$pathprocess ../$clojurejar`" -d ../class -extdirs ../$lwjglpath/jar/ $files ; } 2>&1 )
     builderror=$?
     if [ "$compileErr" != "" ]; then
         echo "$compileErr"
