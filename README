@@ -1,14 +1,10 @@
-AngryPigs is a game in which you catapult a pig into a tree in order to break its branches.
-It's written in Scala and Clojure, and uses the LWJGL library for graphics.
-
-Run:
-Linux and MacOS: install Scala and run with ./bashbeans -r
-Windows: also install Cygwin, and run with ./bashbeans -r --cygwin
+AngryPigs is a game demo in which you catapult a pig into a tree in order to break its branches.
+It's written in Scala (@HairyFotr) and Clojure (@Swizec), and uses the LWJGL library for graphics.
 
 Keys:
 Arrow keys ... move
-Space ... launch pig
-CTRL ... reload pig
+Space ... launch or jump
+Ctrl ... reload pig
 P ... pause
 RShift .. unpause :P
 W,R ... rotate camera X
