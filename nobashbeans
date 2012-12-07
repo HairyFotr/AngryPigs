@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# whoa, that thing sure got bloated... here, use this:
+clojurejar="lib/clojure-1.4.0.jar"
+lwjglpath="lib/lwjgl-2.8.3"
+
+scalac -optimise -cp $clojurejar -d class -extdirs $lwjglpath/jar/ src/*.scala
+scala -cp "src/AngryPigs:class:$lwjglpath/jar/lwjgl.jar:$lwjglpath/jar/lwjgl_util.jar:$clojurejar" -Djava.library.path="$lwjglpath/native/linux/:$lwjglpath/native/macosx/:$lwjglpath/native/windows/" AngryPigs.Game
