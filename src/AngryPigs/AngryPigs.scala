@@ -17,7 +17,7 @@ import scala.util.Random.nextFloat
 /// decouple physics and render
 /// infinite terrain patches and stuff
 
-object Game {
+object AngryPigs {
   import Global._
   import org.lwjgl.opengl.GL11._
   
