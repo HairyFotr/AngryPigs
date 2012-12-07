@@ -1,3 +1,5 @@
 #!/bin/bash
 
-./bashbeans -r -o
+if [[ ! -e AngryPigs.jar ]]; then ant; fi
+
+java -Djava.library.path="lib/lwjgl-2.8.3/native/linux" -jar AngryPigs.jar

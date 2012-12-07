@@ -5,8 +5,12 @@ import org.lwjgl.input.Keyboard
 import scala.collection.mutable.ListBuffer
 import scala.collection.Traversable
 import java.nio._
-import scala.actors.Futures._
-import scala.actors.Future
+//import scala.actors.Futures._
+//import scala.actors.Future
+import scala.concurrent._
+import scala.concurrent.util._
+import scala.concurrent.duration._
+import ExecutionContext.Implicits.global
 import scala.util.Random.nextFloat
 
 // TODO:
@@ -166,7 +170,7 @@ object AngryPigs {
 
   def models(): Traversable[DisplayModel] = (List(pig, catapult, terrain) ++ trees ++ dropBranches ++ trails)
   
-  def makeModels() {
+  def makeModels(): Unit = {
     terrain.setPosition(-Settings.worldSize,-Settings.worldSize,-Settings.worldSize)
     terrain.setScale(Settings.worldSize*2, 5, Settings.worldSize*2)
     terrain.compile()
@@ -180,7 +184,8 @@ object AngryPigs {
     pigCatapultLink.forgeLink()
     
     futureTree = future { TreeFactory() }
-    futureTree.apply()
+    //futureTree.apply()
+    Await.result(futureTree, Duration.Inf)
   }
   
   /**
@@ -456,8 +461,8 @@ object AngryPigs {
       
       if(futureTree==null) {
         if(trees.length < 5 && !Settings.pigAir && tasks.length<500) futureTree = future { TreeFactory() }
-      } else if(futureTree.isSet) {
-        val presentTree = futureTree.apply()
+      } else if(futureTree.isCompleted) {
+        val presentTree = Await.result(futureTree, Duration.Inf)
         trees += presentTree
         
         def growTree(lvl:Int, tree:GeneratorModel):Unit = {

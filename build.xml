@@ -2,28 +2,44 @@
 <project default="create_run_jar" name="Create Runnable Jar for Project AngryPigs with Jar-in-Jar Loader">
     <!--this file was created by Eclipse Runnable JAR Export Wizard-->
     <!--ANT 1.7 is required                                        -->
-    <target name="create_run_jar">
+    <target name="init">
+      <mkdir dir="bin" />
+      <taskdef resource="scala/tools/ant/antlib.xml">
+        <classpath>
+          <pathelement location="lib/scala-2.10.0-RC3/scala-reflect.jar" />
+          <pathelement location="lib/scala-2.10.0-RC3/scala-compiler.jar" />
+          <pathelement location="lib/scala-2.10.0-RC3/scala-library.jar" />
+          <pathelement location="bin" />
+        </classpath>
+      </taskdef>
+    </target>
+    <target name="create_run_jar" depends="init">
+       <scalac 
+            srcdir="src/AngryPigs"
+            destdir="bin"
+            classpath="lib/scala-2.10.0-RC3/scala-library.jar:lib/clojure-1.4.0/clojure-1.4.0.jar"
+            extdirs="lib/lwjgl-2.8.3/jar"
+            addparams="-optimise">
+            <include name="*.scala" />
+        </scalac>
+        <javac
+            srcdir="src/AngryPigs"
+            destdir="bin">
+            <include name="*.java" />
+        </javac>
         <jar destfile="AngryPigs.jar">
-            <manifest>
+	            <manifest>
                 <attribute name="Main-Class" value="org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader"/>
                 <attribute name="Rsrc-Main-Class" value="AngryPigs.ScalaRunner"/>
                 <attribute name="Class-Path" value="."/>
-                <attribute name="Rsrc-Class-Path" value="./ clojure-1.4.0.jar AppleJavaExtensions.jar asm-debug-all.jar jinput.jar lwjgl_test.jar lwjgl_util_applet.jar lwjgl_util.jar lwjgl-debug.jar lwjgl.jar lzma.jar scala-compiler-2.9.2.jar scala-library-2.9.2.jar"/>
+                <attribute name="Rsrc-Class-Path" value="./ clojure-1.4.0.jar AppleJavaExtensions.jar asm-debug-all.jar jinput.jar lwjgl_test.jar lwjgl_util_applet.jar lwjgl_util.jar lwjgl-debug.jar lwjgl.jar lzma.jar scala-compiler.jar scala-library.jar"/>
             </manifest>
             <zipfileset src="jar-in-jar-loader.zip"/>
-            <fileset dir="bin"/>
-            <zipfileset dir="lib" includes="clojure-1.4.0.jar"/>
-            <zipfileset dir="lib/lwjgl-2.8.3/jar" includes="AppleJavaExtensions.jar"/>
-            <zipfileset dir="lib/lwjgl-2.8.3/jar" includes="asm-debug-all.jar"/>
-            <zipfileset dir="lib/lwjgl-2.8.3/jar" includes="jinput.jar"/>
-            <zipfileset dir="lib/lwjgl-2.8.3/jar" includes="lwjgl_test.jar"/>
-            <zipfileset dir="lib/lwjgl-2.8.3/jar" includes="lwjgl_util_applet.jar"/>
-            <zipfileset dir="lib/lwjgl-2.8.3/jar" includes="lwjgl_util.jar"/>
-            <zipfileset dir="lib/lwjgl-2.8.3/jar" includes="lwjgl-debug.jar"/>
-            <zipfileset dir="lib/lwjgl-2.8.3/jar" includes="lwjgl.jar"/>
-            <zipfileset dir="lib/lwjgl-2.8.3/jar" includes="lzma.jar"/>
-            <zipfileset dir="lib" includes="scala-compiler-2.9.2.jar"/>
-            <zipfileset dir="lib" includes="scala-library-2.9.2.jar"/>
+            <fileset dir="bin" />
+            <zipfileset dir="lib/clojure-1.4.0" />
+            <zipfileset dir="lib/scala-2.10.0-RC3" />
+            <zipfileset dir="lib/lwjgl-2.8.3/jar" />
+            <zipfileset dir="src/AngryPigs" />
         </jar>
     </target>
 </project>
