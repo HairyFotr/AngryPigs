@@ -1,8 +1,6 @@
 --------------
   Angry Pigs
 --------------
- by HairyFotr
- and Swizec
  
 A game demo in which you catapult a pig into a tree in order to break its branches.
 Written in Scala (HairyFotr) and Clojure (Swizec), and uses the LWJGL game library.
