@@ -89,7 +89,7 @@ class DisplayModel(var renderfunc:()=>Unit = ()=>(), var idfunc:(DisplayModel,Se
         case (id,listid) => 
           if(listid!=displayList || !preserveCurrent) {
             count += 1
-            Global.tasks += (()=>{GL11.glDeleteLists(listid, 1)})
+            Global.tasks = Global.tasks :+ (()=>{GL11.glDeleteLists(listid, 1)})
             compileCache = compileCache - id
           }
       }

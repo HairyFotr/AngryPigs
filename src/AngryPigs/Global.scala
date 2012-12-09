@@ -18,9 +18,7 @@ object Global {
     m += "maxdepth" -> Settings.maxdepth
     m;
   }
-  lazy val tasks = new ListBuffer[() => Unit]
-  lazy val urgentTasks = new ListBuffer[() => Unit]
-  //implicit def double2float(d:Double):Float = d.toFloat
+  var tasks = List[() => Unit]()
   
   object gluQuadrics {
     val sphere = new Sphere
@@ -29,7 +27,12 @@ object Global {
     val partialdisk = new PartialDisk
   }
 
-  lazy val genTree = new ClojureWrap("AngryPigs", "gen-tree")
+  val genTree = new ClojureWrap("AngryPigs", "gen-tree")
+}
+
+object Utils {
+  def withAlternative[T](func: => T, alternative: => T ): T = try { func } catch { case _: Throwable => alternative}
+  def withExit[T](func: => T, exit: => Any = { }): T = try { func } catch { case _: Throwable => exit; sys.exit(-1) }
 
   def currentTime = System.nanoTime()
   // measures the running time of the provided func  

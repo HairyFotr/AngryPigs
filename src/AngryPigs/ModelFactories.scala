@@ -241,7 +241,7 @@ object TreeFactory {
           5f+nextFloat-nextFloat/2
         )
     } catch {
-      case e: Exception => {
+      case e: Throwable => {
         //e.printStackTrace;
         println("give-me-tree threw exception")
         data = null

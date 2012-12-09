@@ -9,7 +9,6 @@
           <pathelement location="lib/scala-2.10.0-RC3/scala-reflect.jar" />
           <pathelement location="lib/scala-2.10.0-RC3/scala-compiler.jar" />
           <pathelement location="lib/scala-2.10.0-RC3/scala-library.jar" />
-          <pathelement location="bin" />
         </classpath>
       </taskdef>
     </target>
@@ -25,21 +24,22 @@
         <javac
             srcdir="src/AngryPigs"
             destdir="bin">
-            <include name="*.java" />
+            <include name="ScalaRunner.java" />
         </javac>
         <jar destfile="AngryPigs.jar">
 	            <manifest>
                 <attribute name="Main-Class" value="org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader"/>
                 <attribute name="Rsrc-Main-Class" value="AngryPigs.ScalaRunner"/>
                 <attribute name="Class-Path" value="."/>
-                <attribute name="Rsrc-Class-Path" value="./ clojure-1.4.0.jar AppleJavaExtensions.jar asm-debug-all.jar jinput.jar lwjgl_test.jar lwjgl_util_applet.jar lwjgl_util.jar lwjgl-debug.jar lwjgl.jar lzma.jar scala-compiler.jar scala-library.jar"/>
+                <attribute name="Rsrc-Class-Path" value="./ clojure-1.4.0.jar lwjgl_util.jar lwjgl.jar scala-library.jar"/>
             </manifest>
             <zipfileset src="jar-in-jar-loader.zip"/>
             <fileset dir="bin" />
-            <zipfileset dir="lib/clojure-1.4.0" />
-            <zipfileset dir="lib/scala-2.10.0-RC3" />
-            <zipfileset dir="lib/lwjgl-2.8.3/jar" />
-            <zipfileset dir="src/AngryPigs" />
+            <zipfileset dir="lib/clojure-1.4.0" includes="clojure-1.4.0.jar" />
+            <zipfileset dir="lib/scala-2.10.0-RC3" includes="scala-library.jar" />
+            <zipfileset dir="lib/lwjgl-2.8.3/jar" includes="lwjgl.jar" />
+            <zipfileset dir="lib/lwjgl-2.8.3/jar" includes="lwjgl_util.jar" />
+            <zipfileset dir="src/AngryPigs" includes="*.clj" />
         </jar>
     </target>
 </project>

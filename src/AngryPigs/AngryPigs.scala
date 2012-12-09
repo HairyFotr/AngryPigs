@@ -22,10 +22,11 @@ import scala.util.Random.nextFloat
 /// infinite terrain patches and stuff
 
 object AngryPigs {
+  import Utils._
   import Global._
   import org.lwjgl.opengl.GL11._
   
-  var isRunning = false // is main loop running
+  var gameLoopRunning = false // is main loop running
   var (winWidth, winHeight) = (3000, 3000) // window size
   var renderTime = 0f
   
@@ -36,32 +37,29 @@ object AngryPigs {
    * Initializes display and enters main loop
    */
   def main(Args: Array[String]) {
-    try {
-      initDisplay()
-    } catch {
-      case e: Exception =>
-        print("Can't open display. "+e.getMessage)
-        sys.exit(1)
-    }
+    withExit(
+      initDisplay(),
+      println("Can't open display.")
+    )
 
-    // enter loop
-    isRunning = true
-    mainLoop()
+    gameLoop()
     
-    // cleanup
+    // Cleanup
     Display.destroy()
   }
 
   def initDisplay() {
-    val modes: Array[DisplayMode] = Display.getAvailableDisplayModes
-    var bestMode = modes.head
-    // Get best mode
-    for(mode <- modes.tail)
-      if((mode.getWidth <= winWidth && mode.getHeight <= winHeight)
-        &&(bestMode == null
-           ||(mode.getWidth >= bestMode.getWidth && mode.getHeight >= bestMode.getHeight
-            && mode.getBitsPerPixel >= bestMode.getBitsPerPixel)))
-        bestMode = mode
+    Display.setTitle("Angry Pigs")
+    Display.setVSyncEnabled(true)
+    Display.setFullscreen(true)
+
+    val bestMode = Display.getAvailableDisplayModes.reduce((bestMode,mode) => 
+      if(mode.getWidth >= bestMode.getWidth && mode.getHeight >= bestMode.getHeight 
+      && mode.getBitsPerPixel >= bestMode.getBitsPerPixel) 
+        mode 
+      else
+        bestMode
+    )
     
     Display.setDisplayMode(bestMode)
     winWidth = bestMode.getWidth
@@ -69,20 +67,13 @@ object AngryPigs {
     
     println("Display: "+bestMode.getWidth+"x"+bestMode.getHeight+"@"+bestMode.getFrequency+"Hz, "+bestMode.getBitsPerPixel+"bit")
     
-    try {
-      // FSAA
-      Display.create(new PixelFormat(8, 16, 0, 1))
-    } catch {
-      // No FSAA      
-      case _: Exception =>
-        Display.create()
-    }
-
-    Display.setTitle("Angry Pigs")
-    Display.setVSyncEnabled(true)
+    withAlternative(
+      Display.create(new PixelFormat(8, 16, 0, 1)),
+      Display.create()
+    )
   }
 
-  // used for frame independant movement
+  // Frame-independent movement timer
   var frameTime = currentTime
 
   def decreaseDetail() = {
@@ -91,7 +82,7 @@ object AngryPigs {
     if(graphics==1 && maxdepth>5) maxdepth = 5
     println("decreased graphic detail to "+graphics)
     models().foreach(model => {
-      tasks += (() => {
+      tasks = tasks :+ (() => {
         model.compile()
         if(model.compileCache.size > 4) model.reset()
       })
@@ -103,7 +94,7 @@ object AngryPigs {
     maxdepth += 1
     println("increased graphic detail to "+graphics)
     models().foreach(model => {            
-      tasks += (() => {
+      tasks = tasks :+ (() => {
         model.compile()
         if(model.compileCache.size > 4) model.reset()
       })
@@ -111,9 +102,9 @@ object AngryPigs {
   }
   
   /**
-   * Main loop: renders and processes input events
+   * Game loop: renders and processes input events
    */
-  def mainLoop() { 
+  def gameLoop() { 
     makeModels() // make generative models
     setupView()  // setup camera and lights
   
@@ -123,7 +114,9 @@ object AngryPigs {
     val FPSseconds = 5
     var FPStimer = currentTime
     frameTime = currentTime
-    while(isRunning) {
+
+    gameLoopRunning = true
+    while(gameLoopRunning) {
       processInput() // process keyboard input
       
       resetView()   // clear view and reset transformations
@@ -134,8 +127,8 @@ object AngryPigs {
       if(currentTime-FPStimer > second*FPSseconds) {
         val FPS = frameCounter/FPSseconds.toFloat
         // increase or decrease graphics detail
-        if(lastFPS<30 && FPS<20 && Settings.graphics>1 && tasks.length<200) decreaseDetail()
-        if(lastFPS>50 && FPS>50 && Settings.graphics<2 && tasks.length<200) increaseDetail()
+        if(lastFPS < 20 && FPS < 15 && Settings.graphics > 1 && tasks.length < 200) decreaseDetail()
+        if(lastFPS > 50 && FPS > 50 && Settings.graphics < 2 && tasks.length < 200) increaseDetail()
         
         models().foreach(model => if(model.compileCache.size > 5) model.reset())
         
@@ -154,7 +147,7 @@ object AngryPigs {
 
       renderTime = (currentTime-frameTime)/frameIndepRatio
       frameTime = currentTime
-    }
+    } 
   }
   
   //models
@@ -185,7 +178,7 @@ object AngryPigs {
     
     futureTree = future { TreeFactory() }
     //futureTree.apply()
-    Await.result(futureTree, Duration.Inf)
+    //Await.result(futureTree, Duration.Inf)
   }
   
   /**
@@ -256,14 +249,13 @@ object AngryPigs {
     fullTimes += time {
       workerTimes += time {///write tasks object
         def doTask() = {
-          val task = tasks.head
-          task()
-          tasks -= task
-          if(tasks.length==0) println("all tasks done")
+          tasks.head()
+          tasks = tasks.tail
+          if(tasks.isEmpty) println("all tasks done")
         }
         
         // execute non-time-critical tasks... spread them out
-        if(tasks.length>0 && !Settings.pigAir) {
+        if(!tasks.isEmpty && !Settings.pigAir) {
           val cutoff = if(pause) 10 else 50
           for(i <- 0 to tasks.length/cutoff; if(0.05f+(tasks.length-cutoff*i)/(cutoff.toFloat) > nextFloat)) doTask()
         }
@@ -475,7 +467,7 @@ object AngryPigs {
         }
         
         growTree(2, presentTree)
-        for(i <- 3 to Settings.maxdepth) tasks += (() => growTree(i, presentTree))
+        for(i <- 3 to Settings.maxdepth) tasks = tasks :+ (() => growTree(i, presentTree))
         
         futureTree = null
         println("new tree added")
@@ -489,7 +481,7 @@ object AngryPigs {
     import Keyboard._ // static imports.. fuckyeah
     
     if(Display.isCloseRequested || isKeyDown(KEY_ESCAPE)) {
-      isRunning = false
+      gameLoopRunning = false
       return
     }
         

@@ -13,7 +13,9 @@
 
 (defn normalize [v]
   (let [l (length v)]
-    (map #(round 4 (/ %1 l)) v)))
+    (if (== l 0) 
+      v
+      (map #(round 4 (/ %1 l)) v))))
 
 ; taken from http://steve.hollasch.net/cgindex/math/rotvec.html
 ;    let
