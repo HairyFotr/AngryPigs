@@ -3,7 +3,7 @@ Angry Pigs
 
 A game demo in which you catapult a pig into a tree in order to break its branches.
 
-Written in Scala ([@HairyFotr](https://twitter.com/HairyFotr)) and ([@Swizec](https://twitter.com/Swizec)), and uses the LWJGL game library.
+Written in Scala ([@HairyFotr](https://twitter.com/HairyFotr)) and Clojure ([@Swizec](https://twitter.com/Swizec)), and uses the LWJGL game library.
 
 
 ![ScreenShot](https://raw.github.com/HairyFotr/AngryPigs/master/doc/stare3.png)
