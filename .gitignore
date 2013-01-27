@@ -24,6 +24,7 @@
 *.vrb
 
 *.class
+AngryPigs.jar
 *.exe
 *.exe.stackdump
 

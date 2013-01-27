@@ -2,7 +2,7 @@ package AngryPigs
 
 import org.lwjgl.opengl.GL11
 import org.lwjgl.util.glu.GLU
-import scala.collection.mutable.{ListBuffer,HashMap};
+import scala.collection.mutable.{ListBuffer,HashMap}
 import scala.util.Random.{nextInt,nextFloat}
 
 abstract class BasicModel {
@@ -16,31 +16,31 @@ abstract class BasicModel {
   def setRotation(v:Vec3) = { rot = v.clone }
   def setScale(v:Vec3) = { scale = v.clone }
   
-  def doTranslate {
+  def doTranslate() = {
     GL11.glTranslatef(pos.x, pos.y, pos.z);
   }
-  def doRotate {
+  def doRotate() = {
     if(rot.z!=0) GL11.glRotatef(rot.z, 0, 0, 1);
     if(rot.y!=0) GL11.glRotatef(rot.y, 0, 1, 0);
     if(rot.x!=0) GL11.glRotatef(rot.x, 1, 0, 0);    
   }
-  def doScaling {
+  def doScaling() = {
     GL11.glScalef(scale.x, scale.y, scale.z);
   }
 
-  def doTransforms {
-    doTranslate
-    doRotate
-    doScaling
+  def doTransforms() = {
+    doTranslate()
+    doRotate()
+    doScaling()
   }
 
-  def render;
+  def render()
 
-  override def toString:String = "p:("+pos.toString+"), " + "r:("+rot.toString+"), " + "s:("+scale.toString+")";
+  override def toString:String = "p:("+pos.toString+"), " + "r:("+rot.toString+"), " + "s:("+scale.toString+")"
 }
 
 // doesn't care about points and stuff
-class DisplayModel(var renderfunc:()=>Unit = ()=>(), var idfunc:(DisplayModel,SettingMap[String])=>Int = null) extends BasicModel with Properties {
+class DisplayModel(var renderfunc:()=>Unit = ()=>(), var idfunc:(DisplayModel,SettingMap[String]) => Int = null) extends BasicModel with Properties {
   var compiled = false
   
   var (vector,vector2) = (Vec3(), Vec3())
@@ -49,7 +49,7 @@ class DisplayModel(var renderfunc:()=>Unit = ()=>(), var idfunc:(DisplayModel,Se
   // foo value
   properties += "graphics" -> -1;
   
-  def forceCompile() {
+  def forceCompile(): Unit = {
     import Global._
     displayList = GL11.glGenLists(1)
     GL11.glNewList(displayList, GL11.GL_COMPILE)
@@ -59,15 +59,15 @@ class DisplayModel(var renderfunc:()=>Unit = ()=>(), var idfunc:(DisplayModel,Se
     properties += "graphics" -> Settings.graphics
     
     try { id() } catch {
-      case e:NullPointerException =>
+      case e: NullPointerException =>
         compileCache += nextInt -> displayList
         //reset();
     }
   }
   
-  def id(props:SettingMap[String]=this.properties):Int = if(idfunc!=null) idfunc(this,props); else throw new NullPointerException()
+  def id(props:SettingMap[String] = this.properties): Int = if(idfunc != null) idfunc(this,props); else throw new NullPointerException()
   
-  var compileCache = new HashMap[Int,Int]
+  val compileCache = new HashMap[Int,Int]
   
   // adds compile cache to compile()
   def compile() {
@@ -90,7 +90,7 @@ class DisplayModel(var renderfunc:()=>Unit = ()=>(), var idfunc:(DisplayModel,Se
           if(listid!=displayList || !preserveCurrent) {
             count += 1
             Global.tasks = Global.tasks :+ (()=>{GL11.glDeleteLists(listid, 1)})
-            compileCache = compileCache - id
+            compileCache -= id
           }
       }
     }
@@ -314,7 +314,7 @@ class ModelLink(m1:BasicModel, m2:BasicModel, var vector:Vec3=Vec3(), var vector
   def breakLink() { linked = false }
   def forgeLink() { linked = true }
   
-  def applyLink {
+  def applyLink() = {
     if(linked) {
       m1.setPosition(m2.pos+vector)
       m1.setRotation(m2.rot+vector2)

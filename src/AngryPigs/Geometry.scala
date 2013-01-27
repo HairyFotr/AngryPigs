@@ -9,25 +9,26 @@ object Vec3 {
 class Vec3(var x: Float, var y: Float, var z: Float) {
   def this() = this(0f, 0f, 0f)
   
-  private def setPoints(v: Vec3): Vec3 = { x=v.x; y=v.y; z=v.z; this }
-  private def setPoints(x: Float, y: Float, z: Float): Vec3 = { this.x=x; this.y=y; this.z=z; this }
-  private def setPoints(p: Array[Float]): Vec3 = setPoints(p(0), p(1), p(2))
+  private def setPoints(v: Vec3): Unit = { x=v.x; y=v.y; z=v.z; }
+  private def setPoints(x: Float, y: Float, z: Float): Unit = { this.x=x; this.y=y; this.z=z; }
+  private def setPoints(p: Array[Float]): Unit = setPoints(p(0), p(1), p(2))
   
   override def clone = Vec3(x,y,z)
-  private def map(f: Float => Float): Vec3 = { x = f(x); y = f(y); z = f(z); this }
-  def applyVector(v: Vec3, multi: Float = 1): Vec3 = setPoints(this + (v * multi))
+  private def each(f: Float => Float): Unit = { x = f(x); y = f(y); z = f(z); }
+  private def map(f: Float => Float): Vec3 = { val out = this.clone; out.each(f); out }
+  def applyVector(v: Vec3, multi: Float = 1): Unit = setPoints(this + (v * multi))
   
   def unary_- : Vec3      = Vec3(-x, -y, -z)
   def +(v: Vec3): Vec3    = Vec3(x+v.x, y+v.y, z+v.z)
   def -(v: Vec3): Vec3    = Vec3(x-v.x, y-v.y, z-v.z)
   def +=(v: Vec3): Unit   = setPoints(this + v)
-  def +=(f: Float): Unit  = this.map(_ + f)
+  def +=(f: Float): Unit  = this.each(_ + f)
   def -=(v: Vec3): Unit   = setPoints(this + (-v))
-  def -=(f: Float): Unit  = this.map(_ - f)
+  def -=(f: Float): Unit  = this.each(_ - f)
   def *(v: Vec3): Vec3    = Vec3(x*v.x, y*v.y, z*v.z)
-  def *(f: Float): Vec3   = this.clone.map(_ * f)
-  def *=(f: Float): Unit  = this.map(_ * f)
-  def /(f: Float): Vec3   = this.clone.map(_ / f)
+  def *(f: Float): Vec3   = this.map(_ * f)
+  def *=(f: Float): Unit  = this.each(_ * f)
+  def /(f: Float): Vec3   = this.map(_ / f)
   def X(v: Vec3): Vec3    = Vec3(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x)
   def dot(v: Vec3): Float = x*v.x + y*v.y + z*v.z
 
@@ -43,8 +44,8 @@ class Vec3(var x: Float, var y: Float, var z: Float) {
   
   // clamp values to some value(e.g. world size)
   private def clamp(p: Float, clamp: Float): Float = if(clamp != 0 && abs(p) > clamp) clamp * (p / abs(p)) else p
-  def clamp(c: Float): Vec3 = this.map(clamp(_, c))
-  def clamp(cx: Float, cy: Float, cz: Float): Vec3 = setPoints(clamp(x, cx), clamp(y, cy), clamp(z, cz))
+  def clamp(c: Float): Unit = this.each(clamp(_, c))
+  def clamp(cx: Float, cy: Float, cz: Float): Unit = setPoints(clamp(x, cx), clamp(y, cy), clamp(z, cz))
 
   override def toString = "%.2f, %.2f, %.2f".format(x,y,z)
 }

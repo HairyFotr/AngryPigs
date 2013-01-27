@@ -6,9 +6,9 @@
       <mkdir dir="bin" />
       <taskdef resource="scala/tools/ant/antlib.xml">
         <classpath>
-          <pathelement location="lib/scala-2.10.0-RC3/scala-reflect.jar" />
-          <pathelement location="lib/scala-2.10.0-RC3/scala-compiler.jar" />
-          <pathelement location="lib/scala-2.10.0-RC3/scala-library.jar" />
+          <pathelement location="lib/scala-2.10.0/scala-reflect.jar" />
+          <pathelement location="lib/scala-2.10.0/scala-compiler.jar" />
+          <pathelement location="lib/scala-2.10.0/scala-library.jar" />
         </classpath>
       </taskdef>
     </target>
@@ -16,9 +16,9 @@
        <scalac 
             srcdir="src/AngryPigs"
             destdir="bin"
-            classpath="lib/scala-2.10.0-RC3/scala-library.jar:lib/clojure-1.4.0/clojure-1.4.0.jar"
+            classpath="lib/scala-2.10.0/scala-library.jar:lib/clojure-1.4.0/clojure-1.4.0.jar"
             extdirs="lib/lwjgl-2.8.3/jar"
-            addparams="-optimise">
+            addparams="-optimise -Ywarn-value-discard -Ywarn-dead-code -Xlint -deprecation -feature">
             <include name="*.scala" />
         </scalac>
         <javac
@@ -36,7 +36,7 @@
             <zipfileset src="jar-in-jar-loader.zip"/>
             <fileset dir="bin" />
             <zipfileset dir="lib/clojure-1.4.0" includes="clojure-1.4.0.jar" />
-            <zipfileset dir="lib/scala-2.10.0-RC3" includes="scala-library.jar" />
+            <zipfileset dir="lib/scala-2.10.0" includes="scala-library.jar" />
             <zipfileset dir="lib/lwjgl-2.8.3/jar" includes="lwjgl.jar" />
             <zipfileset dir="lib/lwjgl-2.8.3/jar" includes="lwjgl_util.jar" />
             <zipfileset dir="src/AngryPigs" includes="*.clj" />
