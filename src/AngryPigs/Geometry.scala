@@ -3,8 +3,8 @@ package AngryPigs
 import math._
 
 object Vec3 { 
-  def apply() = new Vec3
-  def apply(x: Float, y: Float, z: Float) = new Vec3(x, y, z) 
+  def apply(): Vec3 = new Vec3
+  def apply(x: Float, y: Float, z: Float): Vec3 = new Vec3(x, y, z) 
 }
 class Vec3(var x: Float, var y: Float, var z: Float) {
   def this() = this(0f, 0f, 0f)
@@ -13,7 +13,7 @@ class Vec3(var x: Float, var y: Float, var z: Float) {
   private def setPoints(x: Float, y: Float, z: Float): Unit = { this.x=x; this.y=y; this.z=z; }
   private def setPoints(p: Array[Float]): Unit = setPoints(p(0), p(1), p(2))
   
-  override def clone = Vec3(x,y,z)
+  override def clone: Vec3 = Vec3(x,y,z)
   private def each(f: Float => Float): Unit = { x = f(x); y = f(y); z = f(z); }
   private def map(f: Float => Float): Vec3 = { val out = this.clone; out.each(f); out }
   def applyVector(v: Vec3, multi: Float = 1): Unit = setPoints(this + (v * multi))
@@ -47,7 +47,7 @@ class Vec3(var x: Float, var y: Float, var z: Float) {
   def clamp(c: Float): Unit = this.each(clamp(_, c))
   def clamp(cx: Float, cy: Float, cz: Float): Unit = setPoints(clamp(x, cx), clamp(y, cy), clamp(z, cz))
 
-  override def toString = "%.2f, %.2f, %.2f".format(x,y,z)
+  override def toString: String = "%.2f, %.2f, %.2f".format(x,y,z)
 }
 
 class BoundingBox(var min:Vec3) {

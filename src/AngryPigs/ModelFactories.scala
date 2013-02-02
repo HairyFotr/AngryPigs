@@ -65,7 +65,7 @@ object PigFactory {
       glColor3f(0.4f,1f,0.4f)
       glScalef(1,1,1)
       glTranslatef(0,0.4f,1.4f)
-      val size=0.7f
+      val size = 0.7f
       gluQuadrics.cylinder.draw(size,size, 1, graphics*12,1)
       glTranslatef(0,0,1)
       gluQuadrics.disk.draw(0,size, graphics*12,1)
@@ -212,12 +212,12 @@ object TreeFactory {
     }).toArray
 
     def traverse(data:Array[Object], parent:Branch=null):Branch = {
-      if(data.length==1) { // unpack thingy ... ((...))
+      if(data.size == 1) { // unpack thingy ... ((...))
         traverse(asArray(data(0)), parent)
-      } else if(data.length==4 && !isJavaList(data(0))) { // leaves ... (node)
+      } else if(data.length == 4 && !isJavaList(data(0))) { // leaves ... (node)
         val vector = asFloatArray(data)
         var res = new Branch(parent)
-        if(parent!=null) res.rootVec = parent.rootVec+parent.diffVec
+        if(parent != null) res.rootVec = parent.rootVec+parent.diffVec
         res.diffVec = (Vec3(vector(0), vector(1), vector(2))) * vector(3)
         res.properties += "hasLeaf" -> (nextFloat < 0.085*res.depth)
         res
@@ -246,7 +246,7 @@ object TreeFactory {
         println("give-me-tree threw exception")
         data = null
         limit -= 1
-        if(limit==0) sys.exit(1)
+        if(limit == 0) sys.exit(1)
       }
     }
     
@@ -259,7 +259,7 @@ object TreeFactory {
       for(child <- branch.children) box += generateBoxes(child)
       
       branch.properties += "box" -> box
-      branch.properties += "fatness" -> (if(branch.children.length==0) 0.18f-nextFloat/30f else 0.2f-nextFloat/30f)
+      branch.properties += "fatness" -> (if(branch.children.size == 0) 0.18f-nextFloat/30f else 0.2f-nextFloat/30f)
 
       box
     }

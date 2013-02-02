@@ -55,10 +55,11 @@ object AngryPigs {
 
     val bestMode = Display.getAvailableDisplayModes.reduce((bestMode,mode) => 
       if(mode.getWidth >= bestMode.getWidth && mode.getHeight >= bestMode.getHeight 
-      && mode.getBitsPerPixel >= bestMode.getBitsPerPixel) 
+      && mode.getBitsPerPixel >= bestMode.getBitsPerPixel) {
         mode 
-      else
+      } else {
         bestMode
+      }
     )
     
     Display.setDisplayMode(bestMode)
@@ -76,29 +77,29 @@ object AngryPigs {
   // Frame-independent movement timer
   var frameTime = currentTime
 
-  def decreaseDetail() = {
+  def decreaseDetail(): Unit = {
     import Settings._
     graphics -= 1
-    if(graphics==1 && maxdepth>5) maxdepth = 5
+    if(graphics == 1 && maxdepth > 5) maxdepth = 5
     println("decreased graphic detail to "+graphics)
-    models().foreach(model => {
+    for(model <- models()) {
       tasks = tasks :+ (() => {
         model.compile()
         if(model.compileCache.size > 4) model.reset()
       })
-    })
+    }
   }
-  def increaseDetail() = {
+  def increaseDetail(): Unit = {
     import Settings._
     graphics += 1
     maxdepth += 1
     println("increased graphic detail to "+graphics)
-    models().foreach(model => {            
+    for(model <- models()) {
       tasks = tasks :+ (() => {
         model.compile()
         if(model.compileCache.size > 4) model.reset()
       })
-    })
+    }
   }
   
   /**
@@ -130,7 +131,7 @@ object AngryPigs {
         if(lastFPS < 20 && FPS < 15 && Settings.graphics > 1 && tasks.length < 200) decreaseDetail()
         if(lastFPS > 50 && FPS > 50 && Settings.graphics < 2 && tasks.length < 200) increaseDetail()
         
-        models().foreach(model => if(model.compileCache.size > 5) model.reset())
+        for(model <- models() if(model.compileCache.size > 5)) model.reset()
         
         println("-------------------")
         println("FPS: "+FPS)
@@ -200,7 +201,14 @@ object AngryPigs {
     glEnable(GL_LIGHT0)
 
     // LWJGL makes float buffers a bit difficult
-    def floatBuffer(a:Float*):FloatBuffer = ByteBuffer.allocateDirect(a.length*4).order(ByteOrder.nativeOrder).asFloatBuffer.put(a.toArray).flip.asInstanceOf[FloatBuffer]
+    def floatBuffer(a:Float*): FloatBuffer = {
+      ByteBuffer
+        .allocateDirect(a.length*4)
+        .order(ByteOrder.nativeOrder)
+        .asFloatBuffer.put(a.toArray)
+        .flip
+        .asInstanceOf[FloatBuffer]
+    }
     //def floatBuffer(a:Float*):FloatBuffer = org.lwjgl.BufferUtils.createFloatBuffer(a.length).put(a.toArray) // fails for some reason
 
     glLight(GL_LIGHT0, GL_AMBIENT, floatBuffer(0.3f, 0.3f, 0.3f, 0.0f))
@@ -235,7 +243,7 @@ object AngryPigs {
   var treeView = false
   var pause = false
 
-  def moveObj = if(treeView) trees(0) else { if(pigCatapultLink.isLinked) catapult else pig }
+  def moveObj: DisplayModel = if(treeView) trees(0) else { if(pigCatapultLink.isLinked) catapult else pig }
   
   var fullTimes = 0L
   var renderTimes = 0L
@@ -248,14 +256,14 @@ object AngryPigs {
   def renderFrame() {
     fullTimes += time {
       workerTimes += time {///write tasks object
-        def doTask() = {
+        def doTask(): Unit = {
           tasks.head()
           tasks = tasks.tail
           if(tasks.isEmpty) println("all tasks done")
         }
         
         // execute non-time-critical tasks... spread them out
-        if(!tasks.isEmpty && !Settings.pigAir) {
+        if(tasks.size > 0 && !Settings.pigAir) {
           val cutoff = if(pause) 10 else 50
           for(i <- 0 to tasks.length/cutoff; if(0.05f+(tasks.length-cutoff*i)/(cutoff.toFloat) > nextFloat)) doTask()
         }
@@ -288,7 +296,7 @@ object AngryPigs {
         val mY = pig.pos.y
         moveObj.pos += moveVector*renderTime
         moveObj.pos.clamp(Settings.worldSize-2.5f)
-        if(pig.pos.y==mY && Settings.pigAir) {
+        if(pig.pos.y == mY && Settings.pigAir) {
           Settings.pigAir = false; println("pig is on ground")
           val trailcount = 3///
           if(trails.length >= trailcount) trails = trails.drop(1)
@@ -302,7 +310,7 @@ object AngryPigs {
         val rotTreshold = 6f
         
         if(Settings.pigAir) {
-          if(trails.length==0) trails += new TrailModel(List(pig.pos))
+          if(trails.isEmpty) trails += new TrailModel(List(pig.pos))
           trails.last += moveObj.pos
           trails.last.compile()
         } else if(!Settings.pigAir && (postpigrotx < rotTreshold || postpigrotx > 360f-rotTreshold)) {
@@ -320,12 +328,12 @@ object AngryPigs {
           val branch = tree.data.asInstanceOf[Branch]
           def dropBranch(b:Branch):GeneratorModel = {          
             b.detach()
-            b.children.foreach(child => {
+            b.children.foreach { child =>
               if(child.depth < Settings.maxdepth) dropBranch(child)
               child.marked = true
-            })
+            }
             
-            if(nextFloat > 0.4) b.properties += "hasLeaf" -> false
+            if(0.6.prob) b.properties += "hasLeaf" -> false
             
             val drop = new GeneratorModel(() => b, (data:Object) => data.asInstanceOf[Branch].doAll(_.render))
             drop.pos = tree.pos.clone
@@ -346,13 +354,13 @@ object AngryPigs {
           }
           val moveBoxy = getBox(moveObj)
           moveObj.properties += "box" -> moveBoxy
-          def moveBox = moveBoxy offsetBy moveObj.pos
+          def moveBox: BoundingBox = moveBoxy offsetBy moveObj.pos
 
           branch.doWhile(b => (!done && !b.marked && b.depth<=Settings.maxdepth),
             b => {
               val box = b.properties.get[BoundingBox]("box")
               val canCollide = box.pointCollide(pig.pos, tree.pos)
-              if(b.depth==1) {
+              if(b.depth == 1) {
                 if(!canCollide) {
                   done = true 
                 } else {
@@ -382,8 +390,11 @@ object AngryPigs {
                 
                 pig.vector.y /= 2
                 
-                if(nextFloat > 0.4) {
-                  b.children.foreach(child => if(nextFloat > 0.25) { dropped = true; dropBranch(child) })
+                if(0.6.prob) {
+                  for(child <- b.children) if(0.75.prob) {
+                    dropped = true
+                    dropBranch(child)
+                  }
                 } else {
                   dropped = true
                   dropBranch(b)
@@ -406,7 +417,7 @@ object AngryPigs {
             var depthSum = 0
             val sumLim = 2
             branch.doWhile(b => depthSum<=sumLim, b => { depthSum += 1 })
-            if(depthSum<=sumLim) { // tree is dead
+            if(depthSum <= sumLim) { // tree is dead
               val drop = dropBranch(branch)
               drop.vector.y = 2
               trees -= tree
@@ -423,7 +434,7 @@ object AngryPigs {
           if(branch.pos.y < -Settings.worldSize-50) {
             dropBranches -= branch
             branch.free()
-            //if(dropBranches.length==0) println("all broken branches removed")
+            //if(dropBranches.isEmpty) println("all broken branches removed")
           }
         }
 
@@ -451,8 +462,8 @@ object AngryPigs {
       cam.vector -= cam.vector*renderTime*0.05f
       cam.render
       
-      if(futureTree==null) {
-        if(trees.length < 5 && !Settings.pigAir && tasks.length<500) futureTree = future { TreeFactory() }
+      if(futureTree == null) {
+        if(trees.length < 5 && !Settings.pigAir && tasks.size < 500) futureTree = future { TreeFactory() }
       } else if(futureTree.isCompleted) {
         val presentTree = Await.result(futureTree, Duration.Inf)
         trees += presentTree
@@ -477,7 +488,7 @@ object AngryPigs {
     }
   }
   
-  def processInput() {
+  def processInput(): Unit = {
     import Keyboard._ // static imports.. fuckyeah
     
     if(Display.isCloseRequested || isKeyDown(KEY_ESCAPE)) {
@@ -495,7 +506,7 @@ object AngryPigs {
     } else if(isKeyDown(KEY_5) && !timeLock.isLocked) { 
       increaseDetail()
       timeLock.lockIt(300)
-    } else if(isKeyDown(KEY_6) && !timeLock.isLocked && Settings.graphics>1) { 
+    } else if(isKeyDown(KEY_6) && !timeLock.isLocked && Settings.graphics > 1) { 
       decreaseDetail()
       timeLock.lockIt(300)
     } else if(isKeyDown(KEY_8) && !timeLock.isLocked) { 

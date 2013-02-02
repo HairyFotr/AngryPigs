@@ -31,10 +31,13 @@ object Global {
 }
 
 object Utils {
+  implicit class D(val d:Double) { def prob: Boolean = util.Random.nextDouble < d } //0.5.prob #syntaxabuse
+  implicit class F(val f:Float) { def prob: Boolean = util.Random.nextFloat < f }
+
   def withAlternative[T](func: => T, alternative: => T ): T = try { func } catch { case _: Throwable => alternative}
   def withExit[T](func: => T, exit: => Any = { }): T = try { func } catch { case _: Throwable => exit; sys.exit(-1) }
 
-  def currentTime = System.nanoTime()
+  def currentTime: Long = System.nanoTime()
   // measures the running time of the provided func  
   def time(func: => Unit):Long = {
     val startTime = currentTime
@@ -47,7 +50,7 @@ object Utils {
 
 class SettingMap[A] extends scala.collection.mutable.HashMap[A,Any] {
   private var defaultMap = new scala.collection.mutable.HashMap[String, Any]
-  def setDefault[B](v:B)(implicit m:Manifest[B]) = defaultMap += m.toString -> v
+  def setDefault[B](v:B)(implicit m:Manifest[B]): Unit = defaultMap += m.toString -> v
   def getDefault[B](implicit m:Manifest[B]):B = defaultMap.getOrElse(m.toString, null).asInstanceOf[B]
   
   def get[B:Manifest](key:A):B = getOrElse(key, getDefault[B]).asInstanceOf[B]
@@ -60,17 +63,17 @@ trait Properties {
 
 class TimeLock {
   private var locked = false
-  def isLocked:Boolean = {
-    if(locked && milliTime-lockTime>lockDuration) locked = false
+  def isLocked: Boolean = {
+    if(locked && milliTime-lockTime > lockDuration) locked = false
     
     locked
   }
   
-  private def milliTime = System.nanoTime()/1000000L
+  private def milliTime: Long = System.nanoTime()/1000000L
   
   private var lockTime = milliTime
   private var lockDuration = 0L
-  def lockIt(ms:Int) = {
+  def lockIt(ms:Int): Unit = {
     lockTime = milliTime
     lockDuration = ms
     locked = true

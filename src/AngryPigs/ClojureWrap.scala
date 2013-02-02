@@ -8,12 +8,12 @@ class ClojureWrap(ns: String, objName: String) {
   val obj = ns+"."+objName
   val funcs = new HashMap[String, Var]
   
-  def /(func: String, a: Any) =
+  def /(func: String, a: Any): Object =
     funcs.getOrElseUpdate(func, RT.`var`(obj, func)).invoke(a.asInstanceOf[Object])
-  def /(func: String, a: Any, b: Any) =
+  def /(func: String, a: Any, b: Any): Object =
     funcs.getOrElseUpdate(func, RT.`var`(obj, func)).invoke(a.asInstanceOf[Object], b.asInstanceOf[Object])
-  def /(func: String, a: Any, b: Any, c: Any) =
+  def /(func: String, a: Any, b: Any, c: Any): Object =
     funcs.getOrElseUpdate(func, RT.`var`(obj, func)).invoke(a.asInstanceOf[Object], b.asInstanceOf[Object], c.asInstanceOf[Object])
-  def /(func: String, a: Any, b: Any, c: Any, d: Any) =
+  def /(func: String, a: Any, b: Any, c: Any, d: Any): Object =
     funcs.getOrElseUpdate(func, RT.`var`(obj, func)).invoke(a.asInstanceOf[Object], b.asInstanceOf[Object], c.asInstanceOf[Object], d.asInstanceOf[Object])
 }

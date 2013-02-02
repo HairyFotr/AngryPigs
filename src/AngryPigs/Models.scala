@@ -5,7 +5,7 @@ import org.lwjgl.util.glu.GLU
 import scala.collection.mutable.{ListBuffer,HashMap}
 import scala.util.Random.{nextInt,nextFloat}
 
-abstract class BasicModel {
+abstract class Model {
   var (pos,rot,scale) = (Vec3(), Vec3(), Vec3(1f,1f,1f))
   var visible = true
 
@@ -20,9 +20,9 @@ abstract class BasicModel {
     GL11.glTranslatef(pos.x, pos.y, pos.z);
   }
   def doRotate() = {
-    if(rot.z!=0) GL11.glRotatef(rot.z, 0, 0, 1);
-    if(rot.y!=0) GL11.glRotatef(rot.y, 0, 1, 0);
-    if(rot.x!=0) GL11.glRotatef(rot.x, 1, 0, 0);    
+    if(rot.z != 0) GL11.glRotatef(rot.z, 0, 0, 1);
+    if(rot.y != 0) GL11.glRotatef(rot.y, 0, 1, 0);
+    if(rot.x != 0) GL11.glRotatef(rot.x, 1, 0, 0);    
   }
   def doScaling() = {
     GL11.glScalef(scale.x, scale.y, scale.z);
@@ -40,7 +40,7 @@ abstract class BasicModel {
 }
 
 // doesn't care about points and stuff
-class DisplayModel(var renderfunc:()=>Unit = ()=>(), var idfunc:(DisplayModel,SettingMap[String]) => Int = null) extends BasicModel with Properties {
+class DisplayModel(var renderfunc:()=>Unit = ()=>(), var idfunc:(DisplayModel,SettingMap[String]) => Int = null) extends Model with Properties {
   var compiled = false
   
   var (vector,vector2) = (Vec3(), Vec3())
@@ -83,11 +83,11 @@ class DisplayModel(var renderfunc:()=>Unit = ()=>(), var idfunc:(DisplayModel,Se
   }
   
   def reset(limit:Int=1, preserveCurrent:Boolean=true) = {
-    if(compileCache.size>limit) {
+    if(compileCache.size > limit) {
       var count = 0
       compileCache.clone.foreach {
         case (id,listid) => 
-          if(listid!=displayList || !preserveCurrent) {
+          if(listid != displayList || !preserveCurrent) {
             count += 1
             Global.tasks = Global.tasks :+ (()=>{GL11.glDeleteLists(listid, 1)})
             compileCache -= id
@@ -188,7 +188,7 @@ class Branch(var parent:Branch) extends Properties {
   setParent(parent)
 
   def setParent(p:Branch) {
-    if(p!=null) {
+    if(p != null) {
       p.children += this
       depth = p.depth+1
     }
@@ -197,7 +197,7 @@ class Branch(var parent:Branch) extends Properties {
   def addChild(c:Branch) = if(!(this eq c)) c.setParent(this)
   
   def detach() {
-    if(parent!=null) {
+    if(parent != null) {
       parent.children -= this;
       this.setParent(null);      
     }
@@ -248,7 +248,7 @@ class Branch(var parent:Branch) extends Properties {
   }
 }
 
-class Camera extends BasicModel {
+class Camera extends Model {
   // default projection 
   var perspective = false
   var (near,far) = (1f,30f) // near, far clipping plane
@@ -282,7 +282,7 @@ class Camera extends BasicModel {
   
   private var lookAtV = Vec3()
   def lookAt(v:Vec3) = lookAtV = v.clone
-  def lookAt(m:BasicModel) = lookAtV = m.pos.clone
+  def lookAt(m:Model) = lookAtV = m.pos.clone
     
   override def render {
     // setup projection matrix stack
@@ -308,7 +308,7 @@ class Camera extends BasicModel {
   }
 }
 
-class ModelLink(m1:BasicModel, m2:BasicModel, var vector:Vec3=Vec3(), var vector2:Vec3=Vec3()) {
+class ModelLink(m1:Model, m2:Model, var vector:Vec3=Vec3(), var vector2:Vec3=Vec3()) {
   private var linked = false
   def isLinked = linked
   def breakLink() { linked = false }
