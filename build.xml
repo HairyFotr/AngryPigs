@@ -18,7 +18,7 @@
             destdir="bin"
             classpath="lib/scala-2.10.0/scala-library.jar:lib/clojure-1.4.0/clojure-1.4.0.jar"
             extdirs="lib/lwjgl-2.8.3/jar"
-            addparams="-optimise -Ywarn-all -Ywarn-value-discard -Ywarn-dead-code -Xlint -deprecation -feature">
+            addparams="-optimise -Ywarn-adapted-args -Ywarn-all -Ywarn-dead-code -Ywarn-inaccessible -Ywarn-nullary-override -Ywarn-nullary-unit -Ywarn-value-discard -Xlint -deprecation -feature -unchecked">
             <include name="*.scala" />
         </scalac>
         <javac

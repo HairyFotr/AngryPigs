@@ -12,11 +12,11 @@ object Global {
     var worldSize = 400
     var gravity = Vec3(0f,-0.5f,0f)
   }
-  def settings:SettingMap[String] = { // old settings - idfunc in models depends on this :/ ///could maybe do via reflection and implicits
+  def settings: SettingMap[String] = { // old settings - idfunc in models depends on this :/ ///could maybe do via reflection and implicits
     val m = new SettingMap[String]
     m += "graphics" -> Settings.graphics
     m += "maxdepth" -> Settings.maxdepth
-    m;
+    m
   }
   var tasks = List[() => Unit]()
   

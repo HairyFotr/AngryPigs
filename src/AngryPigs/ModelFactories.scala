@@ -7,11 +7,11 @@ object TerrainFactory {
   // terrain
   val (detail,height)=(30,0.3f)
   
-  private def genTerrain:()=>Object = () => {
+  private def genTerrain: () => Object = () => {
     def getTerrainPoint(x:Int, y:Int):Vec3 = Vec3(x/detail.toFloat,nextFloat*height,y/detail.toFloat)
     (for(i <- 0 to detail; j <- 0 to detail) yield getTerrainPoint(i,j)).toArray
   }
-  private def drawTerrain = (data:Object) => {
+  private def drawTerrain: Object => Unit = (data:Object) => {
     val points = data.asInstanceOf[Array[Vec3]]
     glBegin(GL_QUADS)
     // Draw in clockwise - (00,10,11,01); must skip last point of line
@@ -29,8 +29,8 @@ object TerrainFactory {
   def apply() = new GeneratorModel(genTerrain, drawTerrain)
 }
 object PigFactory {
-  private def genPig:()=>Object = () => {
-    val pigData = new SettingMap[String];
+  private def genPig: () => Object = () => {
+    val pigData = new SettingMap[String]
     pigData += "Moustache.has" -> (nextFloat > 0.2)
     pigData += "Moustache.which" -> (nextInt(2))
     pigData += "Glasses.has" -> (nextFloat > 0.2)
@@ -38,7 +38,8 @@ object PigFactory {
   }  
   private def drawPig(data:Object):Unit = {
     val pigData = data.asInstanceOf[SettingMap[String]]
-    val graphics = settings.get[Int]("graphics");
+    val graphics = settings.get[Int]("graphics")
+    
     //body
     {
       glColor3f(0.3f,0.8f,0.3f)
@@ -60,8 +61,8 @@ object PigFactory {
       glPopMatrix()
     }
     //nose      
-    glPushMatrix();
     {
+      glPushMatrix()
       glColor3f(0.4f,1f,0.4f)
       glScalef(1,1,1)
       glTranslatef(0,0.4f,1.4f)
@@ -69,29 +70,29 @@ object PigFactory {
       gluQuadrics.cylinder.draw(size,size, 1, graphics*12,1)
       glTranslatef(0,0,1)
       gluQuadrics.disk.draw(0,size, graphics*12,1)
-    }
-    //moustache
-    if(pigData.get[Boolean]("Moustache.has")) {
-      glScalef(2,1,1);
-      glColor3f(0.7f,0.2f,0f);
-      pigData.get[Int]("Moustache.which") match {
-        case 0 =>        
-          glTranslatef(0,-0.7f,-0.2f)
-          gluQuadrics.disk.draw(0,0.5f, graphics*9,1);
-        case 1 =>
-          glTranslatef(0,-0.8f,-0.3f)
-          gluQuadrics.partialdisk.draw(0,0.5f, graphics*9,1, 270, 180);
-        case _ =>
-          glTranslatef(0,-0.8f,-0.3f)
-          gluQuadrics.partialdisk.draw(0,0.5f, graphics*9,1, 270, 180);
+      //moustache
+      if(pigData.get[Boolean]("Moustache.has")) {
+        glScalef(2,1,1)
+        glColor3f(0.7f,0.2f,0f)
+        pigData.get[Int]("Moustache.which") match {
+          case 0 =>        
+            glTranslatef(0,-0.7f,-0.2f)
+            gluQuadrics.disk.draw(0,0.5f, graphics*9,1)
+          case 1 =>
+            glTranslatef(0,-0.8f,-0.3f)
+            gluQuadrics.partialdisk.draw(0,0.5f, graphics*9,1, 270, 180)
+          case _ =>
+            glTranslatef(0,-0.8f,-0.3f)
+            gluQuadrics.partialdisk.draw(0,0.5f, graphics*9,1, 270, 180)
+        }
       }
+      glPopMatrix()
     }
-    glPopMatrix();
     //eyes
     {
       glPushMatrix()
       val x = 1.2f
-      def drawEye(leftEye:Boolean) = {
+      def drawEye(leftEye:Boolean): Unit = {
         glPushMatrix()
         glColor3f(0.8f,0.8f,0.8f)
         gluQuadrics.sphere.draw(0.5f,graphics*8,graphics*8)
@@ -174,7 +175,7 @@ object CatapultFactory {
       glEnd()
       glPopMatrix()
 
-      def drawWheel() = {
+      def drawWheel(): Unit = {
         glRotatef(90, 0,1,0)
         gluQuadrics.cylinder.draw(1f,1f, scale.x*2+2, settings.get[Int]("graphics")*9,1)
         gluQuadrics.disk.draw(0,1,20,1)
@@ -191,7 +192,7 @@ object CatapultFactory {
       glTranslatef(-scale.x-1,-1,-scale.z+2f)
       drawWheel()
       glPopMatrix()
-    });
+    })
     val bbox = new BoundingBox(Vec3())
     bbox.min -= scale
     bbox.max += scale
@@ -201,15 +202,15 @@ object CatapultFactory {
 }
 
 object TreeFactory {
-  private def giveMeTree:()=>Object = () => {
+  private def giveMeTree: () => Object = () => {
     def isJavaList(a:Object):Boolean = a.isInstanceOf[java.util.List[_]]
     def asArray(a:Object):Array[Object] = a.asInstanceOf[java.util.List[_]].toArray
-    def asFloatArray(a:Array[Object]):Array[Float] = a.toList.map(a => {
+    def asFloatArray(a:Array[Object]):Array[Float] = a.toList.map{ a =>
       if(a.isInstanceOf[java.lang.Double])
         a.asInstanceOf[java.lang.Double].floatValue()
       else
         a.asInstanceOf[Float]
-    }).toArray
+    }.toArray
 
     def traverse(data:Array[Object], parent:Branch=null):Branch = {
       if(data.size == 1) { // unpack thingy ... ((...))
@@ -242,7 +243,7 @@ object TreeFactory {
         )
     } catch {
       case e: Throwable => {
-        //e.printStackTrace;
+        //e.printStackTrace
         println("give-me-tree threw exception")
         data = null
         limit -= 1
@@ -251,7 +252,7 @@ object TreeFactory {
     }
     
     val tree = traverse(asArray(data))
-    tree.properties += "treekind" -> 0//nextInt(3);
+    tree.properties += "treekind" -> 0//nextInt(3)
     tree.properties += "fatness" -> (0.25f+nextFloat/20f-nextFloat/20f)
     
     def generateBoxes(branch:Branch):BoundingBox = {
@@ -266,7 +267,7 @@ object TreeFactory {
     generateBoxes(tree)
     
     tree
-  };
+  }
   
   private def renderTree:Object=>Unit = (data:Object) => {
     glEnable(GL_CULL_FACE)
@@ -278,11 +279,11 @@ object TreeFactory {
     val model = dmodel.asInstanceOf[GeneratorModel]
     var mid = 0///to properties on fly
     // takes into account branch count and graphic detail
-    model.data.asInstanceOf[Branch].doAll(branch => { mid += 1 })
+    model.data.asInstanceOf[Branch].doAll(branch => mid += 1)
     mid += mid * properties.get[Int]("graphics")
     mid += mid + 101*properties.get[Int]("maxdepth")
     mid
-  };
+  }
   
   def apply() = {
     import Global._

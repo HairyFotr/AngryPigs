@@ -36,7 +36,7 @@ object AngryPigs {
   /**
    * Initializes display and enters main loop
    */
-  def main(Args: Array[String]) {
+  def main(Args: Array[String]): Unit = {
     withExit(
       initDisplay(),
       println("Can't open display.")
@@ -48,7 +48,7 @@ object AngryPigs {
     Display.destroy()
   }
 
-  def initDisplay() {
+  def initDisplay(): Unit = {
     Display.setTitle("Angry Pigs")
     Display.setVSyncEnabled(true)
     Display.setFullscreen(true)
@@ -105,7 +105,7 @@ object AngryPigs {
   /**
    * Game loop: renders and processes input events
    */
-  def gameLoop() { 
+  def gameLoop(): Unit = { 
     makeModels() // make generative models
     setupView()  // setup camera and lights
   
@@ -185,7 +185,7 @@ object AngryPigs {
   /**
   * Initial setup of projection of the scene onto screen, lights etc.
   */
-  def setupView() {
+  def setupView(): Unit = {
     glClearColor(0.3f, 0.6f, 0.8f, 1f)
 
     glEnable(GL_DEPTH_TEST) // enable depth buffer (off by default)
@@ -230,7 +230,7 @@ object AngryPigs {
   /**
   * Resets the view of current frame
   */
-  def resetView() {
+  def resetView(): Unit = {
     // clear color and depth buffer
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     //glMatrixMode(GL_PROJECTION)
@@ -253,7 +253,7 @@ object AngryPigs {
   /**
   * Renders current frame
   */
-  def renderFrame() {
+  def renderFrame(): Unit = {
     fullTimes += time {
       workerTimes += time {///write tasks object
         def doTask(): Unit = {
@@ -356,7 +356,7 @@ object AngryPigs {
           moveObj.properties += "box" -> moveBoxy
           def moveBox: BoundingBox = moveBoxy offsetBy moveObj.pos
 
-          branch.doWhile(b => (!done && !b.marked && b.depth<=Settings.maxdepth),
+          branch.doWhile(b => (!done && !b.marked && b.depth <= Settings.maxdepth),
             b => {
               val box = b.properties.get[BoundingBox]("box")
               val canCollide = box.pointCollide(pig.pos, tree.pos)
@@ -379,7 +379,7 @@ object AngryPigs {
                         0,
                         math.cos(moveObj.rot.y/(180f/math.Pi)).toFloat*moveObj.vector.z
                       )
-                      moveObj.pos += moveVec*renderTime;
+                      moveObj.pos += moveVec*renderTime
                     }
                     moveObj.vector.z = moveObj.vector.z/2
                   }
@@ -489,7 +489,7 @@ object AngryPigs {
   }
   
   def processInput(): Unit = {
-    import Keyboard._ // static imports.. fuckyeah
+    import Keyboard._
     
     if(Display.isCloseRequested || isKeyDown(KEY_ESCAPE)) {
       gameLoopRunning = false
@@ -569,7 +569,7 @@ object AngryPigs {
         }
       }
       
-      Settings.pigAir = true; println("pig is in air");
+      Settings.pigAir = true; println("pig is in air")
       trails += new TrailModel(List(pig.pos))
     }
     if((isKeyDown(KEY_LCONTROL) || isKeyDown(KEY_RCONTROL)) && !Settings.pigAir && !pigCatapultLink.isLinked) {
