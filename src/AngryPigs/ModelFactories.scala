@@ -92,7 +92,7 @@ object PigFactory {
     {
       glPushMatrix()
       val x = 1.2f
-      def drawEye(leftEye:Boolean): Unit = {
+      def drawEye(leftEye:Boolean) {
         glPushMatrix()
         glColor3f(0.8f,0.8f,0.8f)
         gluQuadrics.sphere.draw(0.5f,graphics*8,graphics*8)
@@ -175,7 +175,7 @@ object CatapultFactory {
       glEnd()
       glPopMatrix()
 
-      def drawWheel(): Unit = {
+      def drawWheel() {
         glRotatef(90, 0,1,0)
         gluQuadrics.cylinder.draw(1f,1f, scale.x*2+2, settings.get[Int]("graphics")*9,1)
         gluQuadrics.disk.draw(0,1,20,1)

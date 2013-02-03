@@ -9,26 +9,26 @@ abstract class Model {
   var (pos,rot,scale) = (Vec3(), Vec3(), Vec3(1f,1f,1f))
   var visible = true
 
-  def setPosition(x:Float,y:Float,z:Float): Unit = { pos = Vec3(x,y,z) }
-  def setRotation(x:Float,y:Float,z:Float): Unit = { rot = Vec3(x,y,z) }
-  def setScale(x:Float,y:Float,z:Float): Unit = { scale = Vec3(x,y,z) }
-  def setPosition(v:Vec3): Unit = { pos = v.clone }
-  def setRotation(v:Vec3): Unit = { rot = v.clone }
-  def setScale(v:Vec3): Unit = { scale = v.clone }
+  def setPosition(x:Float,y:Float,z:Float) { pos = Vec3(x,y,z) }
+  def setRotation(x:Float,y:Float,z:Float) { rot = Vec3(x,y,z) }
+  def setScale(x:Float,y:Float,z:Float) { scale = Vec3(x,y,z) }
+  def setPosition(v:Vec3) { pos = v.clone }
+  def setRotation(v:Vec3) { rot = v.clone }
+  def setScale(v:Vec3) { scale = v.clone }
   
-  def doTranslate(): Unit = {
+  def doTranslate() {
     GL11.glTranslatef(pos.x, pos.y, pos.z)
   }
-  def doRotate(): Unit = {
+  def doRotate() {
     if(rot.z != 0) GL11.glRotatef(rot.z, 0, 0, 1)
     if(rot.y != 0) GL11.glRotatef(rot.y, 0, 1, 0)
     if(rot.x != 0) GL11.glRotatef(rot.x, 1, 0, 0)
   }
-  def doScaling(): Unit = {
+  def doScaling() {
     GL11.glScalef(scale.x, scale.y, scale.z)
   }
 
-  def doTransforms(): Unit = {
+  def doTransforms() {
     doTranslate()
     doRotate()
     doScaling()
@@ -49,7 +49,7 @@ class DisplayModel(var renderfunc: () => Unit = () => (), var idfunc: (DisplayMo
   // foo value
   properties += "graphics" -> -1
   
-  def forceCompile(): Unit = {
+  def forceCompile() {
     import Global._
     displayList = GL11.glGenLists(1)
     GL11.glNewList(displayList, GL11.GL_COMPILE)
@@ -76,7 +76,7 @@ class DisplayModel(var renderfunc: () => Unit = () => (), var idfunc: (DisplayMo
   val compileCache = new HashMap[Int,Int]
   
   // adds compile cache to compile()
-  def compile(): Unit = {
+  def compile() {
     try {
       displayList = compileCache.getOrElseUpdate(id(Global.settings), {
         forceCompile()
@@ -88,7 +88,7 @@ class DisplayModel(var renderfunc: () => Unit = () => (), var idfunc: (DisplayMo
     }
   }
   
-  def reset(limit:Int=1, preserveCurrent:Boolean=true): Unit = {
+  def reset(limit:Int=1, preserveCurrent:Boolean=true) {
     if(compileCache.size > limit) {
       var count = 0
       compileCache.clone.foreach {
@@ -101,7 +101,7 @@ class DisplayModel(var renderfunc: () => Unit = () => (), var idfunc: (DisplayMo
       }
     }
   }
-  def free(): Unit = {
+  def free() {
     reset(0,false)
     displayList = -1
   }
@@ -114,7 +114,7 @@ class DisplayModel(var renderfunc: () => Unit = () => (), var idfunc: (DisplayMo
     res
   }
   
-  override def render(): Unit = {
+  override def render() {
     if(!visible) return
     
     GL11.glPushMatrix()
@@ -136,7 +136,7 @@ class GeneratorModel(generator: () => Object, draw: Object => Unit, _idfunc: (Di
   renderfunc = () => { draw(data); () }
   idfunc = _idfunc
   
-  def regenerate(): Unit = {
+  def regenerate() {
     data = generator()
     compile()
   }
@@ -193,7 +193,7 @@ class Branch(var parent:Branch) extends Properties {
 
   setParent(parent)
 
-  def setParent(p:Branch): Unit = {
+  def setParent(p:Branch) {
     if(p != null) {
       p.children += this
       depth = p.depth+1
@@ -202,18 +202,18 @@ class Branch(var parent:Branch) extends Properties {
   }
   def addChild(c:Branch): Unit = if(!(this eq c)) c.setParent(this)
   
-  def detach(): Unit = {
+  def detach() {
     if(parent != null) {
       parent.children -= this
       this.setParent(null)    
     }
   }
   
-  def doAll(f:Branch => Unit): Unit = {
+  def doAll(f:Branch => Unit) {
     f(this)
     children.foreach(_.doAll(f))
   }
-  def doWhile(w:Branch => Boolean, f:Branch => Unit): Unit = {
+  def doWhile(w:Branch => Boolean, f:Branch => Unit) {
     f(this)
     if(w(this)) children.foreach(_.doWhile(w, f))
   }
@@ -223,7 +223,7 @@ class Branch(var parent:Branch) extends Properties {
     children.foreach(_.print())
   }
   
-  def render(): Unit = {
+  def render() {
     import org.lwjgl.opengl.GL11._
     import Global._
     if(depth <= Settings.maxdepth) {
@@ -290,7 +290,7 @@ class Camera extends Model {
   def lookAt(v:Vec3): Unit = lookAtV = v.clone
   def lookAt(m:Model): Unit = lookAtV = m.pos.clone
     
-  override def render(): Unit = {
+  override def render() {
     // setup projection matrix stack
     if(projectionChanged) {
       projectionChanged = false
@@ -317,10 +317,10 @@ class Camera extends Model {
 class ModelLink(m1:Model, m2:Model, var vector:Vec3=Vec3(), var vector2:Vec3=Vec3()) {
   private var linked = false
   def isLinked: Boolean = linked
-  def breakLink(): Unit = { linked = false }
-  def forgeLink(): Unit = { linked = true }
+  def breakLink() { linked = false }
+  def forgeLink() { linked = true }
   
-  def applyLink(): Unit = {
+  def applyLink() {
     if(linked) {
       m1.setPosition(m2.pos+vector)
       m1.setRotation(m2.rot+vector2)

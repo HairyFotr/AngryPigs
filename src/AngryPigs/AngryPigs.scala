@@ -36,7 +36,7 @@ object AngryPigs {
   /**
    * Initializes display and enters main loop
    */
-  def main(Args: Array[String]): Unit = {
+  def main(Args: Array[String]) {
     withExit(
       initDisplay(),
       println("Can't open display.")
@@ -48,7 +48,7 @@ object AngryPigs {
     Display.destroy()
   }
 
-  def initDisplay(): Unit = {
+  def initDisplay() {
     Display.setTitle("Angry Pigs")
     Display.setVSyncEnabled(true)
     Display.setFullscreen(true)
@@ -77,7 +77,7 @@ object AngryPigs {
   // Frame-independent movement timer
   var frameTime = currentTime
 
-  def decreaseDetail(): Unit = {
+  def decreaseDetail() {
     import Settings._
     graphics -= 1
     if(graphics == 1 && maxdepth > 5) maxdepth = 5
@@ -89,7 +89,7 @@ object AngryPigs {
       })
     }
   }
-  def increaseDetail(): Unit = {
+  def increaseDetail() {
     import Settings._
     graphics += 1
     maxdepth += 1
@@ -105,7 +105,7 @@ object AngryPigs {
   /**
    * Game loop: renders and processes input events
    */
-  def gameLoop(): Unit = { 
+  def gameLoop() { 
     makeModels() // make generative models
     setupView()  // setup camera and lights
   
@@ -164,7 +164,7 @@ object AngryPigs {
 
   def models(): Traversable[DisplayModel] = (List(pig, catapult, terrain) ++ trees ++ dropBranches ++ trails)
   
-  def makeModels(): Unit = {
+  def makeModels() {
     terrain.setPosition(-Settings.worldSize,-Settings.worldSize,-Settings.worldSize)
     terrain.setScale(Settings.worldSize*2, 5, Settings.worldSize*2)
     terrain.compile()
@@ -185,7 +185,7 @@ object AngryPigs {
   /**
   * Initial setup of projection of the scene onto screen, lights etc.
   */
-  def setupView(): Unit = {
+  def setupView() {
     glClearColor(0.3f, 0.6f, 0.8f, 1f)
 
     glEnable(GL_DEPTH_TEST) // enable depth buffer (off by default)
@@ -230,7 +230,7 @@ object AngryPigs {
   /**
   * Resets the view of current frame
   */
-  def resetView(): Unit = {
+  def resetView() {
     // clear color and depth buffer
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     //glMatrixMode(GL_PROJECTION)
@@ -253,10 +253,10 @@ object AngryPigs {
   /**
   * Renders current frame
   */
-  def renderFrame(): Unit = {
+  def renderFrame() {
     fullTimes += time {
       workerTimes += time {///write tasks object
-        def doTask(): Unit = {
+        def doTask() {
           tasks.head()
           tasks = tasks.tail
           if(tasks.isEmpty) println("all tasks done")
@@ -488,7 +488,7 @@ object AngryPigs {
     }
   }
   
-  def processInput(): Unit = {
+  def processInput() {
     import Keyboard._
     
     if(Display.isCloseRequested || isKeyDown(KEY_ESCAPE)) {

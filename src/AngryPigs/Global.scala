@@ -73,7 +73,7 @@ class TimeLock {
   
   private var lockTime = milliTime
   private var lockDuration = 0L
-  def lockIt(ms:Int): Unit = {
+  def lockIt(ms:Int) {
     lockTime = milliTime
     lockDuration = ms
     locked = true
