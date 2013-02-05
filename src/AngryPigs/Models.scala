@@ -128,7 +128,7 @@ class DisplayModel(var renderfunc: () => Unit = () => (), var idfunc: (DisplayMo
     }
       
     GL11.glPopMatrix()
-  }  
+  }
 }
 
 class GeneratorModel(generator: () => Object, draw: Object => Unit, _idfunc: (DisplayModel,SettingMap[String]) => Int = null) extends DisplayModel {
@@ -205,11 +205,11 @@ class Branch(var parent:Branch) extends Properties {
   def detach() {
     if(parent != null) {
       parent.children -= this
-      this.setParent(null)    
+      this.setParent(null)
     }
   }
   
-  def doAll(f:Branch => Unit) {
+  def doAll(f: Branch => Unit) {
     f(this)
     children.foreach(_.doAll(f))
   }
@@ -218,7 +218,7 @@ class Branch(var parent:Branch) extends Properties {
     if(w(this)) children.foreach(_.doWhile(w, f))
   }
 
-  def print():Unit = {
+  def print() {
     println(depth+" "*(depth*2) + rootVec +" -- " + diffVec)
     children.foreach(_.print())
   }

@@ -3,9 +3,13 @@ import Global._
 import org.lwjgl.opengl.GL11._
 import scala.util.Random.{nextInt, nextFloat}
 
-object TerrainFactory {
+abstract class ModelFactory {
+  def apply(): Model
+}
+
+object TerrainFactory extends ModelFactory {
   // terrain
-  val (detail,height)=(30,0.3f)
+  val (detail,height) = (30,0.3f)
   
   private def genTerrain: () => Object = () => {
     def getTerrainPoint(x:Int, y:Int):Vec3 = Vec3(x/detail.toFloat,nextFloat*height,y/detail.toFloat)
@@ -17,26 +21,26 @@ object TerrainFactory {
     // Draw in clockwise - (00,10,11,01); must skip last point of line
     val width = math.sqrt(points.length).toInt
     for(i <- 0 until points.length-width-1; if((i+1)%width != 0))
-      List(points(i), points(i+1), points(i+width+1), points(i+width)) foreach { p =>
+      List(points(i), points(i+1), points(i+width+1), points(i+width)) foreach { pt =>
         //glColor3f(0.2f, 0.7f+p.y/2, 0.2f)
-        glColor3d(0.2+p.y/4, 0.65f+p.y/1.5, 0.2+p.y/4)
-        glNormal3f(p.y, p.y, p.y)
-        glVertex3f(p.x, p.y, p.z)
+        glColor3d(0.2+pt.y/4, 0.65f+pt.y/1.5, 0.2+pt.y/4)
+        glNormal3f(pt.y, pt.y, pt.y)
+        glVertex3f(pt.x, pt.y, pt.z)
       }
     glEnd()//*/
   }
   
-  def apply() = new GeneratorModel(genTerrain, drawTerrain)
+  override def apply() = new GeneratorModel(genTerrain, drawTerrain)
 }
-object PigFactory {
+object PigFactory extends ModelFactory {
   private def genPig: () => Object = () => {
     val pigData = new SettingMap[String]
     pigData += "Moustache.has" -> (nextFloat > 0.2)
     pigData += "Moustache.which" -> (nextInt(2))
     pigData += "Glasses.has" -> (nextFloat > 0.2)
     pigData += "Glasses.which" -> (nextInt(3))
-  }  
-  private def drawPig(data:Object):Unit = {
+  }
+  private def drawPig(data: Object) {
     val pigData = data.asInstanceOf[SettingMap[String]]
     val graphics = settings.get[Int]("graphics")
     
@@ -60,7 +64,7 @@ object PigFactory {
       gluQuadrics.disk.draw(0,0.35f, graphics*8,1)
       glPopMatrix()
     }
-    //nose      
+    //nose
     {
       glPushMatrix()
       glColor3f(0.4f,1f,0.4f)
@@ -75,7 +79,7 @@ object PigFactory {
         glScalef(2,1,1)
         glColor3f(0.7f,0.2f,0f)
         pigData.get[Int]("Moustache.which") match {
-          case 0 =>        
+          case 0 =>
             glTranslatef(0,-0.7f,-0.2f)
             gluQuadrics.disk.draw(0,0.5f, graphics*9,1)
           case 1 =>
@@ -125,17 +129,17 @@ object PigFactory {
     }
   }
   
-  def apply() = new GeneratorModel(genPig, drawPig)
+  override def apply() = new GeneratorModel(genPig, drawPig)
 }
 
-object CatapultFactory {
+object CatapultFactory extends ModelFactory {
   val scale = Vec3(4f,1f,6.5f)
-  def apply() = {
+  override def apply() = {
     var catapult = new DisplayModel(() => {
       glPushMatrix()
       glScalef(scale.x,scale.y,scale.z)
       glColor3f(0.8f,0.3f,0f)
-      glBegin(GL_QUADS)      
+      glBegin(GL_QUADS)
         // top
         glNormal3f( 0f, 1f, 0f)
         glVertex3f( 1f, 1f,-1f)
@@ -201,16 +205,16 @@ object CatapultFactory {
   }
 }
 
-object TreeFactory {
+object TreeFactory extends ModelFactory {
   private def giveMeTree: () => Object = () => {
-    def isJavaList(a:Object):Boolean = a.isInstanceOf[java.util.List[_]]
-    def asArray(a:Object):Array[Object] = a.asInstanceOf[java.util.List[_]].toArray
-    def asFloatArray(a:Array[Object]):Array[Float] = a.toList.map{ a =>
-      if(a.isInstanceOf[java.lang.Double])
-        a.asInstanceOf[java.lang.Double].floatValue()
+    def isJavaList(o:Object):Boolean = o.isInstanceOf[java.util.List[_]]
+    def asArray(o:Object):Array[Object] = o.asInstanceOf[java.util.List[_]].toArray
+    def asFloatArray(arr:Array[Object]):Array[Float] = arr.toList.map { num =>
+      if(num.isInstanceOf[java.lang.Double])
+        num.asInstanceOf[java.lang.Double].floatValue()
       else
-        a.asInstanceOf[Float]
-    }.toArray
+        num.asInstanceOf[Float]
+    } toArray
 
     def traverse(data:Array[Object], parent:Branch=null):Branch = {
       if(data.size == 1) { // unpack thingy ... ((...))
@@ -234,13 +238,12 @@ object TreeFactory {
     
     var data:Object = null
     var limit = 10
-    while(data==null) try {
+    while(data == null) try {
         data = genTree/("give-me-tree", 
           0f+nextFloat/10-nextFloat/10, 
           2f+nextFloat/2-nextFloat/3, 
           0f+nextFloat/10-nextFloat/10, 
-          5f+nextFloat-nextFloat/2
-        )
+          5f+nextFloat-nextFloat/2)
     } catch {
       case e: Throwable => {
         //e.printStackTrace
@@ -285,7 +288,7 @@ object TreeFactory {
     mid
   }
   
-  def apply() = {
+  override def apply() = {
     import Global._
     var tree = new GeneratorModel(giveMeTree, renderTree, treeId)
     def random(span:Float):Float = (17+nextFloat*3-nextFloat*3)*nextFloat*span
@@ -293,8 +296,8 @@ object TreeFactory {
     tree.setPosition(
       random(10) - random(10),
       -Settings.worldSize,
-      -Settings.worldSize/2+30 + random(10) - random(7)
-    )
+      -Settings.worldSize/2+30 + random(10) - random(7))
+      
     tree
   }
 }

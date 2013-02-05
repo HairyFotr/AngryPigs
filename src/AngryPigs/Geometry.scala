@@ -50,49 +50,49 @@ class Vec3(var x: Float, var y: Float, var z: Float) {
   override def toString: String = "%.2f, %.2f, %.2f".format(x,y,z)
 }
 
-class BoundingBox(var min:Vec3) {
+class BoundingBox(var min: Vec3) {
     min = min.clone
     var max = min.clone
     
-    def this(v1:Vec3, v2:Vec3) = {
+    def this(v1: Vec3, v2: Vec3) = {
         this(v1.clone)
         this += v2
     }
-    def this(points:List[Vec3]) = {
+    def this(points: List[Vec3]) = {
         this(points(0).clone)
         for(i <- 1 until points.length) this += points(i)
     }
     
-    def boxCollide(b:BoundingBox, offset:Vec3=Vec3()):Boolean = {///@ tolerance
+    def boxCollide(b: BoundingBox, offset: Vec3 = Vec3()): Boolean = {///@ tolerance
         ((min.x+offset.x <= b.max.x) && (max.x+offset.x >= b.min.x) && 
          (min.y+offset.y <= b.max.y) && (max.y+offset.y >= b.min.y) &&
          (min.z+offset.z <= b.max.z) && (max.z+offset.z >= b.min.z))
     }
-    def pointCollide(v:Vec3, offset:Vec3=Vec3()):Boolean = {
+    def pointCollide(v: Vec3, offset: Vec3 = Vec3()): Boolean = {
         ((min.x+offset.x <= v.x) && (max.x+offset.x >= v.x) && 
          (min.y+offset.y <= v.y) && (max.y+offset.y >= v.y) &&
          (min.z+offset.z <= v.z) && (max.z+offset.z >= v.z))
     }
     
-    def +=(v:Vec3):Unit = {
+    def +=(v: Vec3) {
         this.min = min.minCoords(v)
         this.max = max.maxCoords(v)
     }
-    def +=(b:BoundingBox):Unit = {
+    def +=(b: BoundingBox) {
         this += b.min
         this += b.max
     }
-    def ++(b:BoundingBox):BoundingBox = {// merge boxes
+    def ++(b: BoundingBox): BoundingBox = {// merge boxes
         var box = this.clone
         box += b
         box
     }
-    def offsetBy(v:Vec3):BoundingBox = {// offset box
+    def offsetBy(v: Vec3): BoundingBox = {// offset box
         var box = this.clone
         box.min += v
         box.max += v
         box
     }
     
-    override def clone:BoundingBox = new BoundingBox(min.clone,max.clone)
+    override def clone: BoundingBox = new BoundingBox(min.clone,max.clone)
 }

@@ -373,13 +373,14 @@ object AngryPigs {
                     moveObj.vector.z = -moveObj.vector.z
                     if(math.abs(moveObj.vector.z) < 0.01f) moveObj.vector.z = 0.01f*math.abs(moveObj.vector.z)/moveObj.vector.z
                     var limit = 500
-                    while(basebox.boxCollide(moveBox) && {limit -= 1; limit}>0) {
+                    while(basebox.boxCollide(moveBox) && limit > 0) {
                       val moveVec = Vec3(
                         math.sin(moveObj.rot.y/(180f/math.Pi)).toFloat*moveObj.vector.z,
                         0,
                         math.cos(moveObj.rot.y/(180f/math.Pi)).toFloat*moveObj.vector.z
                       )
                       moveObj.pos += moveVec*renderTime
+                      limit -= 1
                     }
                     moveObj.vector.z = moveObj.vector.z/2
                   }
@@ -416,7 +417,7 @@ object AngryPigs {
 
             var depthSum = 0
             val sumLim = 2
-            branch.doWhile(b => depthSum<=sumLim, b => { depthSum += 1 })
+            branch.doWhile(b => depthSum <= sumLim, b => depthSum += 1)
             if(depthSum <= sumLim) { // tree is dead
               val drop = dropBranch(branch)
               drop.vector.y = 2

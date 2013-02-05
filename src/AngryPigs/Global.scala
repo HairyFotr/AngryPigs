@@ -38,7 +38,7 @@ object Utils {
   def withExit[T](func: => T, exit: => Any = { }): T = try { func } catch { case _: Throwable => exit; sys.exit(-1) }
 
   def currentTime: Long = System.nanoTime()
-  // measures the running time of the provided func  
+  // measures the running time of the provided func
   def time(func: => Unit):Long = {
     val startTime = currentTime
     func
