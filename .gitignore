@@ -34,5 +34,5 @@ ref/*
 *~
 *.log
 /target
-/projects/target
-/projects/plugins/target
+/project/target
+/project/plugins/target
