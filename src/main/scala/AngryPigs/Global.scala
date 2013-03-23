@@ -31,15 +31,15 @@ object Global {
 }
 
 object Utils {
-  implicit class D(val d:Double) { def prob: Boolean = util.Random.nextDouble < d } //0.5.prob #syntaxabuse
-  implicit class F(val f:Float) { def prob: Boolean = util.Random.nextFloat < f }
+  implicit class D(val d: Double) { def prob: Boolean = util.Random.nextDouble < d } //0.5.prob #syntaxabuse
+  implicit class F(val f: Float) { def prob: Boolean = util.Random.nextFloat < f }
 
   def withAlternative[T](func: => T, alternative: => T ): T = try { func } catch { case _: Throwable => alternative}
   def withExit[T](func: => T, exit: => Any = { }): T = try { func } catch { case _: Throwable => exit; sys.exit(-1) }
 
   def currentTime: Long = System.nanoTime()
   // measures the running time of the provided func
-  def time(func: => Unit):Long = {
+  def time(func: => Unit): Long = {
     val startTime = currentTime
     func
     (currentTime-startTime)
@@ -48,12 +48,12 @@ object Utils {
 
 // some small classes
 
-class SettingMap[A] extends scala.collection.mutable.HashMap[A,Any] {
-  private var defaultMap = new scala.collection.mutable.HashMap[String, Any]
-  def setDefault[B](v:B)(implicit m:Manifest[B]): Unit = defaultMap += m.toString -> v
-  def getDefault[B](implicit m:Manifest[B]):B = defaultMap.getOrElse(m.toString, null).asInstanceOf[B]
+class SettingMap[A] extends HashMap[A,Any] {
+  private var defaultMap = new HashMap[String, Any]
+  def setDefault[B](v: B)(implicit m: Manifest[B]): Unit = defaultMap += m.toString -> v
+  def getDefault[B](implicit m: Manifest[B]): B = defaultMap.getOrElse(m.toString, null).asInstanceOf[B]
   
-  def get[B:Manifest](key:A):B = getOrElse(key, getDefault[B]).asInstanceOf[B]
+  def get[B: Manifest](key: A): B = getOrElse(key, getDefault[B]).asInstanceOf[B]
   // add trigger hooks for when some value updates :P
 }
 trait Properties {
@@ -73,7 +73,7 @@ class TimeLock {
   
   private var lockTime = milliTime
   private var lockDuration = 0L
-  def lockIt(ms:Int) {
+  def lockIt(ms: Int) {
     lockTime = milliTime
     lockDuration = ms
     locked = true

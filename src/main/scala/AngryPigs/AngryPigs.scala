@@ -160,7 +160,7 @@ object AngryPigs {
   var catapult = CatapultFactory()
   var pigCatapultLink = new ModelLink(pig, catapult, Vec3(0f,2.5f,0f))
   var trees = new ListBuffer[GeneratorModel]
-  var futureTree:Future[GeneratorModel] = null
+  var futureTree: Future[GeneratorModel] = null
   var dropBranches = new ListBuffer[GeneratorModel]
   var trails = new ListBuffer[TrailModel]
 
@@ -203,7 +203,7 @@ object AngryPigs {
     glEnable(GL_LIGHT0)
 
     // LWJGL makes float buffers a bit difficult
-    def floatBuffer(a:Float*): FloatBuffer = {
+    def floatBuffer(a: Float*): FloatBuffer = {
       ByteBuffer
         .allocateDirect(a.length*4)
         .order(ByteOrder.nativeOrder)
@@ -211,7 +211,7 @@ object AngryPigs {
         .flip
         .asInstanceOf[FloatBuffer]
     }
-    //def floatBuffer(a:Float*):FloatBuffer = org.lwjgl.BufferUtils.createFloatBuffer(a.length).put(a.toArray) // fails for some reason
+    //def floatBuffer(a: Float*): FloatBuffer = org.lwjgl.BufferUtils.createFloatBuffer(a.length).put(a.toArray) // fails for some reason
 
     glLight(GL_LIGHT0, GL_AMBIENT, floatBuffer(0.3f, 0.3f, 0.3f, 0.0f))
     glLight(GL_LIGHT0, GL_DIFFUSE, floatBuffer(0.7f, 0.7f, 0.7f, 0.0f))
@@ -298,12 +298,12 @@ object AngryPigs {
         val mY = pig.pos.y
         moveObj.pos += moveVector*renderTime
         moveObj.pos.clamp(Settings.worldSize-2.5f)
-        if(pig.pos.y == mY && Settings.pigAir) {
+        if(pig.pos.y <= mY && Settings.pigAir) {
           Settings.pigAir = false; println("pig is on ground")
           val trailcount = 3///
           if(trails.length >= trailcount) trails = trails.drop(1)
         }
-        def unrot(angle:Float, lim:Int=360):Float = { angle - ((math.floor(angle).toInt / lim)*lim) }
+        def unrot(angle: Float, lim: Int = 360): Float = { angle - ((math.floor(angle).toInt / lim)*lim) }
         pig.vector += Settings.gravity*renderTime
         pig.vector2 -= pig.vector2*renderTime*0.0175f
         pig.rot += pig.vector2*renderTime
@@ -337,7 +337,7 @@ object AngryPigs {
             
             if(0.6.prob) b.properties += "hasLeaf" -> false
             
-            val drop = new GeneratorModel(() => b, (data:Object) => data.asInstanceOf[Branch].doAll(_.render))
+            val drop = new GeneratorModel(() => b, (data: Object) => data.asInstanceOf[Branch].doAll(_.render))
             drop.pos = tree.pos.clone
             drop.vector = Vec3(
               (math.sin(pig.rot.y/(180f/math.Pi)).toFloat*pig.vector.z/2)*(1+nextFloat/6-nextFloat/12) +nextFloat/17-nextFloat/17,
@@ -471,7 +471,7 @@ object AngryPigs {
         val presentTree = Await.result(futureTree, Duration.Inf)
         trees += presentTree
         
-        def growTree(lvl:Int, tree:GeneratorModel) {
+        def growTree(lvl: Int, tree: GeneratorModel) {
           if(lvl <= Settings.maxdepth) {///@ move setting to tree!
             val ex = Settings.maxdepth
             Settings.maxdepth = lvl

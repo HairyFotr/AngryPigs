@@ -12,7 +12,7 @@ object TerrainFactory extends ModelFactory {
   val (detail,height) = (30,0.3f)
   
   private def genTerrain: () => Object = () => {
-    def getTerrainPoint(x:Int, y:Int):Vec3 = Vec3(x/detail.toFloat,nextFloat*height,y/detail.toFloat)
+    def getTerrainPoint(x: Int, y: Int): Vec3 = Vec3(x/detail.toFloat,nextFloat*height,y/detail.toFloat)
     (for(i <- 0 to detail; j <- 0 to detail) yield getTerrainPoint(i,j)).toArray
   }
   private def drawTerrain: Object => Unit = (data: Object) => {
@@ -94,7 +94,7 @@ object PigFactory extends ModelFactory {
     {
       glPushMatrix()
       val x = 1.2f
-      def drawEye(leftEye:Boolean) {
+      def drawEye(leftEye: Boolean) {
         glPushMatrix()
         glColor3f(0.8f,0.8f,0.8f)
         gluQuadrics.sphere.draw(0.5f,graphics*8,graphics*8)
@@ -120,9 +120,9 @@ object PigFactory extends ModelFactory {
         glPopMatrix()
       }
       glTranslatef(x,0.6f,1.2f)
-      drawEye(true)//lefteye
+      drawEye(leftEye = true)//lefteye
       glTranslatef(-2*x,0,0)
-      drawEye(false)//righteye
+      drawEye(leftEye = false)//righteye
       glPopMatrix()
     }
   }
@@ -205,16 +205,16 @@ object CatapultFactory extends ModelFactory {
 
 object TreeFactory extends ModelFactory {
   private def giveMeTree: () => Object = () => {
-    def isJavaList(o:Object):Boolean = o.isInstanceOf[java.util.List[_]]
-    def asArray(o:Object):Array[Object] = o.asInstanceOf[java.util.List[_]].toArray
-    def asFloatArray(arr:Array[Object]):Array[Float] = arr.toList.map { num =>
+    def isJavaList(o: Object): Boolean = o.isInstanceOf[java.util.List[_]]
+    def asArray(o: Object): Array[Object] = o.asInstanceOf[java.util.List[_]].toArray
+    def asFloatArray(arr: Array[Object]): Array[Float] = arr.toList.map { num =>
       if(num.isInstanceOf[java.lang.Double])
         num.asInstanceOf[java.lang.Double].floatValue()
       else
         num.asInstanceOf[Float]
-    } toArray
+    }.toArray
 
-    def traverse(data:Array[Object], parent:Branch=null):Branch = {
+    def traverse(data: Array[Object], parent: Branch = null): Branch = {
       if(data.size == 1) { // unpack thingy ... ((...))
         traverse(asArray(data(0)), parent)
       } else if(data.size == 4 && !isJavaList(data(0))) { // leaves ... (node)
@@ -234,7 +234,7 @@ object TreeFactory extends ModelFactory {
       }
     }
     
-    var data:Object = null
+    var data: Object = null
     var limit = 10
     while(data == null) try {
         data = genTree/("give-me-tree", 
@@ -256,7 +256,7 @@ object TreeFactory extends ModelFactory {
     tree.properties += "treekind" -> 0//nextInt(3)
     tree.properties += "fatness" -> (0.25f+nextFloat/20f-nextFloat/20f)
     
-    def generateBoxes(branch:Branch):BoundingBox = {
+    def generateBoxes(branch: Branch): BoundingBox = {
       var box = new BoundingBox(List(branch.rootVec, branch.destVec))
       for(child <- branch.children) box += generateBoxes(child)
       
@@ -270,13 +270,13 @@ object TreeFactory extends ModelFactory {
     tree
   }
   
-  private def renderTree:Object=>Unit = (data:Object) => {
+  private def renderTree: Object => Unit = (data: Object) => {
     glEnable(GL_CULL_FACE)
     glCullFace(GL_BACK)
     data.asInstanceOf[Branch].doAll(_.render)
     glDisable(GL_CULL_FACE)
   }
-  private def treeId:(DisplayModel,SettingMap[String])=>Int = (dmodel,properties) => {
+  private def treeId: (DisplayModel, SettingMap[String]) => Int = (dmodel,properties) => {
     val model = dmodel.asInstanceOf[GeneratorModel]
     var mid = 0///to properties on fly
     // takes into account branch count and graphic detail
@@ -289,7 +289,7 @@ object TreeFactory extends ModelFactory {
   override def apply() = {
     import Global._
     var tree = new GeneratorModel(giveMeTree, renderTree, treeId)
-    def random(span:Float):Float = (17+nextFloat*3-nextFloat*3)*nextFloat*span
+    def random(span: Float): Float = (17+nextFloat*3-nextFloat*3)*nextFloat*span
     
     tree.setPosition(
       random(10) - random(10),

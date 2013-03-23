@@ -9,12 +9,12 @@ abstract class Model {
   var (pos,rot,scale) = (Vec3(), Vec3(), Vec3(1f,1f,1f))
   var visible = true
 
-  def setPosition(x:Float,y:Float,z:Float) { pos = Vec3(x,y,z) }
-  def setRotation(x:Float,y:Float,z:Float) { rot = Vec3(x,y,z) }
-  def setScale(x:Float,y:Float,z:Float) { scale = Vec3(x,y,z) }
-  def setPosition(v:Vec3) { pos = v.clone }
-  def setRotation(v:Vec3) { rot = v.clone }
-  def setScale(v:Vec3) { scale = v.clone }
+  def setPosition(x: Float, y: Float, z: Float) { pos = Vec3(x,y,z) }
+  def setRotation(x: Float, y: Float, z: Float) { rot = Vec3(x,y,z) }
+  def setScale(x: Float, y: Float, z: Float) { scale = Vec3(x,y,z) }
+  def setPosition(v: Vec3) { pos = v.clone }
+  def setRotation(v: Vec3) { rot = v.clone }
+  def setScale(v: Vec3) { scale = v.clone }
   
   def doTranslate() {
     GL11.glTranslatef(pos.x, pos.y, pos.z)
@@ -36,7 +36,7 @@ abstract class Model {
 
   def render(): Unit
 
-  override def toString:String = "p:("+pos.toString+"), " + "r:("+rot.toString+"), " + "s:("+scale.toString+")"
+  override def toString: String = "p:("+pos.toString+"), " + "r:("+rot.toString+"), " + "s:("+scale.toString+")"
 }
 
 // doesn't care about points and stuff
@@ -44,7 +44,7 @@ class DisplayModel(var renderfunc: () => Unit = () => (), var idfunc: (DisplayMo
   var compiled = false
   
   var (vector,vector2) = (Vec3(), Vec3())
-  var displayList:Int = -1
+  var displayList: Int = -1
   
   // foo value
   properties += "graphics" -> -1
@@ -65,7 +65,7 @@ class DisplayModel(var renderfunc: () => Unit = () => (), var idfunc: (DisplayMo
     }
   }
   
-  def id(props:SettingMap[String] = this.properties): Int = {
+  def id(props: SettingMap[String] = this.properties): Int = {
     if(idfunc != null) {
       idfunc(this, props) 
     } else { 
@@ -84,11 +84,11 @@ class DisplayModel(var renderfunc: () => Unit = () => (), var idfunc: (DisplayMo
       })
       properties += "graphics" -> Global.Settings.graphics
     } catch {
-      case e:NullPointerException => forceCompile()
+      case e: NullPointerException => forceCompile()
     }
   }
   
-  def reset(limit:Int=1, preserveCurrent:Boolean=true) {
+  def reset(limit: Int = 1, preserveCurrent: Boolean = true) {
     if(compileCache.size > limit) {
       var count = 0
       compileCache.clone.foreach {
@@ -102,11 +102,11 @@ class DisplayModel(var renderfunc: () => Unit = () => (), var idfunc: (DisplayMo
     }
   }
   def free() {
-    reset(0,false)
+    reset(limit = 0, preserveCurrent = false)
     displayList = -1
   }
 
-  override def clone:DisplayModel = {
+  override def clone: DisplayModel = {
     val res = new DisplayModel(this.renderfunc)
     res.pos = this.pos.clone
     res.rot = this.rot.clone
@@ -151,10 +151,10 @@ class GeneratorModel(generator: () => Object, draw: Object => Unit, _idfunc: (Di
   }
 }
 
-class TrailModel(var points:List[Vec3]) 
+class TrailModel(var points: List[Vec3]) 
   extends GeneratorModel(
     () => { points.map(_.clone) }, 
-    (data:Object) => {
+    (data: Object) => {
       import org.lwjgl.opengl.GL11._
       import Global._
 
@@ -175,15 +175,15 @@ class TrailModel(var points:List[Vec3])
         glPopMatrix()
       }
     }, 
-    (model:DisplayModel,props:SettingMap[String]) => model.asInstanceOf[GeneratorModel].data.asInstanceOf[List[Vec3]].length) {
+    (model: DisplayModel, props: SettingMap[String]) => model.asInstanceOf[GeneratorModel].data.asInstanceOf[List[Vec3]].length) {
     
-  def +=(v:Vec3) = {
+  def +=(v: Vec3) = {
     data = data.asInstanceOf[List[Vec3]] ++ List(v.clone)
     compile()
   }
 }
 
-class Branch(var parent:Branch) extends Properties {
+class Branch(var parent: Branch) extends Properties {
   var (diffVec,rootVec) = (Vec3(), Vec3())
   def destVec: Vec3 = rootVec+diffVec
 
@@ -193,14 +193,14 @@ class Branch(var parent:Branch) extends Properties {
 
   setParent(parent)
 
-  def setParent(p:Branch) {
+  def setParent(p: Branch) {
     if(p != null) {
       p.children += this
       depth = p.depth+1
     }
     parent = p
   }
-  def addChild(c:Branch): Unit = if(!(this eq c)) c.setParent(this)
+  def addChild(c: Branch): Unit = if(!(this eq c)) c.setParent(this)
   
   def detach() {
     if(parent != null) {
@@ -213,7 +213,7 @@ class Branch(var parent:Branch) extends Properties {
     f(this)
     children.foreach(_.doAll(f))
   }
-  def doWhile(w:Branch => Boolean, f:Branch => Unit) {
+  def doWhile(w: Branch => Boolean, f: Branch => Unit) {
     f(this)
     if(w(this)) children.foreach(_.doWhile(w, f))
   }
@@ -265,30 +265,30 @@ class Camera extends Model {
   var angle = Vec3()
 
   // set a perspective projection
-  def setPerspective(fv:Float, ar:Float, n:Float, f:Float) {
-    perspective=true
-    fov=fv
-    aspectRatio=ar
-    near=n
-    far=f
+  def setPerspective(fv: Float, ar: Float, n: Float, f: Float) {
+    perspective = true
+    fov = fv
+    aspectRatio = ar
+    near = n
+    far = f
     projectionChanged = true
   }
   
   // set an ortographic projection
-  def setOrtho(mx:Float, my:Float, Mx:Float, My:Float, n:Float, f:Float) {
-    perspective=false
-    minX=mx
-    minY=my
-    maxX=Mx
-    maxY=My
-    near=n
-    far=f
+  def setOrtho(mx: Float, my: Float, Mx: Float, My: Float, n: Float, f: Float) {
+    perspective = false
+    minX = mx
+    minY = my
+    maxX = Mx
+    maxY = My
+    near = n
+    far = f
     projectionChanged = true
   }
   
   private var lookAtV = Vec3()
-  def lookAt(v:Vec3): Unit = lookAtV = v.clone
-  def lookAt(m:Model): Unit = lookAtV = m.pos.clone
+  def lookAt(v: Vec3): Unit = lookAtV = v.clone
+  def lookAt(m: Model): Unit = lookAtV = m.pos.clone
     
   override def render() {
     // setup projection matrix stack
@@ -314,7 +314,7 @@ class Camera extends Model {
   }
 }
 
-class ModelLink(m1:Model, m2:Model, var vector:Vec3=Vec3(), var vector2:Vec3=Vec3()) {
+class ModelLink(m1: Model, m2: Model, var vector: Vec3=Vec3(), var vector2: Vec3=Vec3()) {
   private var linked = false
   def isLinked: Boolean = linked
   def breakLink() { linked = false }
