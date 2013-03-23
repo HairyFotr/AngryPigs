@@ -1,6 +1,0 @@
-#!/bin/bash
-
-if [[ ! -e AngryPigs.jar ]] || [[ "$1" == "build"  ]] || [[ src/AngryPigs/AngryPigs.scala -nt AngryPigs.jar ]] || [[ build.xml -nt AngryPigs.jar ]]; then ant || exit 0; fi
-if [[ "$1" == "build"  ]]; then exit; fi
-
-java -Djava.library.path="lib/lwjgl-2.8.3/native/linux" -jar AngryPigs.jar

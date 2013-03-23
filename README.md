@@ -24,3 +24,7 @@ Written in Scala ([@HairyFotr](https://twitter.com/HairyFotr)) and Clojure ([@Sw
 *    5 ... increase details
 *    6 ... decrease details
 *    8 ... regenerate pig
+
+### Building:
+
+You need sbt, then just `sbt run` from your console.

@@ -33,3 +33,6 @@ ref/*
 .bashbean*
 *~
 *.log
+/target
+/projects/target
+/projects/plugins/target
