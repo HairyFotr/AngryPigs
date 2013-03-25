@@ -298,7 +298,7 @@ object AngryPigs {
         val mY = pig.pos.y
         moveObj.pos += moveVector*renderTime
         moveObj.pos.clamp(Settings.worldSize-2.5f)
-        if(pig.pos.y <= mY && Settings.pigAir) {
+        if(pig.pos.y == mY && Settings.pigAir) { //TODO: half of the trail + bugs, if this is somehow exactly == 0 at the apex of the throw
           Settings.pigAir = false; println("pig is on ground")
           val trailcount = 3///
           if(trails.length >= trailcount) trails = trails.drop(1)

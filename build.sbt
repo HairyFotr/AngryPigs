@@ -4,6 +4,8 @@ name := "AngryPigs"
 
 organization := "AngryPigs"
 
+scalacOptions ++= Seq("-optimize")
+
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-Xlint")
 
 scalacOptions ++= Seq("-Ywarn-adapted-args", "-Ywarn-all", "-Ywarn-dead-code", "-Ywarn-inaccessible", "-Ywarn-nullary-override", "-Ywarn-nullary-unit", "-Ywarn-value-discard")
