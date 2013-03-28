@@ -133,7 +133,7 @@ object PigFactory extends ModelFactory {
 object CatapultFactory extends ModelFactory {
   val scale = Vec3(4f,1f,6.5f)
   override def apply() = {
-    var catapult = new DisplayModel(() => {
+    val catapult = new DisplayModel(() => {
       glPushMatrix()
       glScalef(scale.x,scale.y,scale.z)
       glColor3f(0.8f,0.3f,0f)
@@ -219,7 +219,7 @@ object TreeFactory extends ModelFactory {
         traverse(asArray(data(0)), parent)
       } else if(data.size == 4 && !isJavaList(data(0))) { // leaves ... (node)
         val vector = asFloatArray(data)
-        var res = new Branch(parent)
+        val res = new Branch(parent)
         if(parent != null) res.rootVec = parent.rootVec+parent.diffVec
         res.diffVec = (Vec3(vector(0), vector(1), vector(2))) * vector(3)
         res.properties += "hasLeaf" -> (nextFloat < 0.085*res.depth)
@@ -257,11 +257,11 @@ object TreeFactory extends ModelFactory {
     tree.properties += "fatness" -> (0.25f+nextFloat/20f-nextFloat/20f)
     
     def generateBoxes(branch: Branch): BoundingBox = {
-      var box = new BoundingBox(List(branch.rootVec, branch.destVec))
+      val box = new BoundingBox(List(branch.rootVec, branch.destVec))
       for(child <- branch.children) box += generateBoxes(child)
       
       branch.properties += "box" -> box
-      branch.properties += "fatness" -> (if(branch.children.size == 0) 0.18f-nextFloat/30f else 0.2f-nextFloat/30f)
+      branch.properties += "fatness" -> (if(branch.children.isEmpty) 0.18f-nextFloat/30f else 0.2f-nextFloat/30f)
 
       box
     }
@@ -288,7 +288,7 @@ object TreeFactory extends ModelFactory {
   
   override def apply() = {
     import Global._
-    var tree = new GeneratorModel(giveMeTree, renderTree, treeId)
+    val tree = new GeneratorModel(giveMeTree, renderTree, treeId)
     def random(span: Float): Float = (17+nextFloat*3-nextFloat*3)*nextFloat*span
     
     tree.setPosition(

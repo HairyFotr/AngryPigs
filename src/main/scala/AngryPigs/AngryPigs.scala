@@ -38,7 +38,7 @@ object AngryPigs {
   /**
    * Initializes display and enters main loop
    */
-  def main(Args: Array[String]) {
+  def main(args: Array[String]) {
     //withExit(
       initDisplay()//,
     //  println("Can't open display.")
@@ -155,14 +155,14 @@ object AngryPigs {
   
   //models
   val cam = new Camera
-  var terrain = TerrainFactory()
+  val terrain = TerrainFactory()
   var pig = PigFactory()
-  var catapult = CatapultFactory()
-  var pigCatapultLink = new ModelLink(pig, catapult, Vec3(0f,2.5f,0f))
-  var trees = new ListBuffer[GeneratorModel]
+  val catapult = CatapultFactory()
+  val pigCatapultLink = new ModelLink(pig, catapult, Vec3(0f,2.5f,0f))
+  val trees = new ListBuffer[GeneratorModel]
   var futureTree: Future[GeneratorModel] = null
-  var dropBranches = new ListBuffer[GeneratorModel]
-  var trails = new ListBuffer[TrailModel]
+  val dropBranches = new ListBuffer[GeneratorModel]//TODO: HashSet?
+  val trails = new ListBuffer[TrailModel]
 
   def models(): Traversable[DisplayModel] = (List(pig, catapult, terrain) ++ trees ++ dropBranches ++ trails)
   
@@ -265,7 +265,7 @@ object AngryPigs {
         }
         
         // execute non-time-critical tasks... spread them out
-        if(tasks.size > 0 && !Settings.pigAir) {
+        if(!tasks.isEmpty && !Settings.pigAir) {
           val cutoff = if(pause) 10 else 50
           for(i <- 0 to tasks.length/cutoff; if(0.05f+(tasks.length-cutoff*i)/(cutoff.toFloat) > nextFloat)) doTask()
         }
@@ -301,7 +301,7 @@ object AngryPigs {
         if(pig.pos.y == mY && Settings.pigAir) { //TODO: half of the trail + bugs, if this is somehow exactly == 0 at the apex of the throw
           Settings.pigAir = false; println("pig is on ground")
           val trailcount = 3///
-          if(trails.length >= trailcount) trails = trails.drop(1)
+          if(trails.length >= trailcount) trails.remove(0)
         }
         def unrot(angle: Float, lim: Int = 360): Float = { angle - ((math.floor(angle).toInt / lim)*lim) }
         pig.vector += Settings.gravity*renderTime

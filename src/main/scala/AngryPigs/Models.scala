@@ -189,7 +189,7 @@ class Branch(var parent: Branch) extends Properties {
 
   var depth = 1
   var marked = false
-  var children = new ListBuffer[Branch]
+  val children = new ListBuffer[Branch]
 
   setParent(parent)
 

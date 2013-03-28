@@ -49,7 +49,7 @@ object Utils {
 // some small classes
 
 class SettingMap[A] extends HashMap[A,Any] {
-  private var defaultMap = new HashMap[String, Any]
+  private val defaultMap = new HashMap[String, Any]
   def setDefault[B](v: B)(implicit m: Manifest[B]): Unit = defaultMap += m.toString -> v
   def getDefault[B](implicit m: Manifest[B]): B = defaultMap.getOrElse(m.toString, null).asInstanceOf[B]
   
@@ -57,7 +57,7 @@ class SettingMap[A] extends HashMap[A,Any] {
   // add trigger hooks for when some value updates :P
 }
 trait Properties {
-  var properties = new SettingMap[String]
+  val properties = new SettingMap[String]
 }
 
 
