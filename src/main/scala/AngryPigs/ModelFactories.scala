@@ -225,7 +225,7 @@ object TreeFactory extends ModelFactory {
         res.properties += "hasLeaf" -> (nextFloat < 0.085*res.depth)
         res
       } else if(!isJavaList(asArray(data(0)).apply(0)) && isJavaList(asArray(data(1)).apply(0))) { // parent & subbranches ((node) (...))
-        var newparent = traverse(asArray(data(0)), parent)
+        val newparent = traverse(asArray(data(0)), parent)
         for(i <- 1 until data.size) traverse(asArray(data(i)), newparent)
         newparent
       } else { // branches ... ((...) (...) (...))

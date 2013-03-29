@@ -156,7 +156,7 @@ object AngryPigs {
   //models
   val cam = new Camera
   val terrain = TerrainFactory()
-  var pig = PigFactory()
+  val pig = PigFactory()
   val catapult = CatapultFactory()
   val pigCatapultLink = new ModelLink(pig, catapult, Vec3(0f,2.5f,0f))
   val trees = new ListBuffer[GeneratorModel]
@@ -241,11 +241,11 @@ object AngryPigs {
     //glLoadIdentity()
   }
   
-  var frameIndepRatio = 48000000f
+  val frameIndepRatio = 48000000f
   var treeView = false
   var pause = false
 
-  def moveObj: DisplayModel = if(treeView) trees(0) else { if(pigCatapultLink.isLinked) catapult else pig }
+  def moveObj: DisplayModel = if(treeView && !trees.isEmpty) trees(0) else { if(pigCatapultLink.isLinked) catapult else pig }
   
   var fullTimes = 0L
   var renderTimes = 0L
@@ -275,7 +275,7 @@ object AngryPigs {
         physicsTimes += time {
         // pig-catapult collision - hop onto catapult :)
         if(!pigCatapultLink.isLinked && !Settings.pigAir) {
-          var catapultBox = catapult.properties.get[BoundingBox]("box").clone
+          val catapultBox = catapult.properties.get[BoundingBox]("box").clone
           catapultBox.max.x += 2f
           catapultBox.max.z += 2f
           catapultBox.min.x -= 2f
@@ -308,7 +308,7 @@ object AngryPigs {
         pig.vector2 -= pig.vector2*renderTime*0.0175f
         pig.rot += pig.vector2*renderTime
         pig.rot.x = unrot(pig.rot.x)
-        var postpigrotx = unrot(pig.rot.x)
+        val postpigrotx = unrot(pig.rot.x)
         val rotTreshold = 6f
         
         if(Settings.pigAir) {

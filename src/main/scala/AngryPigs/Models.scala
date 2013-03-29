@@ -151,7 +151,7 @@ class GeneratorModel(generator: () => Object, draw: Object => Unit, _idfunc: (Di
   }
 }
 
-class TrailModel(var points: List[Vec3]) 
+class TrailModel(points: List[Vec3]) 
   extends GeneratorModel(
     () => { points.map(_.clone) }, 
     (data: Object) => {
